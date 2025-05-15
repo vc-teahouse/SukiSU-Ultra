@@ -69,7 +69,11 @@ extern long ksu_strncpy_from_user_retry(char *dst,
 extern struct key *init_session_keyring;
 #endif
 
+
 extern void ksu_android_ns_fs_check(void);
+
+extern int ksu_access_ok(const void *addr, unsigned long size);
+
 extern struct file *ksu_filp_open_compat(const char *filename, int flags,
 					 umode_t mode);
 extern ssize_t ksu_kernel_read_compat(struct file *p, void *buf, size_t count,
@@ -94,10 +98,10 @@ static long ksu_copy_from_user_retry(void *to,
 	return copy_from_user(to, from, count);
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
-#define ksu_access_ok(addr, size) access_ok(addr, size)
-#else
-#define ksu_access_ok(addr, size) access_ok(VERIFY_READ, addr, size)
-#endif
+//#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+//#define ksu_access_ok(addr, size) access_ok(addr, size)
+//#else
+//#define ksu_access_ok(addr, size) access_ok(VERIFY_READ, addr, size)
+//#endif
 
 #endif
