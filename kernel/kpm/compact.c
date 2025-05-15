@@ -52,7 +52,7 @@ static int sukisu_is_uid_should_umount(uid_t uid)
 
 static int sukisu_is_current_uid_manager()
 {
-	return is_manager();
+	return ksu_is_manager();
 }
 
 static uid_t sukisu_get_manager_uid()
