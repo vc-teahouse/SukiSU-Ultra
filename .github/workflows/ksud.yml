@@ -33,6 +33,7 @@ jobs:
       if: ${{ inputs.pack_lkm && inputs.pull_lkm }}
       uses: actions/checkout@v4
       with:
+        repository: SukiSU-Ultra/SukiSU-Ultra
         ref: lkm
         path: lkm
 
