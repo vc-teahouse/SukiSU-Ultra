@@ -726,7 +726,7 @@ private fun InfoCard(
             )
 
             // 活跃管理器
-            if (systemInfo.isDynamicSignEnabled && systemInfo.managersList != null) {
+            if (!isSimpleMode && systemInfo.isDynamicSignEnabled && systemInfo.managersList != null) {
                 val signatureMap = systemInfo.managersList.managers.groupBy { it.signatureIndex }
 
                 val managersText = buildString {
