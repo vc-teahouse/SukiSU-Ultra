@@ -42,9 +42,10 @@ fun getGitCommitCount(): Int {
 }
 
 fun getGitDescribe(): String {
-    return providers.exec {
+    val tag = providers.exec {
         commandLine("git", "describe", "--tags", "--always", "--abbrev=0")
     }.standardOutput.asText.get().trim()
+    return "$tag-spoofed"
 }
 
 subprojects {
