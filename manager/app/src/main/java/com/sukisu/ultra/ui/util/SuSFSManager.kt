@@ -51,7 +51,7 @@ object SuSFSManager {
 
 
     // 常量
-    private const val SUSFS_BINARY_BASE_NAME = "ksu_susfs"
+    private const val SUSFS_BINARY_TARGET_NAME = "ksu_susfs"
     private const val DEFAULT_UNAME = "default"
     private const val DEFAULT_BUILD_TIME = "default"
     private const val MODULE_ID = "susfs_manager"
@@ -177,9 +177,9 @@ object SuSFSManager {
         getSuSFSVersion()
     } catch (_: Exception) { MIN_VERSION_FOR_HIDE_MOUNT }
 
-    private fun getSuSFSBinaryName(): String = "${SUSFS_BINARY_BASE_NAME}_${getSuSFSVersionUse().removePrefix("v")}"
+    private fun getSuSFSBinaryName(): String = "${SUSFS_BINARY_TARGET_NAME}_${getSuSFSVersionUse().removePrefix("v")}"
 
-    private fun getSuSFSTargetPath(): String = "/data/adb/ksu/bin/${getSuSFSBinaryName()}"
+    private fun getSuSFSTargetPath(): String = "/data/adb/ksu/bin/$SUSFS_BINARY_TARGET_NAME"
 
     private fun runCmd(shell: Shell, cmd: String): String {
         return shell.newJob()
