@@ -192,6 +192,8 @@ fun SuSFSConfigScreen(
     var selectedBackupFile by remember { mutableStateOf<String?>(null) }
     var backupInfo by remember { mutableStateOf<SuSFSManager.BackupData?>(null) }
 
+    var isNavigating by remember { mutableStateOf(false) }
+
     val allTabs = SuSFSTab.getAllTabs(isSusVersion_1_5_8())
 
     // 实时判断是否可以启用开机自启动
@@ -839,7 +841,10 @@ fun SuSFSConfigScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        navigator.popBackStack()
+                        if (!isNavigating) {
+                            isNavigating = true
+                            navigator.popBackStack()
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
