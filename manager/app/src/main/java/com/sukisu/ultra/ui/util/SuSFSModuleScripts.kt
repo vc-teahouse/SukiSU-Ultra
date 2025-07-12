@@ -464,9 +464,6 @@ object ScriptGenerator {
                 if (config.susPaths.isNotEmpty()) {
                     generatePathSettingSection(config.androidDataPath, config.sdcardPath)
                     appendLine()
-                    appendLine("until [ -d \"/sdcard/Android\" ]; do sleep 1; done")
-                    appendLine("sleep 45")
-                    appendLine()
                     generateSusPathsSection(config.susPaths)
                 }
             }
@@ -480,6 +477,8 @@ object ScriptGenerator {
         appendLine("# 路径配置")
         appendLine("# 设置Android Data路径")
         appendLine("until [ -d \"/sdcard/Android\" ]; do sleep 1; done")
+        appendLine("sleep 60")
+        appendLine()
         appendLine("\"${'$'}SUSFS_BIN\" set_android_data_root_path '$androidDataPath'")
         appendLine("echo \"$(get_current_time): Android Data路径设置为: $androidDataPath\" >> \"${'$'}LOG_FILE\"")
         appendLine()

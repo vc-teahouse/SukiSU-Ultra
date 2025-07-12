@@ -112,6 +112,7 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
     var showFloatAction by rememberSaveable { mutableStateOf(false) }
     // 添加状态跟踪是否已经完成刷写
     var hasFlashCompleted by rememberSaveable { mutableStateOf(false) }
+    var hasExecuted by rememberSaveable { mutableStateOf(false) }
 
     val snackBarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
@@ -135,17 +136,20 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 currentModule = 1
             )
             hasFlashCompleted = false
+            hasExecuted = false
         } else if (flashIt !is FlashIt.FlashModules) {
             hasFlashCompleted = false
+            hasExecuted = false
         }
     }
 
     // 只有在未完成刷写时才执行刷写操作
-    LaunchedEffect(flashIt, hasFlashCompleted) {
-        // 如果已经完成刷写或者已有文本内容，则不再执行
-        if (hasFlashCompleted || text.isNotEmpty()) {
+    LaunchedEffect(flashIt) {
+        if (hasExecuted || hasFlashCompleted || text.isNotEmpty()) {
             return@LaunchedEffect
         }
+
+        hasExecuted = true
 
         withContext(Dispatchers.IO) {
             setFlashingStatus(FlashingStatus.FLASHING)
