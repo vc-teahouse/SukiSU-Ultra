@@ -31,7 +31,7 @@ pub fn on_post_data_fs() -> Result<()> {
     } else {
         // Then exec common post-fs-data scripts
         if let Err(e) = crate::module::exec_common_scripts("post-fs-data.d", true) {
-            warn!("exec common post-fs-data scripts failed: {}", e);
+            warn!("exec common post-fs-data scripts failed: {e}");
         }
     }
 
@@ -44,7 +44,7 @@ pub fn on_post_data_fs() -> Result<()> {
     if safe_mode {
         warn!("safe mode, skip post-fs-data scripts and disable all modules!");
         if let Err(e) = crate::module::disable_all_modules() {
-            warn!("disable all modules failed: {}", e);
+            warn!("disable all modules failed: {e}");
         }
         return Ok(());
     }
@@ -58,7 +58,7 @@ pub fn on_post_data_fs() -> Result<()> {
     }
 
     if let Err(e) = restorecon::restorecon() {
-        warn!("restorecon failed: {}", e);
+        warn!("restorecon failed: {e}");
     }
 
     // load sepolicy.rule
@@ -67,7 +67,7 @@ pub fn on_post_data_fs() -> Result<()> {
     }
 
     if let Err(e) = crate::profile::apply_sepolies() {
-        warn!("apply root profile sepolicy failed: {}", e);
+        warn!("apply root profile sepolicy failed: {e}");
     }
 
     // mount temp dir
@@ -88,12 +88,12 @@ pub fn on_post_data_fs() -> Result<()> {
     // exec modules post-fs-data scripts
     // TODO: Add timeout
     if let Err(e) = crate::module::exec_stage_script("post-fs-data", true) {
-        warn!("exec post-fs-data scripts failed: {}", e);
+        warn!("exec post-fs-data scripts failed: {e}");
     }
 
     // load system.prop
     if let Err(e) = crate::module::load_system_prop() {
-        warn!("load system.prop failed: {}", e);
+        warn!("load system.prop failed: {e}");
     }
 
     // mount module systemlessly by magic mount
@@ -192,7 +192,7 @@ fn catch_bootlog(logname: &str, command: Vec<&str>) -> Result<()> {
     };
 
     if let Err(e) = result {
-        warn!("Failed to start logcat: {:#}", e);
+        warn!("Failed to start logcat: {e:#}");
     }
 
     Ok(())

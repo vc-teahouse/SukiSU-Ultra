@@ -401,7 +401,7 @@ pub fn restore_uninstall_module(id: &str) -> Result<()> {
 }
 
 pub fn run_action(id: &str) -> Result<()> {
-    let action_script_path = format!("/data/adb/modules/{}/action.sh", id);
+    let action_script_path = format!("/data/adb/modules/{id}/action.sh");
     exec_script(&action_script_path, true)
 }
 
