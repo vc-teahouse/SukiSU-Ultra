@@ -352,6 +352,9 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     onInstallModule = {
                         navigator.navigate(FlashScreenDestination(FlashIt.FlashModule(it)))
                     },
+                    onUpdateModule = {
+                        navigator.navigate(FlashScreenDestination(FlashIt.FlashModuleUpdate(it)))
+                    },
                     onClickModule = { id, name, hasWebUi ->
                         val currentTime = System.currentTimeMillis()
                         if (currentTime - lastClickTime < 600) {
@@ -622,6 +625,7 @@ private fun ModuleList(
     modifier: Modifier = Modifier,
     boxModifier: Modifier = Modifier,
     onInstallModule: (Uri) -> Unit,
+    onUpdateModule: (Uri) -> Unit,
     onClickModule: (id: String, name: String, hasWebUi: Boolean) -> Unit,
     context: Context,
     snackBarHost: SnackbarHostState
@@ -709,7 +713,7 @@ private fun ModuleList(
                 downloadUrl,
                 fileName,
                 downloading,
-                onDownloaded = onInstallModule,
+                onDownloaded = onUpdateModule,
                 onDownloading = {
                     launch(Dispatchers.Main) {
                         Toast.makeText(context, downloading, Toast.LENGTH_SHORT).show()
