@@ -589,4 +589,24 @@
     <string name="no_active_manager">No active manager</string>
     <string name="default_signature">SukiSU</string>
     <string name="home_zygisk_implement">Zygisk implement</string>
+    <!-- 循环路径相关 -->
+    <string name="susfs_tab_sus_loop_paths">SUS Loop Paths</string>
+    <string name="susfs_add_sus_loop_path">Add SUS Loop Path</string>
+    <string name="susfs_edit_sus_loop_path">Edit SUS Loop Path</string>
+    <string name="susfs_loop_path_added_success">SUS loop path added successfully: %1$s</string>
+    <string name="susfs_loop_path_removed">SUS loop path removed: %1$s</string>
+    <string name="susfs_loop_path_updated">SUS loop path updated: %1$s -> %2$s</string>
+    <string name="susfs_no_loop_paths_configured">No SUS loop paths configured</string>
+    <string name="susfs_reset_loop_paths_title">Reset Loop Paths</string>
+    <string name="susfs_reset_loop_paths_message">Are you sure you want to clear all SUS loop paths? This action cannot be undone.</string>
+    <string name="susfs_loop_path_label">Loop Path</string>
+    <string name="susfs_loop_path_placeholder">/data/example/path</string>
+    <string name="susfs_loop_path_restriction_warning">Note: Only paths NOT inside /storage/ and /sdcard/ can be added via loop paths.</string>
+    <string name="susfs_loop_path_invalid_location">Error: Loop paths cannot be inside /storage/ or /sdcard/ directories</string>
+    <string name="loop_paths_section">Loop Paths</string>
+    <string name="add_loop_path">Add Loop Path</string>
+    <!-- 循环路径功能描述 -->
+    <string name="sus_loop_path_feature_label">SUS Loop Path</string>
+    <string name="sus_loop_paths_description_title">Loop Path Configuration</string>
+    <string name="sus_loop_paths_description_text">Loop paths are re-flagged as SUS_PATH on each non-root user app or isolated service startup. This helps address issues where added paths may have their inode status reset or inode re-created in the kernel.</string>
 </resources>

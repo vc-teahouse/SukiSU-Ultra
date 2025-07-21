@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
@@ -41,15 +42,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.screen.extensions.AddKstatPathItemCard
-import com.sukisu.ultra.ui.screen.extensions.AppInfoCache
-import com.sukisu.ultra.ui.screen.extensions.AppPathGroupCard
-import com.sukisu.ultra.ui.screen.extensions.EmptyStateCard
-import com.sukisu.ultra.ui.screen.extensions.FeatureStatusCard
-import com.sukisu.ultra.ui.screen.extensions.KstatConfigItemCard
-import com.sukisu.ultra.ui.screen.extensions.PathItemCard
-import com.sukisu.ultra.ui.screen.extensions.SectionHeader
-import com.sukisu.ultra.ui.screen.extensions.SusMountHidingControlCard
 import com.sukisu.ultra.ui.util.SuSFSManager
 import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion_1_5_8
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
@@ -205,6 +197,111 @@ fun SusPathsContent(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(text = stringResource(R.string.add_app_path))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * SUS循环路径内容组件
+ */
+@Composable
+fun SusLoopPathsContent(
+    susLoopPaths: Set<String>,
+    isLoading: Boolean,
+    onAddLoopPath: () -> Unit,
+    onRemoveLoopPath: (String) -> Unit,
+    onEditLoopPath: ((String) -> Unit)? = null
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // 说明卡片
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.sus_loop_paths_description_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = stringResource(R.string.sus_loop_paths_description_text),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.susfs_loop_path_restriction_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
+            }
+
+            if (susLoopPaths.isEmpty()) {
+                item {
+                    EmptyStateCard(
+                        message = stringResource(R.string.susfs_no_loop_paths_configured)
+                    )
+                }
+            } else {
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.loop_paths_section),
+                        subtitle = null,
+                        icon = Icons.Default.Loop,
+                        count = susLoopPaths.size
+                    )
+                }
+
+                items(susLoopPaths.toList()) { path ->
+                    PathItemCard(
+                        path = path,
+                        icon = Icons.Default.Loop,
+                        onDelete = { onRemoveLoopPath(path) },
+                        onEdit = if (onEditLoopPath != null) { { onEditLoopPath(path) } } else null,
+                        isLoading = isLoading
+                    )
+                }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = onAddLoopPath,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = stringResource(R.string.add_loop_path))
                     }
                 }
             }
