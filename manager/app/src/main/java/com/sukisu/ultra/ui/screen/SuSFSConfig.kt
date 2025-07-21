@@ -82,8 +82,8 @@ import com.sukisu.ultra.ui.component.SusLoopPathsContent
 import com.sukisu.ultra.ui.component.TryUmountContent
 import com.sukisu.ultra.ui.theme.CardConfig
 import com.sukisu.ultra.ui.util.SuSFSManager
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion_1_5_8
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion_1_5_9
+import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion158
+import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion159
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
 import java.io.File
@@ -104,10 +104,10 @@ enum class SuSFSTab(val displayNameRes: Int) {
     ENABLED_FEATURES(R.string.susfs_tab_enabled_features);
 
     companion object {
-        fun getAllTabs(isSusVersion_1_5_8: Boolean, isSusVersion_1_5_9: Boolean): List<SuSFSTab> {
+        fun getAllTabs(isSusVersion158: Boolean, isSusVersion159: Boolean): List<SuSFSTab> {
             return when {
-                isSusVersion_1_5_9 -> entries.toList()
-                isSusVersion_1_5_8 -> entries.filter { it != SUS_LOOP_PATHS }
+                isSusVersion159 -> entries.toList()
+                isSusVersion158 -> entries.filter { it != SUS_LOOP_PATHS }
                 else -> entries.filter { it != PATH_SETTINGS && it != SUS_LOOP_PATHS }
             }
         }
@@ -201,7 +201,7 @@ fun SuSFSConfigScreen(
 
     var isNavigating by remember { mutableStateOf(false) }
 
-    val allTabs = SuSFSTab.getAllTabs(isSusVersion_1_5_8(), isSusVersion_1_5_9())
+    val allTabs = SuSFSTab.getAllTabs(isSusVersion158(), isSusVersion159())
 
     // 实时判断是否可以启用开机自启动
     val canEnableAutoStart by remember {
@@ -1283,12 +1283,12 @@ fun SuSFSConfigScreen(
                         )
                     }
                     SuSFSTab.SUS_MOUNTS -> {
-                        val isSusVersion_1_5_8 = remember { isSusVersion_1_5_8() }
+                        val isSusVersion158 = remember { isSusVersion158() }
 
                         SusMountsContent(
                             susMounts = susMounts,
                             hideSusMountsForAllProcs = hideSusMountsForAllProcs,
-                            isSusVersion_1_5_8 = isSusVersion_1_5_8,
+                            isSusVersion158 = isSusVersion158,
                             isLoading = isLoading,
                             onAddMount = { showAddMountDialog = true },
                             onRemoveMount = { mount ->

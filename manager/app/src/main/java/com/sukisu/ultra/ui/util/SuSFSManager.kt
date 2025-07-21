@@ -222,7 +222,7 @@ object SuSFSManager {
     /**
      * 检查是否支持设置sdcard路径等功能（1.5.8+）
      */
-    fun isSusVersion_1_5_8(): Boolean {
+    fun isSusVersion158(): Boolean {
         return try {
             val currentVersion = getSuSFSVersion()
             compareVersions(currentVersion, MIN_VERSION_FOR_HIDE_MOUNT) >= 0
@@ -234,7 +234,7 @@ object SuSFSManager {
     /**
      * 检查是否支持循环路径功能（1.5.9+）
      */
-    fun isSusVersion_1_5_9(): Boolean {
+    fun isSusVersion159(): Boolean {
         return try {
             val currentVersion = getSuSFSVersion()
             compareVersions(currentVersion, MIN_VERSION_FOR_LOOP_PATH) >= 0
@@ -262,7 +262,7 @@ object SuSFSManager {
             kstatConfigs = getKstatConfigs(context),
             addKstatPaths = getAddKstatPaths(context),
             hideSusMountsForAllProcs = getHideSusMountsForAllProcs(context),
-            support158 = isSusVersion_1_5_8(),
+            support158 = isSusVersion158(),
             enableHideBl = getEnableHideBl(context),
             enableCleanupResidue = getEnableCleanupResidue(context),
             umountForZygoteIsoService = getUmountForZygoteIsoService(context),
@@ -860,7 +860,7 @@ object SuSFSManager {
 
     // SUS挂载隐藏控制
     suspend fun setHideSusMountsForAllProcs(context: Context, hideForAll: Boolean): Boolean {
-        if (!isSusVersion_1_5_8()) {
+        if (!isSusVersion158()) {
             return false
         }
 
@@ -894,7 +894,7 @@ object SuSFSManager {
     @SuppressLint("StringFormatInvalid")
     suspend fun addSusPath(context: Context, path: String): Boolean {
         // 如果是1.5.8版本，先设置路径配置
-        if (isSusVersion_1_5_8()) {
+        if (isSusVersion158()) {
             // 获取当前配置的路径，如果没有配置则使用默认值
             val androidDataPath = getAndroidDataPath(context)
             val sdcardPath = getSdcardPath(context)
@@ -1083,7 +1083,7 @@ object SuSFSManager {
 
     // Zygote隔离服务卸载控制
     suspend fun setUmountForZygoteIsoService(context: Context, enabled: Boolean): Boolean {
-        if (!isSusVersion_1_5_8()) {
+        if (!isSusVersion158()) {
             return false
         }
 

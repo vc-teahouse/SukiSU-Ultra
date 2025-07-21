@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.util.SuSFSManager
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion_1_5_8
+import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion158
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 
 /**
@@ -316,7 +316,7 @@ fun SusLoopPathsContent(
 fun SusMountsContent(
     susMounts: Set<String>,
     hideSusMountsForAllProcs: Boolean,
-    isSusVersion_1_5_8: Boolean,
+    isSusVersion158: Boolean,
     isLoading: Boolean,
     onAddMount: () -> Unit,
     onRemoveMount: (String) -> Unit,
@@ -328,7 +328,7 @@ fun SusMountsContent(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (isSusVersion_1_5_8) {
+            if (isSusVersion158) {
                 item {
                     SusMountHidingControlCard(
                         hideSusMountsForAllProcs = hideSusMountsForAllProcs,
@@ -404,7 +404,7 @@ fun TryUmountContent(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (isSusVersion_1_5_8()) {
+            if (isSusVersion158()) {
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
