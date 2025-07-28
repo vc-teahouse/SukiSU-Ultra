@@ -459,7 +459,7 @@ int ksu_get_active_managers(struct manager_list_info *info)
     
     if (ksu_manager_uid != KSU_INVALID_UID && count < 2) {
         info->managers[count].uid = ksu_manager_uid;
-        info->managers[count].signature_index = 1;
+        info->managers[count].signature_index = 0;
         count++;
     }
     
@@ -490,9 +490,11 @@ static struct apk_sign_key {
 	unsigned size;
 	const char *sha256;
 } apk_sign_keys[] = {
-	{EXPECTED_SIZE, EXPECTED_HASH},
 	{EXPECTED_SIZE_SHIRKNEKO, EXPECTED_HASH_SHIRKNEKO}, // ShirkNeko/SukiSU
 	{EXPECTED_SIZE_OTHER, EXPECTED_HASH_OTHER}, // Dynamic Sign
+#ifdef EXPECTED_SIZE
+	{EXPECTED_SIZE, EXPECTED_HASH}, // Custom
+#endif
 };
 
 static struct sdesc *init_sdesc(struct crypto_shash *alg)
@@ -620,7 +622,7 @@ static int verify_signature_block(struct file *fp, u32 *size4, loff_t *pos, u32 
 	for (i = 0; i < ARRAY_SIZE(apk_sign_keys); i++) {
 		sign_key = apk_sign_keys[i];
 
-		if (i == 2) {
+		if (i == 1) { // Dynamic Sign indexing
 			unsigned long flags;
 			spin_lock_irqsave(&dynamic_sign_lock, flags);
 			if (dynamic_sign.is_set) {
@@ -796,8 +798,8 @@ clean:
 		}
 		
 		if (check_multi_manager) {
-			// 1: ShirkNeko/SukiSU, 2: Dynamic Sign
-			if (matched_index == 1 || matched_index == 2) {
+			// 0: ShirkNeko/SukiSU, 1: Dynamic Sign
+			if (matched_index == 0 || matched_index == 1) {
 				pr_info("Multi-manager APK detected (dynamic_sign enabled): signature_index=%d\n", matched_index);
 				return 1;
 			}
