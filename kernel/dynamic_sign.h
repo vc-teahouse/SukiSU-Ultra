@@ -39,6 +39,5 @@ bool ksu_is_multi_manager_apk(char *path, int *signature_index);
 
 // Manager rescanning functionality
 bool ksu_trigger_manager_rescan(void);
-void ksu_rescan_manager_work_handler(struct work_struct *work);
 
 #endif

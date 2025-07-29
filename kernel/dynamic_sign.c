@@ -230,7 +230,7 @@ void ksu_rescan_manager_work_handler(struct work_struct *work)
     pr_info("Preserved traditional manager, rescanning for dynamic managers\n");
     
     // Trigger manager scanning
-    ksu_track_throne();
+    track_throne();
     
     pr_info("Manager rescan completed\n");
 }
