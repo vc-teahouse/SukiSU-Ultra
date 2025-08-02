@@ -2,7 +2,6 @@
 #define __KSU_H_DYNAMIC_SIGN
 
 #include <linux/types.h>
-#include <linux/completion.h>
 #include "ksu.h"
 
 #define DYNAMIC_SIGN_FILE_MAGIC 0x7f445347 // 'DSG', u32
@@ -21,7 +20,7 @@ struct manager_info {
     bool is_active;
 };
 
-// Enhanced dynamic sign operations with error recovery
+// Dynamic sign operations
 int ksu_handle_dynamic_sign(struct dynamic_sign_user_config *config);
 void ksu_dynamic_sign_init(void);
 void ksu_dynamic_sign_exit(void);
@@ -35,11 +34,8 @@ bool ksu_is_any_manager(uid_t uid);
 int ksu_get_manager_signature_index(uid_t uid);
 int ksu_get_active_managers(struct manager_list_info *info);
 
-// Multi-manager APK verification with timeout protection
+// Multi-manager APK verification
 bool ksu_is_multi_manager_apk(char *path, int *signature_index);
-
-// Manager rescanning functionality
-bool ksu_trigger_manager_rescan(void);
 
 // Configuration access for signature verification
 bool ksu_get_dynamic_sign_config(unsigned int *size, const char **hash);

@@ -42,7 +42,6 @@
 #include "manager.h"
 #include "selinux/selinux.h"
 #include "throne_tracker.h"
-#include "throne_tracker.h"
 #include "kernel_compat.h"
 
 #include "kpm/kpm.h"
