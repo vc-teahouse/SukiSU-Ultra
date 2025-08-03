@@ -9,9 +9,6 @@ import java.nio.charset.StandardCharsets
 import java.util.zip.ZipInputStream
 import com.sukisu.ultra.R
 import android.util.Log
-import com.sukisu.ultra.Natives
-import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 
 object ModuleUtils {
@@ -140,111 +137,6 @@ object ModuleUtils {
         } catch (e: Exception) {
             Log.e(TAG, "提取模块ID时发生异常: ${e.message}", e)
             null
-        }
-    }
-}
-
-// 模块签名验证工具类
-object ModuleSignatureUtils {
-    private const val TAG = "ModuleSignatureUtils"
-
-    fun verifyModuleSignature(context: Context, moduleUri: Uri): Boolean {
-        return try {
-            // 创建临时文件
-            val tempFile = File(context.cacheDir, "temp_module_${System.currentTimeMillis()}.zip")
-
-            // 复制URI内容到临时文件
-            context.contentResolver.openInputStream(moduleUri)?.use { inputStream ->
-                FileOutputStream(tempFile).use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-
-            // 调用native方法验证签名
-            val isVerified = Natives.verifyModuleSignature(tempFile.absolutePath)
-
-            // 清理临时文件
-            tempFile.delete()
-
-            Log.d(TAG, "Module signature verification result: $isVerified")
-            isVerified
-        } catch (e: Exception) {
-            Log.e(TAG, "Error verifying module signature", e)
-            false
-        }
-    }
-
-}
-
-// 验证模块签名
-fun verifyModuleSignature(context: Context, moduleUri: Uri): Boolean {
-    return ModuleSignatureUtils.verifyModuleSignature(context, moduleUri)
-}
-
-object ModuleOperationUtils {
-    private const val TAG = "ModuleOperationUtils"
-
-    fun handleModuleInstallSuccess(context: Context, moduleUri: Uri, isSignatureVerified: Boolean) {
-        if (!isSignatureVerified) {
-            Log.d(TAG, "模块签名未验证，跳过创建验证标志")
-            return
-        }
-
-        try {
-            // 从ZIP文件提取模块ID
-            val moduleId = ModuleUtils.extractModuleId(context, moduleUri)
-            if (moduleId == null) {
-                Log.e(TAG, "无法提取模块ID，无法创建验证标志")
-                return
-            }
-
-            // 创建验证标志文件
-            val success = ModuleVerificationManager.createVerificationFlag(moduleId)
-            if (success) {
-                Log.d(TAG, "模块 $moduleId 验证标志创建成功")
-            } else {
-                Log.e(TAG, "模块 $moduleId 验证标志创建失败")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "处理模块安装成功时发生异常", e)
-        }
-    }
-
-    fun handleModuleUninstall(moduleId: String) {
-        try {
-            val success = ModuleVerificationManager.removeVerificationFlag(moduleId)
-            if (success) {
-                Log.d(TAG, "模块 $moduleId 验证标志移除成功")
-            } else {
-                Log.d(TAG, "模块 $moduleId 验证标志移除失败或不存在")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "处理模块卸载时发生异常: $moduleId", e)
-        }
-    }
-    fun handleModuleUpdate(context: Context, moduleUri: Uri, isSignatureVerified: Boolean) {
-        try {
-            val moduleId = ModuleUtils.extractModuleId(context, moduleUri)
-            if (moduleId == null) {
-                Log.e(TAG, "无法提取模块ID，无法处理验证标志")
-                return
-            }
-
-            if (isSignatureVerified) {
-                // 签名验证通过，创建或更新验证标志
-                val success = ModuleVerificationManager.createVerificationFlag(moduleId)
-                if (success) {
-                    Log.d(TAG, "模块 $moduleId 更新后验证标志已更新")
-                } else {
-                    Log.e(TAG, "模块 $moduleId 更新后验证标志更新失败")
-                }
-            } else {
-                // 签名验证失败，移除验证标志
-                ModuleVerificationManager.removeVerificationFlag(moduleId)
-                Log.d(TAG, "模块 $moduleId 更新后签名未验证，验证标志已移除")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "处理模块更新时发生异常", e)
         }
     }
 }
