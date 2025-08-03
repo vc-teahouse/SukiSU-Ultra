@@ -197,36 +197,56 @@ bool get_managers_list(struct manager_list_info* info) {
 bool verify_module_signature(const char* input) {
 #if defined(__aarch64__) || defined(_M_ARM64)
     if (input == NULL) {
+        LogDebug("verify_module_signature: input path is null");
         return false;
     }
 
     int fd = zako_file_open_rw(input);
+    if (fd < 0) {
+        LogDebug("verify_module_signature: failed to open file: %s", input);
+        return false;
+    }
+
     uint32_t results = zako_file_verify_esig(fd, 0);
 
     if (results != 0) {
+        /* If important error occured, verification process should
+           be considered as failed due to unexpected modification
+           potentially happened. */
         if ((results & ZAKO_ESV_IMPORTANT_ERROR) != 0) {
+            LogDebug("verify_module_signature: Verification failed! (important error)");
         } else {
+            /* This is for manager that doesn't want to do certificate checks */
+            LogDebug("verify_module_signature: Verification partially passed");
         }
     } else {
+        LogDebug("verify_module_signature: Verification passed!");
         goto exit;
     }
 
     /* Go through all bit fields */
-    for (uint8_t i = 0; i < sizeof(uint32_t) * 8; i++) {
+    for (size_t i = 0; i < sizeof(uint32_t) * 8; i++) {
         if ((results & (1 << i)) == 0) {
             continue;
         }
 
         /* Convert error bit field index into human readable string */
-        const char* message = zako_esign_verrcidx2str(i);
+        const char* message = zako_esign_verrcidx2str((uint8_t)i);
         // Error message: message
+        if (message != NULL) {
+            LogDebug("verify_module_signature: Error bit %zu: %s", i, message);
+        } else {
+            LogDebug("verify_module_signature: Error bit %zu: Unknown error", i);
+        }
     }
 
     exit:
     close(fd);
+    LogDebug("verify_module_signature: path=%s, results=0x%x, success=%s",
+             input, results, (results == 0) ? "true" : "false");
     return results == 0;
 #else
-    // 非arm64-v8a架构不支持模块签名验证
+    LogDebug("verify_module_signature: not supported on non-arm64 architecture, path=%s", input ? input : "null");
     return false;
 #endif
 }
