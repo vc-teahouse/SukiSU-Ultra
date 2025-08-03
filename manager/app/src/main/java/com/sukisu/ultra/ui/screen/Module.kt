@@ -189,6 +189,8 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     for (uri in selectedModules) {
                         val isVerified = verifyModuleSignature(context, uri)
                         verificationResults[uri] = isVerified
+                        // 存储验证状态
+                        setModuleVerificationStatus(uri, isVerified)
 
                         if (forceVerification && !isVerified) {
                             withContext(Dispatchers.Main) {
@@ -253,6 +255,8 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                         // 验证模块签名
                         val forceVerification = prefs.getBoolean("force_signature_verification", false)
                         val isVerified = verifyModuleSignature(context, uri)
+                        // 存储验证状态
+                        setModuleVerificationStatus(uri, isVerified)
 
                         if (forceVerification && !isVerified) {
                             signatureDialogMessage = context.getString(R.string.module_signature_invalid_message)
@@ -835,7 +839,12 @@ private fun ModuleList(
                 downloadUrl,
                 fileName,
                 downloading,
-                onDownloaded = onUpdateModule,
+                onDownloaded = { uri ->
+                    // 验证更新模块的签名
+                    val isVerified = verifyModuleSignature(context, uri)
+                    setModuleVerificationStatus(uri, isVerified)
+                    onUpdateModule(uri)
+                },
                 onDownloading = {
                     launch(Dispatchers.Main) {
                         Toast.makeText(context, downloading, Toast.LENGTH_SHORT).show()
@@ -867,6 +876,8 @@ private fun ModuleList(
         val success = loadingDialog.withLoading {
             withContext(Dispatchers.IO) {
                 if (isUninstall) {
+                    // 卸载时移除验证标志
+                    ModuleOperationUtils.handleModuleUninstall(module.dirId)
                     uninstallModule(module.dirId)
                 } else {
                     restoreModule(module.dirId)
@@ -1075,14 +1086,48 @@ fun ModuleItem(
                 Column(
                     modifier = Modifier.fillMaxWidth(0.8f)
                 ) {
-                    Text(
-                        text = module.name,
-                        fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                        fontWeight = FontWeight.SemiBold,
-                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
-                        fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
-                        textDecoration = textDecoration,
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = module.name,
+                            fontSize = MaterialTheme.typography.titleMedium.fontSize,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = MaterialTheme.typography.bodySmall.lineHeight,
+                            fontFamily = MaterialTheme.typography.titleMedium.fontFamily,
+                            textDecoration = textDecoration,
+                            modifier = Modifier.weight(1f, false)
+                        )
+
+                        // 显示验证标签
+                        if (module.isVerified) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Verified,
+                                        contentDescription = stringResource(R.string.module_signature_verified),
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(2.dp))
+                                    Text(
+                                        text = stringResource(R.string.module_verified),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                    }
 
                     Text(
                         text = "$moduleVersion: ${module.version}",
@@ -1309,6 +1354,8 @@ fun ModuleItemPreview() {
         hasActionScript = false,
         dirId = "dirId",
         config = ModuleConfig(),
+        isVerified = true,
+        verificationTimestamp = System.currentTimeMillis()
     )
     ModuleItem(EmptyDestinationsNavigator, module, "", {}, {}, {}, {})
 }

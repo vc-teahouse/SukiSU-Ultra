@@ -36,7 +36,7 @@ object ModuleUtils {
                 }
             }?.removeSuffix(".zip") ?: context.getString(R.string.unknown_module)
 
-            var formattedFileName = fileName.replace(Regex("[^a-zA-Z0-9\\s\\-_.@()\\u4e00-\\u9fa5]"), "").trim()
+            val formattedFileName = fileName.replace(Regex("[^a-zA-Z0-9\\s\\-_.@()\\u4e00-\\u9fa5]"), "").trim()
             var moduleName = formattedFileName
 
             try {
@@ -55,12 +55,10 @@ object ModuleUtils {
                     if (entry.name == "module.prop") {
                         val reader = BufferedReader(InputStreamReader(zipInputStream, StandardCharsets.UTF_8))
                         var line: String?
-                        var nameFound = false
                         while (reader.readLine().also { line = it } != null) {
                             if (line?.startsWith("name=") == true) {
                                 moduleName = line.substringAfter("=")
                                 moduleName = moduleName.replace(Regex("[^a-zA-Z0-9\\s\\-_.@()\\u4e00-\\u9fa5]"), "").trim()
-                                nameFound = true
                                 break
                             }
                         }
@@ -105,6 +103,45 @@ object ModuleUtils {
             Log.e(TAG, "Unable to get persistent permissions on URIs: $uri, Error: ${e.message}")
         }
     }
+
+    fun extractModuleId(context: Context, uri: Uri): String? {
+        if (uri == Uri.EMPTY) {
+            return null
+        }
+
+        return try {
+
+            val inputStream = context.contentResolver.openInputStream(uri)
+            if (inputStream == null) {
+                return null
+            }
+
+            val zipInputStream = ZipInputStream(inputStream)
+            var entry = zipInputStream.nextEntry
+            var moduleId: String? = null
+
+            // 遍历ZIP文件中的条目，查找module.prop文件
+            while (entry != null) {
+                if (entry.name == "module.prop") {
+                    val reader = BufferedReader(InputStreamReader(zipInputStream, StandardCharsets.UTF_8))
+                    var line: String?
+                    while (reader.readLine().also { line = it } != null) {
+                        if (line?.startsWith("id=") == true) {
+                            moduleId = line.substringAfter("=").trim()
+                            break
+                        }
+                    }
+                    break
+                }
+                entry = zipInputStream.nextEntry
+            }
+            zipInputStream.close()
+            moduleId
+        } catch (e: Exception) {
+            Log.e(TAG, "提取模块ID时发生异常: ${e.message}", e)
+            null
+        }
+    }
 }
 
 // 模块签名验证工具类
@@ -142,4 +179,72 @@ object ModuleSignatureUtils {
 // 验证模块签名
 fun verifyModuleSignature(context: Context, moduleUri: Uri): Boolean {
     return ModuleSignatureUtils.verifyModuleSignature(context, moduleUri)
+}
+
+object ModuleOperationUtils {
+    private const val TAG = "ModuleOperationUtils"
+
+    fun handleModuleInstallSuccess(context: Context, moduleUri: Uri, isSignatureVerified: Boolean) {
+        if (!isSignatureVerified) {
+            Log.d(TAG, "模块签名未验证，跳过创建验证标志")
+            return
+        }
+
+        try {
+            // 从ZIP文件提取模块ID
+            val moduleId = ModuleUtils.extractModuleId(context, moduleUri)
+            if (moduleId == null) {
+                Log.e(TAG, "无法提取模块ID，无法创建验证标志")
+                return
+            }
+
+            // 创建验证标志文件
+            val success = ModuleVerificationManager.createVerificationFlag(moduleId)
+            if (success) {
+                Log.d(TAG, "模块 $moduleId 验证标志创建成功")
+            } else {
+                Log.e(TAG, "模块 $moduleId 验证标志创建失败")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "处理模块安装成功时发生异常", e)
+        }
+    }
+
+    fun handleModuleUninstall(moduleId: String) {
+        try {
+            val success = ModuleVerificationManager.removeVerificationFlag(moduleId)
+            if (success) {
+                Log.d(TAG, "模块 $moduleId 验证标志移除成功")
+            } else {
+                Log.d(TAG, "模块 $moduleId 验证标志移除失败或不存在")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "处理模块卸载时发生异常: $moduleId", e)
+        }
+    }
+    fun handleModuleUpdate(context: Context, moduleUri: Uri, isSignatureVerified: Boolean) {
+        try {
+            val moduleId = ModuleUtils.extractModuleId(context, moduleUri)
+            if (moduleId == null) {
+                Log.e(TAG, "无法提取模块ID，无法处理验证标志")
+                return
+            }
+
+            if (isSignatureVerified) {
+                // 签名验证通过，创建或更新验证标志
+                val success = ModuleVerificationManager.createVerificationFlag(moduleId)
+                if (success) {
+                    Log.d(TAG, "模块 $moduleId 更新后验证标志已更新")
+                } else {
+                    Log.e(TAG, "模块 $moduleId 更新后验证标志更新失败")
+                }
+            } else {
+                // 签名验证失败，移除验证标志
+                ModuleVerificationManager.removeVerificationFlag(moduleId)
+                Log.d(TAG, "模块 $moduleId 更新后签名未验证，验证标志已移除")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "处理模块更新时发生异常", e)
+        }
+    }
 }

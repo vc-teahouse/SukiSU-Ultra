@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.ui.util.HanziToPinyin
 import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.getRootShell
+import com.sukisu.ultra.ui.util.ModuleVerificationManager
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
@@ -86,6 +87,8 @@ class ModuleViewModel : ViewModel() {
         val hasActionScript: Boolean,
         val dirId: String, // real module id (dir name)
         var config: ModuleConfig? = null,
+        var isVerified: Boolean = false, // 添加验证状态字段
+        var verificationTimestamp: Long = 0L, // 添加验证时间戳
     )
 
     var isRefreshing by mutableStateOf(false)
@@ -131,7 +134,7 @@ class ModuleViewModel : ViewModel() {
                 Log.i(TAG, "result: $result")
 
                 val array = JSONArray(result)
-                modules = (0 until array.length())
+                val moduleInfos = (0 until array.length())
                     .asSequence()
                     .map { array.getJSONObject(it) }
                     .map { obj ->
@@ -151,6 +154,26 @@ class ModuleViewModel : ViewModel() {
                             obj.getString("dir_id")
                         )
                     }.toList()
+
+                // 批量检查所有模块的验证状态
+                val moduleIds = moduleInfos.map { it.dirId }
+                val verificationStatus = ModuleVerificationManager.batchCheckVerificationStatus(moduleIds)
+
+                // 更新模块验证状态
+                modules = moduleInfos.map { moduleInfo ->
+                    val isVerified = verificationStatus[moduleInfo.dirId] ?: false
+                    val verificationTimestamp = if (isVerified) {
+                        ModuleVerificationManager.getVerificationTimestamp(moduleInfo.dirId)
+                    } else {
+                        0L
+                    }
+
+                    moduleInfo.copy(
+                        isVerified = isVerified,
+                        verificationTimestamp = verificationTimestamp
+                    )
+                }
+
                 launch {
                     modules.forEach { module ->
                         withContext(Dispatchers.IO) {
@@ -205,6 +228,14 @@ class ModuleViewModel : ViewModel() {
 
             Log.i(TAG, "load cost: ${SystemClock.elapsedRealtime() - start}, modules: $modules")
         }
+    }
+
+    fun createModuleVerificationFlag(moduleId: String): Boolean {
+        return ModuleVerificationManager.createVerificationFlag(moduleId)
+    }
+
+    fun removeModuleVerificationFlag(moduleId: String): Boolean {
+        return ModuleVerificationManager.removeVerificationFlag(moduleId)
     }
 
     private fun sanitizeVersionString(version: String): String {
@@ -267,6 +298,31 @@ class ModuleViewModel : ViewModel() {
 
         return Triple(zipUrl, version, changelog)
     }
+}
+
+fun ModuleViewModel.ModuleInfo.copy(
+    id: String = this.id,
+    name: String = this.name,
+    author: String = this.author,
+    version: String = this.version,
+    versionCode: Int = this.versionCode,
+    description: String = this.description,
+    enabled: Boolean = this.enabled,
+    update: Boolean = this.update,
+    remove: Boolean = this.remove,
+    updateJson: String = this.updateJson,
+    hasWebUi: Boolean = this.hasWebUi,
+    hasActionScript: Boolean = this.hasActionScript,
+    dirId: String = this.dirId,
+    config: ModuleConfig? = this.config,
+    isVerified: Boolean = this.isVerified,
+    verificationTimestamp: Long = this.verificationTimestamp
+): ModuleViewModel.ModuleInfo {
+    return ModuleViewModel.ModuleInfo(
+        id, name, author, version, versionCode, description,
+        enabled, update, remove, updateJson, hasWebUi, hasActionScript,
+        dirId, config, isVerified, verificationTimestamp
+    )
 }
 
 /**

@@ -70,10 +70,14 @@ data class ModuleInstallStatus(
     val totalModules: Int = 0,
     val currentModule: Int = 0,
     val currentModuleName: String = "",
-    val failedModules: MutableList<String> = mutableListOf()
+    val failedModules: MutableList<String> = mutableListOf(),
+    val verifiedModules: MutableList<String> = mutableListOf() // 添加已验证模块列表
 )
 
 private var moduleInstallStatus = mutableStateOf(ModuleInstallStatus())
+
+// 存储模块URI和验证状态的映射
+private var moduleVerificationMap = mutableMapOf<Uri, Boolean>()
 
 fun setFlashingStatus(status: FlashingStatus) {
     currentFlashingStatus.value = status
@@ -83,7 +87,8 @@ fun updateModuleInstallStatus(
     totalModules: Int? = null,
     currentModule: Int? = null,
     currentModuleName: String? = null,
-    failedModule: String? = null
+    failedModule: String? = null,
+    verifiedModule: String? = null
 ) {
     val current = moduleInstallStatus.value
     moduleInstallStatus.value = current.copy(
@@ -99,6 +104,18 @@ fun updateModuleInstallStatus(
             failedModules = updatedFailedModules
         )
     }
+
+    if (verifiedModule != null) {
+        val updatedVerifiedModules = current.verifiedModules.toMutableList()
+        updatedVerifiedModules.add(verifiedModule)
+        moduleInstallStatus.value = moduleInstallStatus.value.copy(
+            verifiedModules = updatedVerifiedModules
+        )
+    }
+}
+
+fun setModuleVerificationStatus(uri: Uri, isVerified: Boolean) {
+    moduleVerificationMap[uri] = isVerified
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +159,7 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                     )
                     hasFlashCompleted = false
                     hasExecuted = false
+                    moduleVerificationMap.clear()
                 }
             }
             is FlashIt.FlashModuleUpdate -> {
@@ -179,6 +197,11 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                     setFlashingStatus(FlashingStatus.FAILED)
                 } else {
                     setFlashingStatus(FlashingStatus.SUCCESS)
+
+                    // 处理模块更新成功后的验证标志
+                    val isVerified = moduleVerificationMap[flashIt.uri] ?: false
+                    ModuleOperationUtils.handleModuleUpdate(context, flashIt.uri, isVerified)
+
                     viewModel.markNeedRefresh()
                 }
                 if (showReboot) {
@@ -239,6 +262,28 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                     }
                 } else {
                     setFlashingStatus(FlashingStatus.SUCCESS)
+
+                    // 处理模块安装成功后的验证标志
+                    when (flashIt) {
+                        is FlashIt.FlashModule -> {
+                            val isVerified = moduleVerificationMap[flashIt.uri] ?: false
+                            ModuleOperationUtils.handleModuleInstallSuccess(context, flashIt.uri, isVerified)
+                            if (isVerified) {
+                                updateModuleInstallStatus(verifiedModule = moduleInstallStatus.value.currentModuleName)
+                            }
+                        }
+                        is FlashIt.FlashModules -> {
+                            val currentUri = flashIt.uris[flashIt.currentIndex]
+                            val isVerified = moduleVerificationMap[currentUri] ?: false
+                            ModuleOperationUtils.handleModuleInstallSuccess(context, currentUri, isVerified)
+                            if (isVerified) {
+                                updateModuleInstallStatus(verifiedModule = moduleInstallStatus.value.currentModuleName)
+                            }
+                        }
+
+                        else -> {}
+                    }
+
                     viewModel.markNeedRefresh()
                 }
                 if (showReboot) {
