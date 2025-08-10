@@ -49,6 +49,7 @@ object SuSFSManager {
     private const val KEY_ENABLE_CLEANUP_RESIDUE = "enable_cleanup_residue"
     private const val KEY_ENABLE_HIDE_BL = "enable_hide_bl"
     private const val KEY_UMOUNT_FOR_ZYGOTE_ISO_SERVICE = "umount_for_zygote_iso_service"
+    private const val KEY_ENABLE_AVC_LOG_SPOOFING = "enable_avc_log_spoofing"
 
 
     // 常量
@@ -156,7 +157,8 @@ object SuSFSManager {
         val support158: Boolean,
         val enableHideBl: Boolean,
         val enableCleanupResidue: Boolean,
-        val umountForZygoteIsoService: Boolean
+        val umountForZygoteIsoService: Boolean,
+        val enableAvcLogSpoofing: Boolean
     ) {
         /**
          * 检查是否有需要自启动的配置
@@ -232,7 +234,7 @@ object SuSFSManager {
     }
 
     /**
-     * 检查是否支持循环路径功能（1.5.9+）
+     * 检查是否支持循环路径和AVC日志欺骗等功能（1.5.9+）
      */
     fun isSusVersion159(): Boolean {
         return try {
@@ -266,6 +268,7 @@ object SuSFSManager {
             enableHideBl = getEnableHideBl(context),
             enableCleanupResidue = getEnableCleanupResidue(context),
             umountForZygoteIsoService = getUmountForZygoteIsoService(context),
+            enableAvcLogSpoofing = getEnableAvcLogSpoofing(context)
         )
     }
 
@@ -334,6 +337,13 @@ object SuSFSManager {
 
     fun getUmountForZygoteIsoService(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_UMOUNT_FOR_ZYGOTE_ISO_SERVICE, false)
+
+    // AVC日志欺骗配置
+    fun saveEnableAvcLogSpoofing(context: Context, enabled: Boolean) =
+        getPrefs(context).edit { putBoolean(KEY_ENABLE_AVC_LOG_SPOOFING, enabled) }
+
+    fun getEnableAvcLogSpoofing(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_ENABLE_AVC_LOG_SPOOFING, false)
 
 
     // 路径和配置管理
@@ -502,6 +512,7 @@ object SuSFSManager {
             KEY_ENABLE_HIDE_BL to getEnableHideBl(context),
             KEY_ENABLE_CLEANUP_RESIDUE to getEnableCleanupResidue(context),
             KEY_UMOUNT_FOR_ZYGOTE_ISO_SERVICE to getUmountForZygoteIsoService(context),
+            KEY_ENABLE_AVC_LOG_SPOOFING to getEnableAvcLogSpoofing(context),
         )
     }
 
@@ -854,6 +865,25 @@ object SuSFSManager {
             saveEnableLogState(context, enabled)
             if (isAutoStartEnabled(context)) updateMagiskModule(context)
             showToast(context, if (enabled) context.getString(R.string.susfs_log_enabled) else context.getString(R.string.susfs_log_disabled))
+        }
+        return success
+    }
+
+    // AVC日志欺骗开关
+    suspend fun setEnableAvcLogSpoofing(context: Context, enabled: Boolean): Boolean {
+        if (!isSusVersion159()) {
+            return false
+        }
+
+        val success = executeSusfsCommand(context, "enable_avc_log_spoofing ${if (enabled) 1 else 0}")
+        if (success) {
+            saveEnableAvcLogSpoofing(context, enabled)
+            if (isAutoStartEnabled(context)) updateMagiskModule(context)
+            showToast(context, if (enabled)
+                context.getString(R.string.avc_log_spoofing_enabled)
+            else
+                context.getString(R.string.avc_log_spoofing_disabled)
+            )
         }
         return success
     }

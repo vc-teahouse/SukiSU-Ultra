@@ -136,6 +136,7 @@ fun SuSFSConfigScreen(
     var executeInPostFsData by remember { mutableStateOf(false) }
     var enableHideBl by remember { mutableStateOf(true) }
     var enableCleanupResidue by remember { mutableStateOf(false) }
+    var enableAvcLogSpoofing by remember { mutableStateOf(false) }
 
     // 槽位信息相关状态
     var slotInfoList by remember { mutableStateOf(emptyList<SuSFSManager.SlotInfo>()) }
@@ -311,6 +312,7 @@ fun SuSFSConfigScreen(
         enableHideBl = SuSFSManager.getEnableHideBl(context)
         enableCleanupResidue = SuSFSManager.getEnableCleanupResidue(context)
         umountForZygoteIsoService = SuSFSManager.getUmountForZygoteIsoService(context)
+        enableAvcLogSpoofing = SuSFSManager.getEnableAvcLogSpoofing(context)
 
         loadSlotInfo()
     }
@@ -481,6 +483,7 @@ fun SuSFSConfigScreen(
                                     enableHideBl = SuSFSManager.getEnableHideBl(context)
                                     enableCleanupResidue = SuSFSManager.getEnableCleanupResidue(context)
                                     umountForZygoteIsoService = SuSFSManager.getUmountForZygoteIsoService(context)
+                                    enableAvcLogSpoofing = SuSFSManager.getEnableAvcLogSpoofing(context)
                                 }
                                 isLoading = false
                                 showRestoreConfirmDialog = false
@@ -946,6 +949,7 @@ fun SuSFSConfigScreen(
                                                 SuSFSManager.saveExecuteInPostFsData(context, executeInPostFsData)
                                                 SuSFSManager.saveEnableHideBl(context, enableHideBl)
                                                 SuSFSManager.saveEnableCleanupResidue(context, enableCleanupResidue)
+                                                SuSFSManager.saveEnableAvcLogSpoofing(context, enableAvcLogSpoofing)
                                             }
                                             isLoading = false
                                         }
@@ -1237,6 +1241,17 @@ fun SuSFSConfigScreen(
                                         SuSFSManager.configureAutoStart(context, true)
                                     }
                                 }
+                            },
+                            enableAvcLogSpoofing = enableAvcLogSpoofing,
+                            onEnableAvcLogSpoofingChange = { enabled ->
+                                coroutineScope.launch {
+                                    isLoading = true
+                                    val success = SuSFSManager.setEnableAvcLogSpoofing(context, enabled)
+                                    if (success) {
+                                        enableAvcLogSpoofing = enabled
+                                    }
+                                    isLoading = false
+                                }
                             }
                         )
                     }
@@ -1456,10 +1471,13 @@ private fun BasicSettingsContent(
     enableHideBl: Boolean,
     onEnableHideBlChange: (Boolean) -> Unit,
     enableCleanupResidue: Boolean,
-    onEnableCleanupResidueChange: (Boolean) -> Unit
+    onEnableCleanupResidueChange: (Boolean) -> Unit,
+    enableAvcLogSpoofing: Boolean,
+    onEnableAvcLogSpoofingChange: (Boolean) -> Unit
 ) {
     var scriptLocationExpanded by remember { mutableStateOf(false) }
     val isAbDevice = isAbDevice()
+    val isSusVersion159 = isSusVersion159()
 
     Column(
         modifier = Modifier
@@ -1766,6 +1784,66 @@ private fun BasicSettingsContent(
                     onCheckedChange = onEnableCleanupResidueChange,
                     enabled = !isLoading
                 )
+            }
+        }
+
+        // AVC日志欺骗开关（仅在1.5.9+版本显示）
+        if (isSusVersion159) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.avc_log_spoofing),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(R.string.avc_log_spoofing_description),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            lineHeight = 14.sp
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.avc_log_spoofing_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            lineHeight = 12.sp
+                        )
+                    }
+                    Switch(
+                        checked = enableAvcLogSpoofing,
+                        onCheckedChange = onEnableAvcLogSpoofingChange,
+                        enabled = !isLoading
+                    )
+                }
             }
         }
 

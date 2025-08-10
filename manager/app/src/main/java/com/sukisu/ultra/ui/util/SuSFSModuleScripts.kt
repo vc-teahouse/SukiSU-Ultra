@@ -117,6 +117,14 @@ object ScriptGenerator {
         appendLine()
     }
 
+    private fun StringBuilder.generateAvcLogSpoofingSection(enableAvcLogSpoofing: Boolean) {
+        appendLine("# 设置AVC日志欺骗状态")
+        val avcLogValue = if (enableAvcLogSpoofing) 1 else 0
+        appendLine("\"${'$'}SUSFS_BIN\" enable_avc_log_spoofing $avcLogValue")
+        appendLine("echo \"$(get_current_time): AVC日志欺骗功能设置为: ${if (enableAvcLogSpoofing) "启用" else "禁用"}\" >> \"${'$'}LOG_FILE\"")
+        appendLine()
+    }
+
     private fun StringBuilder.generateSusPathsSection(susPaths: Set<String>) {
         if (susPaths.isNotEmpty()) {
             appendLine("# 添加SUS路径")
@@ -385,6 +393,9 @@ object ScriptGenerator {
             }
 
             generateUmountZygoteIsoServiceSection(config.umountForZygoteIsoService, config.support158)
+
+            // 添加AVC日志欺骗设置
+            generateAvcLogSpoofingSection(config.enableAvcLogSpoofing)
 
             appendLine("echo \"$(get_current_time): Post-FS-Data脚本执行完成\" >> \"${'$'}LOG_FILE\"")
         }

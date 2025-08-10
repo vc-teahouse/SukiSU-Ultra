@@ -606,6 +606,18 @@
     <string name="sus_loop_path_feature_label">SUS循环路径</string>
     <string name="sus_loop_paths_description_title">循环路径配置</string>
     <string name="sus_loop_paths_description_text">循环路径会在每次非root用户应用或隔离服务启动时重新标记为SUS_PATH。这有助于解决添加的路径可能因inode状态重置或内核中inode重新创建而失效的问题</string>
+    <string name="avc_log_spoofing">AVC 日志欺骗</string>
+    <string name="avc_log_spoofing_enabled">AVC 日志欺骗已启用</string>
+    <string name="avc_log_spoofing_disabled">AVC 日志欺骗已禁用</string>
+    <string name="avc_log_spoofing_description">
+禁用: 禁用在内核 AVC 日志中欺骗 \'su\' 的 sus tcontext。\n
+启用: 启用在内核 AVC 日志中将 \'su\' 的 sus tcontext 欺骗为 \'kernel\'
+</string>
+    <string name="avc_log_spoofing_warning">
+重要提示：\n
+- 内核中默认设置为 \'0\'\n
+- 启用此功能有时会使开发人员在调试权限或 SELinux 问题时难以识别原因，因此建议用户在调试时禁用此功能。
+</string>
     <!-- 模块签名功能描述 -->
     <string name="module_verified">已验证</string>
     <string name="module_signature_verified">模块签名已验证</string>
