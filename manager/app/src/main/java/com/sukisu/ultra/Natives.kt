@@ -34,21 +34,29 @@ object Natives {
     const val ROOT_UID = 0
     const val ROOT_GID = 0
 
+    // 获取完整版本号
     external fun getFullVersion(): String
 
-    fun getSimpleVersionFull(): String {
-        val fullVersion = getFullVersion()
-        val startIndex = fullVersion.indexOf('v')
-        if (startIndex < 0) {
-            return fullVersion
+    fun isVersionLessThan(v1Full: String, v2Full: String): Boolean {
+        fun extractVersionParts(version: String): List<Int> {
+            val match = Regex("""v\d+(\.\d+)*""").find(version)
+            val simpleVersion = match?.value ?: version
+            return simpleVersion.trimStart('v').split('.').map { it.toIntOrNull() ?: 0 }
         }
-        val endIndex = fullVersion.indexOf('-', startIndex)
-        val versionStr = if (endIndex > startIndex) {
-            fullVersion.substring(startIndex, endIndex)
-        } else {
-            fullVersion.substring(startIndex)
+
+        val v1Parts = extractVersionParts(v1Full)
+        val v2Parts = extractVersionParts(v2Full)
+        val maxLength = maxOf(v1Parts.size, v2Parts.size)
+        for (i in 0 until maxLength) {
+            val num1 = v1Parts.getOrElse(i) { 0 }
+            val num2 = v2Parts.getOrElse(i) { 0 }
+            if (num1 != num2) return num1 < num2
         }
-        return "v" + (Regex("""\d+(\.\d+)*""").find(versionStr)?.value ?: versionStr)
+        return false
+    }
+
+    fun getSimpleVersionFull(): String = getFullVersion().let { version ->
+        Regex("""v\d+(\.\d+)*""").find(version)?.value ?: version
     }
 
     init {
@@ -149,14 +157,8 @@ object Natives {
     }
 
     fun requireNewKernel(): Boolean {
-        if (version < MINIMAL_SUPPORTED_KERNEL) {
-            return true
-        }
-        val simpleVersionFull = getSimpleVersionFull()
-        if (simpleVersionFull.isEmpty()) {
-            return false
-        }
-        return simpleVersionFull < MINIMAL_SUPPORTED_KERNEL_FULL
+        if (version < MINIMAL_SUPPORTED_KERNEL) return true
+        return isVersionLessThan(getFullVersion(), MINIMAL_SUPPORTED_KERNEL_FULL)
     }
 
     @Immutable
