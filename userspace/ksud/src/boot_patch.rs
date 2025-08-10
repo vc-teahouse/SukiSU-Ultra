@@ -153,82 +153,40 @@ fn parse_kmi_from_boot(magiskboot: &Path, image: &PathBuf, workdir: &Path) -> Re
     parse_kmi_from_kernel(&image_path, workdir)
 }
 
-fn do_cpio_cmd(magiskboot: &Path, workdir: &Path, cmd: &str) -> Result<()> {
+fn do_cpio_cmd(magiskboot: &Path, workdir: &Path, cpio_path: &Path, cmd: &str) -> Result<()> {
     let status = Command::new(magiskboot)
         .current_dir(workdir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .arg("cpio")
-        .arg("ramdisk.cpio")
+        .arg(cpio_path)
         .arg(cmd)
         .status()?;
-
     ensure!(status.success(), "magiskboot cpio {} failed", cmd);
     Ok(())
 }
 
-fn do_vendor_init_boot_cpio_cmd(magiskboot: &Path, workdir: &Path, cmd: &str) -> Result<()> {
-    let vendor_init_boot_cpio = workdir.join("vendor_ramdisk").join("init_boot.cpio");
+fn is_magisk_patched(magiskboot: &Path, workdir: &Path, cpio_path: &Path) -> Result<bool> {
     let status = Command::new(magiskboot)
         .current_dir(workdir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .arg("cpio")
-        .arg(vendor_init_boot_cpio)
-        .arg(cmd)
+        .arg(cpio_path)
+        .arg("test")
         .status()?;
-
-    ensure!(status.success(), "magiskboot cpio {} failed", cmd);
-    Ok(())
-}
-
-fn is_magisk_patched(magiskboot: &Path, workdir: &Path) -> Result<bool> {
-    let status = Command::new(magiskboot)
-        .current_dir(workdir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .args(["cpio", "ramdisk.cpio", "test"])
-        .status()?;
-
     // 0: stock, 1: magisk
     Ok(status.code() == Some(1))
 }
 
-fn is_magisk_patched_vendor_init_boot(magiskboot: &Path, workdir: &Path) -> Result<bool> {
-    let vendor_init_boot_cpio = workdir.join("vendor_ramdisk").join("init_boot.cpio");
+fn is_kernelsu_patched(magiskboot: &Path, workdir: &Path, cpio_path: &Path) -> Result<bool> {
     let status = Command::new(magiskboot)
         .current_dir(workdir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
-        .args(["cpio", vendor_init_boot_cpio.to_str().unwrap(), "test"])
-        .status()?;
-
-    // 0: stock, 1: magisk
-    Ok(status.code() == Some(1))
-}
-
-fn is_kernelsu_patched(magiskboot: &Path, workdir: &Path) -> Result<bool> {
-    let status = Command::new(magiskboot)
-        .current_dir(workdir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .args(["cpio", "ramdisk.cpio", "exists kernelsu.ko"])
-        .status()?;
-
-    Ok(status.success())
-}
-
-fn is_kernelsu_patched_vendor_init_boot(magiskboot: &Path, workdir: &Path) -> Result<bool> {
-    let vendor_ramdisk_cpio = workdir.join("vendor_ramdisk").join("init_boot.cpio");
-    let status = Command::new(magiskboot)
-        .current_dir(workdir)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .args([
-            "cpio",
-            vendor_ramdisk_cpio.to_str().unwrap(),
-            "exists kernelsu.ko",
-        ])
+        .arg("cpio")
+        .arg(cpio_path)
+        .arg("exists kernelsu.ko")
         .status()?;
 
     Ok(status.success())
@@ -278,24 +236,37 @@ pub fn restore(
         .status()?;
     ensure!(status.success(), "magiskboot unpack failed");
 
-    let no_ramdisk = !workdir.join("ramdisk.cpio").exists();
-    let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir)?;
-    let is_kernelsu_patched_vendor_init_boot =
-        is_kernelsu_patched_vendor_init_boot(&magiskboot, workdir)?;
-    ensure!(
-        is_kernelsu_patched || is_kernelsu_patched_vendor_init_boot,
-        "boot image is not patched by KernelSU"
-    );
+    let mut ramdisk = workdir.join("ramdisk.cpio");
+    if !ramdisk.exists() {
+        ramdisk = workdir.join("vendor_ramdisk").join("init_boot.cpio")
+    }
+    if !ramdisk.exists() {
+        ramdisk = workdir.join("vendor_ramdisk").join("ramdisk.cpio");
+    }
+    if !ramdisk.exists() {
+        bail!("No compatible ramdisk found.")
+    }
+    let ramdisk = ramdisk.as_path();
+    let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir, ramdisk)?;
+    ensure!(is_kernelsu_patched, "boot image is not patched by KernelSU");
 
     let mut new_boot = None;
     let mut from_backup = false;
 
     #[cfg(target_os = "android")]
-    if do_cpio_cmd(&magiskboot, workdir, &format!("exists {BACKUP_FILENAME}")).is_ok() {
+    if do_cpio_cmd(
+        &magiskboot,
+        workdir,
+        ramdisk,
+        &format!("exists {BACKUP_FILENAME}"),
+    )
+    .is_ok()
+    {
         do_cpio_cmd(
             &magiskboot,
             workdir,
-            &format!("extract {0} {0}", BACKUP_FILENAME),
+            ramdisk,
+            &format!("extract {BACKUP_FILENAME} {BACKUP_FILENAME}"),
         )?;
         let sha = std::fs::read(workdir.join(BACKUP_FILENAME))?;
         let sha = String::from_utf8(sha)?;
@@ -317,29 +288,13 @@ pub fn restore(
     }
 
     if new_boot.is_none() {
-        if no_ramdisk {
-            // vendor init_boot  restore
-            do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "rm kernelsu.ko")?;
-            // if init.real exists, restore it
-            let status =
-                do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "exists init.real").is_ok();
-            if status {
-                do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "mv init.real init")?;
-            } else {
-                let vendor_init_boot = workdir.join("vendor_ramdisk").join("init_boot.cpio");
-                std::fs::remove_file(vendor_init_boot)?;
-            }
-        } else {
-            // remove kernelsu.ko
-            do_cpio_cmd(&magiskboot, workdir, "rm kernelsu.ko")?;
-            // if init.real exists, restore it
-            let status = do_cpio_cmd(&magiskboot, workdir, "exists init.real").is_ok();
-            if status {
-                do_cpio_cmd(&magiskboot, workdir, "mv init.real init")?;
-            } else {
-                let ramdisk = workdir.join("ramdisk.cpio");
-                std::fs::remove_file(ramdisk)?;
-            }
+        // remove kernelsu.ko
+        do_cpio_cmd(&magiskboot, workdir, ramdisk, "rm kernelsu.ko")?;
+
+        // if init.real exists, restore it
+        let status = do_cpio_cmd(&magiskboot, workdir, ramdisk, "exists init.real").is_ok();
+        if status {
+            do_cpio_cmd(&magiskboot, workdir, ramdisk, "mv init.real init")?;
         }
 
         println!("- Repacking boot image");
@@ -348,7 +303,7 @@ pub fn restore(
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .arg("repack")
-            .arg(bootimage.display().to_string())
+            .arg(&bootimage)
             .status()?;
         ensure!(status.success(), "magiskboot repack failed");
         new_boot = Some(workdir.join("new-boot.img"));
@@ -447,7 +402,7 @@ fn do_patch(
         match get_current_kmi() {
             Ok(value) => value,
             Err(e) => {
-                println!("- {}", e);
+                println!("- {e}");
                 if let Some(image_path) = &image {
                     println!(
                         "- Trying to auto detect KMI version for {}",
@@ -472,7 +427,7 @@ fn do_patch(
     let (bootimage, bootdevice) =
         find_boot_image(&image, skip_init, ota, is_replace_kernel, workdir)?;
 
-    let bootimage = bootimage.display().to_string();
+    let bootimage = bootimage.as_path();
 
     // try extract magiskboot/bootctl
     let _ = assets::ensure_binaries(false);
@@ -501,71 +456,54 @@ fn do_patch(
         assets::copy_assets_to_file("ksuinit", init_file).context("copy ksuinit failed")?;
     }
 
-    // magiskboot unpack boot.img
-    // magiskboot cpio ramdisk.cpio 'cp init init.real'
-    // magiskboot cpio ramdisk.cpio 'add 0755 ksuinit init'
-    // magiskboot cpio ramdisk.cpio 'add 0755 <kmod> kernelsu.ko'
-
     println!("- Unpacking boot image");
     let status = Command::new(&magiskboot)
         .current_dir(workdir)
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .arg("unpack")
-        .arg(&bootimage)
+        .arg(bootimage)
         .status()?;
     ensure!(status.success(), "magiskboot unpack failed");
 
-    let no_ramdisk = !workdir.join("ramdisk.cpio").exists();
-    let no_vendor_init_boot = !workdir
-        .join("vendor_ramdisk")
-        .join("init_boot.cpio")
-        .exists();
-    if no_ramdisk && no_vendor_init_boot {
+    let mut ramdisk = workdir.join("ramdisk.cpio");
+    if !ramdisk.exists() {
+        ramdisk = workdir.join("vendor_ramdisk").join("init_boot.cpio")
+    }
+    if !ramdisk.exists() {
+        ramdisk = workdir.join("vendor_ramdisk").join("ramdisk.cpio");
+    }
+    if !ramdisk.exists() {
         bail!("No compatible ramdisk found.");
     }
-    let is_magisk_patched = is_magisk_patched(&magiskboot, workdir)?;
-    let is_magisk_patched_vendor_init_boot =
-        is_magisk_patched_vendor_init_boot(&magiskboot, workdir)?;
-    ensure!(
-        !is_magisk_patched || !is_magisk_patched_vendor_init_boot,
-        "Cannot work with Magisk patched image"
-    );
+    let ramdisk = ramdisk.as_path();
+    let is_magisk_patched = is_magisk_patched(&magiskboot, workdir, ramdisk)?;
+    ensure!(!is_magisk_patched, "Cannot work with Magisk patched image");
 
     println!("- Adding KernelSU LKM");
-    let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir)?;
-    let is_kernelsu_patched_vendor_init_boot =
-        is_kernelsu_patched_vendor_init_boot(&magiskboot, workdir)?;
+    let is_kernelsu_patched = is_kernelsu_patched(&magiskboot, workdir, ramdisk)?;
 
     let mut need_backup = false;
-    if !is_kernelsu_patched || (no_ramdisk && !is_kernelsu_patched_vendor_init_boot) {
-        if no_ramdisk {
-            // vendor init_boot patching
-            let status = do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "exists init");
-            if status.is_ok() {
-                do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
-            }
-        } else {
-            // kernelsu.ko is not exist, backup init if necessary
-            let status = do_cpio_cmd(&magiskboot, workdir, "exists init");
-            if status.is_ok() {
-                do_cpio_cmd(&magiskboot, workdir, "mv init init.real")?;
-            }
-            need_backup = flash;
+    if !is_kernelsu_patched {
+        // kernelsu.ko is not exist, backup init if necessary
+        let status = do_cpio_cmd(&magiskboot, workdir, ramdisk, "exists init");
+        if status.is_ok() {
+            do_cpio_cmd(&magiskboot, workdir, ramdisk, "mv init init.real")?;
         }
+        need_backup = flash;
     }
 
-    if no_ramdisk {
-        do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "add 0755 init init")?;
-        do_vendor_init_boot_cpio_cmd(&magiskboot, workdir, "add 0755 kernelsu.ko kernelsu.ko")?;
-    } else {
-        do_cpio_cmd(&magiskboot, workdir, "add 0755 init init")?;
-        do_cpio_cmd(&magiskboot, workdir, "add 0755 kernelsu.ko kernelsu.ko")?;
-    }
+    do_cpio_cmd(&magiskboot, workdir, ramdisk, "add 0755 init init")?;
+    do_cpio_cmd(
+        &magiskboot,
+        workdir,
+        ramdisk,
+        "add 0755 kernelsu.ko kernelsu.ko",
+    )?;
 
     #[cfg(target_os = "android")]
     if need_backup {
-        if let Err(e) = do_backup(&magiskboot, workdir, &bootimage) {
+        if let Err(e) = do_backup(&magiskboot, workdir, ramdisk, bootimage) {
             println!("- Backup stock image failed: {e}");
         }
     }
@@ -577,7 +515,7 @@ fn do_patch(
         .stdout(Stdio::null())
         .stderr(Stdio::null())
         .arg("repack")
-        .arg(&bootimage)
+        .arg(bootimage)
         .status()?;
     ensure!(status.success(), "magiskboot repack failed");
     let new_boot = workdir.join("new-boot.img");
@@ -587,7 +525,7 @@ fn do_patch(
         let output_dir = out.unwrap_or(std::env::current_dir()?);
         let now = chrono::Utc::now();
         let output_image = output_dir.join(format!(
-            "SukiSU_patched_{}.img",
+            "kernelsu_patched_{}.img",
             now.format("%Y%m%d_%H%M%S")
         ));
 
@@ -628,11 +566,11 @@ fn calculate_sha1(file_path: impl AsRef<Path>) -> Result<String> {
     }
 
     let result = hasher.finalize();
-    Ok(format!("{:x}", result))
+    Ok(format!("{result:x}"))
 }
 
 #[cfg(target_os = "android")]
-fn do_backup(magiskboot: &Path, workdir: &Path, image: &str) -> Result<()> {
+fn do_backup(magiskboot: &Path, workdir: &Path, cpio_path: &Path, image: &Path) -> Result<()> {
     let sha1 = calculate_sha1(image)?;
     let filename = format!("{KSU_BACKUP_FILE_PREFIX}{sha1}");
 
@@ -644,7 +582,8 @@ fn do_backup(magiskboot: &Path, workdir: &Path, image: &str) -> Result<()> {
     do_cpio_cmd(
         magiskboot,
         workdir,
-        &format!("add 0755 {0} {0}", BACKUP_FILENAME),
+        cpio_path,
+        &format!("add 0755 {BACKUP_FILENAME} {BACKUP_FILENAME}"),
     )?;
     println!("- Stock image has been backup to");
     println!("- {target}");
@@ -654,7 +593,7 @@ fn do_backup(magiskboot: &Path, workdir: &Path, image: &str) -> Result<()> {
 #[cfg(target_os = "android")]
 fn clean_backup(sha1: &str) -> Result<()> {
     println!("- Clean up backup");
-    let backup_name = format!("{}{}", KSU_BACKUP_FILE_PREFIX, sha1);
+    let backup_name = format!("{KSU_BACKUP_FILE_PREFIX}{sha1}");
     let dir = std::fs::read_dir(defs::KSU_BACKUP_DIR)?;
     for entry in dir.flatten() {
         let path = entry.path();
