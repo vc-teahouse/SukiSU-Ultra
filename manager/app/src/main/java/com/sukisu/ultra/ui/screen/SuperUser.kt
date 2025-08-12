@@ -159,7 +159,13 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     }
 
     // 应用分类和排序逻辑
-    val filteredAndSortedApps = remember(viewModel.appList, selectedCategory, currentSortType, viewModel.search) {
+    val filteredAndSortedApps = remember(
+        viewModel.appList,
+        selectedCategory,
+        currentSortType,
+        viewModel.search,
+        viewModel.showSystemApps
+    ) {
         var apps = viewModel.appList
 
         // 按分类筛选
@@ -230,7 +236,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     }
 
     // 计算应用数量
-    val appCounts = remember(viewModel.appList) {
+    val appCounts = remember(viewModel.appList, viewModel.showSystemApps) {
         mapOf(
             AppCategory.ALL to viewModel.appList.size,
             AppCategory.ROOT to viewModel.appList.count { it.allowSu },
@@ -240,7 +246,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     }
 
     // BottomSheet菜单项
-    val bottomSheetMenuItems = remember {
+    val bottomSheetMenuItems = remember(viewModel.showSystemApps) {
         listOf(
             BottomSheetMenuItem(
                 icon = Icons.Filled.Refresh,
@@ -263,6 +269,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                 onClick = {
                     viewModel.updateShowSystemApps(!viewModel.showSystemApps)
                     scope.launch {
+                        kotlinx.coroutines.delay(100)
                         bottomSheetState.hide()
                         showBottomSheet = false
                     }

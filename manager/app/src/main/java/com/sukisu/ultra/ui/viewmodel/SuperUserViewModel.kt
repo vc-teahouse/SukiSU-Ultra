@@ -189,6 +189,13 @@ class SuperUserViewModel : ViewModel() {
     fun updateShowSystemApps(newValue: Boolean) {
         showSystemApps = newValue
         saveShowSystemApps(newValue)
+        notifyAppListChanged()
+    }
+
+    private fun notifyAppListChanged() {
+        val currentApps = apps
+        apps = emptyList()
+        apps = currentApps
     }
 
     /**
@@ -251,7 +258,7 @@ class SuperUserViewModel : ViewModel() {
     }
 
     val appList by derivedStateOf {
-        sortedList.filter {
+        val filtered = sortedList.filter {
             it.label.contains(search, true) || it.packageName.contains(
                 search,
                 true
@@ -260,6 +267,8 @@ class SuperUserViewModel : ViewModel() {
         }.filter {
             it.uid == 2000 || showSystemApps || it.packageInfo.applicationInfo!!.flags.and(ApplicationInfo.FLAG_SYSTEM) == 0
         }
+
+        filtered
     }
 
     // 切换批量操作模式

@@ -230,14 +230,6 @@ class ModuleViewModel : ViewModel() {
         }
     }
 
-    fun createModuleVerificationFlag(moduleId: String): Boolean {
-        return ModuleVerificationManager.createVerificationFlag(moduleId)
-    }
-
-    fun removeModuleVerificationFlag(moduleId: String): Boolean {
-        return ModuleVerificationManager.removeVerificationFlag(moduleId)
-    }
-
     private fun sanitizeVersionString(version: String): String {
         return version.replace(Regex("[^a-zA-Z0-9.\\-_]"), "_")
     }
