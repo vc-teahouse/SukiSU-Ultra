@@ -62,6 +62,7 @@ object SuSFSManager {
     private const val MIN_VERSION_FOR_LOOP_PATH = "1.5.9"
     private const val BACKUP_FILE_EXTENSION = ".susfs_backup"
     private const val MEDIA_DATA_PATH = "/data/media/0/Android/data"
+    private const val CGROUP_UID_PATH_PREFIX = "/sys/fs/cgroup/uid_"
 
     data class SlotInfo(val slotName: String, val uname: String, val buildTime: String)
     data class CommandResult(val isSuccess: Boolean, val output: String, val errorOutput: String = "")
@@ -400,9 +401,7 @@ object SuSFSManager {
     fun getSdcardPath(context: Context): String =
         getPrefs(context).getString(KEY_SDCARD_PATH, "/sdcard") ?: "/sdcard"
 
-    /**
-     * 获取已安装的应用列表
-     */
+    // 获取已安装的应用列表
     @SuppressLint("QueryPermissionsNeeded")
     suspend fun getInstalledApps(): List<AppInfo> = withContext(Dispatchers.IO) {
         try {
@@ -456,10 +455,29 @@ object SuSFSManager {
         }
     }
 
+    // 获取应用的UID
+    private suspend fun getAppUid(context: Context, packageName: String): Int? = withContext(Dispatchers.IO) {
+        try {
+            // 从SuperUserViewModel中查找
+            val superUserApp = SuperUserViewModel.apps.find { it.packageName == packageName }
+            if (superUserApp != null) {
+                return@withContext superUserApp.packageInfo.applicationInfo?.uid
+            }
 
-    /**
-     * 快捷添加应用路径
-     */
+            // 从PackageManager中查找
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            packageInfo.applicationInfo?.uid
+        } catch (e: Exception) {
+            Log.w("SuSFSManager", "Failed to get UID for package $packageName: ${e.message}")
+            null
+        }
+    }
+
+    private fun buildUidPath(uid: Int): String = "$CGROUP_UID_PATH_PREFIX$uid"
+
+
+    // 快捷添加应用路径
     suspend fun addAppPaths(context: Context, packageName: String): Boolean {
         val androidDataPath = getAndroidDataPath(context)
         getSdcardPath(context)
@@ -467,27 +485,35 @@ object SuSFSManager {
         val path1 = "$androidDataPath/$packageName"
         val path2 = "$MEDIA_DATA_PATH/$packageName"
 
-        var successCount = 0
-        var totalCount = 0
+        val uid = getAppUid(context, packageName)
+        if (uid == null) {
+            Log.w("SuSFSManager", "Failed to get UID for package: $packageName")
+            return false
+        }
 
-        // 添加第一个路径
-        totalCount++
+        val path3 = buildUidPath(uid)
+
+        var successCount = 0
+        val totalCount = 3
+
+        // 添加第一个路径（Android/data路径）
         if (addSusPath(context, path1)) {
             successCount++
         }
 
-        // 添加第二个路径
-        totalCount++
+        // 添加第二个路径（媒体数据路径）
         if (addSusPath(context, path2)) {
             successCount++
         }
 
-        val success = successCount > 0
-        if (success) {
-            ""
-        } else {
-            ""
+        // 添加第三个路径（UID路径）
+        if (addSusPath(context, path3)) {
+            successCount++
         }
+
+        val success = successCount > 0
+
+        Log.d("SuSFSManager", "Added $successCount/$totalCount paths for $packageName (UID: $uid)")
 
         return success
     }

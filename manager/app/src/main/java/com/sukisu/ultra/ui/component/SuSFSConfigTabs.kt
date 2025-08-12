@@ -76,16 +76,41 @@ fun SusPathsContent(
 
     val (appPathGroups, otherPaths) = remember(susPaths) {
         val appPathRegex = Regex(".*/Android/data/([^/]+)/?.*")
+        val uidPathRegex = Regex("/sys/fs/cgroup/uid_([0-9]+)")
         val appPathMap = mutableMapOf<String, MutableList<String>>()
+        val uidToPackageMap = mutableMapOf<String, String>()
         val others = mutableListOf<String>()
 
+        // 构建UID到包名的映射
+        SuperUserViewModel.apps.forEach { app ->
+            try {
+                val uid = app.packageInfo.applicationInfo?.uid
+                uidToPackageMap[uid.toString()] = app.packageName
+            } catch (_: Exception) {
+            }
+        }
+
         susPaths.forEach { path ->
-            val matchResult = appPathRegex.find(path)
-            if (matchResult != null) {
-                val packageName = matchResult.groupValues[1]
-                appPathMap.getOrPut(packageName) { mutableListOf() }.add(path)
-            } else {
-                others.add(path)
+            val appDataMatch = appPathRegex.find(path)
+            val uidMatch = uidPathRegex.find(path)
+
+            when {
+                appDataMatch != null -> {
+                    val packageName = appDataMatch.groupValues[1]
+                    appPathMap.getOrPut(packageName) { mutableListOf() }.add(path)
+                }
+                uidMatch != null -> {
+                    val uid = uidMatch.groupValues[1]
+                    val packageName = uidToPackageMap[uid]
+                    if (packageName != null) {
+                        appPathMap.getOrPut(packageName) { mutableListOf() }.add(path)
+                    } else {
+                        others.add(path)
+                    }
+                }
+                else -> {
+                    others.add(path)
+                }
             }
         }
 
