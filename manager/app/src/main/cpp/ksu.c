@@ -15,7 +15,7 @@
 
 // Zako extern declarations
 #define ZAKO_ESV_IMPORTANT_ERROR 1 << 31
-extern int zako_file_open_rw(const char* path);
+extern int zako_sys_file_open(const char* path);
 extern uint32_t zako_file_verify_esig(int fd, uint32_t flags);
 extern const char* zako_esign_verrcidx2str(uint8_t index);
 
@@ -201,7 +201,7 @@ bool verify_module_signature(const char* input) {
         return false;
     }
 
-    int fd = zako_file_open_rw(input);
+    int fd = zako_sys_file_open(input);
     if (fd < 0) {
         LogDebug("verify_module_signature: failed to open file: %s", input);
         return false;
