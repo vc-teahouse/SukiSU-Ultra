@@ -727,6 +727,15 @@ private fun InfoCard(
                 icon = Icons.Default.SettingsSuggest,
             )
 
+            if (!isSimpleMode &&
+                (systemInfo.suSFSStatus != "Supported")) {
+                InfoCardItem(
+                    stringResource(R.string.home_hook_type),
+                    Natives.getHookType(),
+                    icon = Icons.Default.Link
+                )
+            }
+
             // 活跃管理器
             if (!isSimpleMode && systemInfo.isDynamicSignEnabled && systemInfo.managersList != null) {
                 val signatureMap = systemInfo.managersList.managers.groupBy { it.signatureIndex }
