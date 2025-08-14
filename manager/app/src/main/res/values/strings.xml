@@ -629,5 +629,5 @@ Important Note:\n
     <string name="module_signature_invalid">Unknown publisher</string>
     <string name="module_signature_invalid_message">Unsigned modules may be incomplete. To protect your device, installation of this module has been blocked.</string>
     <string name="module_signature_verification_failed">Unsigned modules may be incomplete. Do you want to allow the following module from an unknown publisher to install in this device?</string>
-    <string name="home_hook_type">Hook type: %s</string>
+    <string name="home_hook_type">Hook type</string>
 </resources>
