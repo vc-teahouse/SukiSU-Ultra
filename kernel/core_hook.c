@@ -522,6 +522,25 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		return 0;
 	}
 
+	// Checking hook usage
+	if (arg2 == CMD_HOOK_TYPE) {
+		const char *hook_type;
+		
+#if defined(CONFIG_KSU_KPROBES_HOOK)
+		hook_type = "Kprobes";
+#elif defined(CONFIG_KSU_TRACEPOINT_HOOK)
+		hook_type = "Tracepoint";
+#else
+		hook_type = "Unknown";
+#endif
+		
+		size_t len = strlen(hook_type) + 1;
+		if (copy_to_user((void __user *)arg3, hook_type, len)) {
+			pr_err("hook_type: copy_to_user failed\n");
+			return 0;
+		}
+	}
+
 	#ifdef CONFIG_KPM
 	// ADD: 添加KPM模块控制
 	if(sukisu_is_kpm_control_code(arg2)) {

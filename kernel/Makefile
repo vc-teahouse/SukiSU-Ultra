@@ -9,6 +9,10 @@ kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
 
+ifeq ($(strip $(CONFIG_KSU_TRACEPOINT_HOOK)),y)
+kernelsu-objs += ksu_trace.o
+endif
+
 kernelsu-objs += selinux/selinux.o
 kernelsu-objs += selinux/sepolicy.o
 kernelsu-objs += selinux/rules.o
@@ -16,6 +20,7 @@ ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
 ccflags-y += -I$(objtree)/security/selinux -include $(srctree)/include/uapi/asm-generic/errno.h
 
 obj-$(CONFIG_KSU) += kernelsu.o
+obj-$(CONFIG_KSU_TRACEPOINT_HOOK) += ksu_trace_export.o
 
 obj-$(CONFIG_KPM) += kpm/
 
@@ -88,6 +93,12 @@ $(info -- SukiSU Manager package name: $(KSU_MANAGER_PACKAGE))
 endif
 
 $(info -- Supported Unofficial Manager: 5ec1cff (GKI) ShirkNeko udochina (GKI and KPM))
+
+ifeq ($(strip $(CONFIG_KSU_KPROBES_HOOK)),y)
+$(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
+else ifeq ($(strip $(CONFIG_KSU_TRACEPOINT_HOOK)),y)
+$(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
+endif
 
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
 KERNEL_TYPE := Non-GKI

@@ -36,6 +36,10 @@ extern void ksu_sucompat_init();
 extern void ksu_sucompat_exit();
 extern void ksu_ksud_init();
 extern void ksu_ksud_exit();
+#ifdef CONFIG_KSU_TRACEPOINT_HOOK
+extern void ksu_trace_register();
+extern void ksu_trace_unregister();
+#endif
 
 int __init kernelsu_init(void)
 {
@@ -56,11 +60,15 @@ int __init kernelsu_init(void)
 	ksu_allowlist_init();
 
 	ksu_throne_tracker_init();
-#ifdef CONFIG_KPROBES
+#ifdef CONFIG_KSU_KPROBES_HOOK
 	ksu_sucompat_init();
 	ksu_ksud_init();
 #else
  	pr_alert("KPROBES is disabled, KernelSU may not work, please check https://kernelsu.org/guide/how-to-integrate-for-non-gki.html");
+#endif
+
+#ifdef CONFIG_KSU_TRACEPOINT_HOOK
+    ksu_trace_register();
 #endif
 
 #ifdef MODULE
@@ -79,9 +87,13 @@ void kernelsu_exit(void)
 
 	destroy_workqueue(ksu_workqueue);
 
-#ifdef CONFIG_KPROBES
+#ifdef CONFIG_KSU_KPROBES_HOOK
 	ksu_ksud_exit();
 	ksu_sucompat_exit();
+#endif
+
+#ifdef CONFIG_KSU_TRACEPOINT_HOOK
+    ksu_trace_unregister();
 #endif
 
 	ksu_core_exit();
