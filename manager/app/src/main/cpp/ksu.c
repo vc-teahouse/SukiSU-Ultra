@@ -11,15 +11,15 @@
 #include "prelude.h"
 #include "ksu.h"
 
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
 
 // Zako extern declarations
 #define ZAKO_ESV_IMPORTANT_ERROR 1 << 31
 extern int zako_sys_file_open(const char* path);
 extern uint32_t zako_file_verify_esig(int fd, uint32_t flags);
-extern const char* zako_esign_verrcidx2str(uint8_t index);
+extern const char* zako_file_verrcidx2str(uint8_t index);
 
-#endif // __aarch64__ || _M_ARM64
+#endif // __aarch64__ || _M_ARM64 || __arm__ || _M_ARM
 
 #define KERNEL_SU_OPTION 0xDEADBEEF
 
@@ -195,7 +195,7 @@ bool get_managers_list(struct manager_list_info* info) {
 }
 
 bool verify_module_signature(const char* input) {
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
     if (input == NULL) {
         LogDebug("verify_module_signature: input path is null");
         return false;
@@ -231,7 +231,7 @@ bool verify_module_signature(const char* input) {
         }
 
         /* Convert error bit field index into human readable string */
-        const char* message = zako_esign_verrcidx2str((uint8_t)i);
+        const char* message = zako_file_verrcidx2str((uint8_t)i);
         // Error message: message
         if (message != NULL) {
             LogDebug("verify_module_signature: Error bit %zu: %s", i, message);
@@ -246,7 +246,7 @@ bool verify_module_signature(const char* input) {
              input, results, (results == 0) ? "true" : "false");
     return results == 0;
 #else
-    LogDebug("verify_module_signature: not supported on non-arm64 architecture, path=%s", input ? input : "null");
+    LogDebug("verify_module_signature: not supported on non-ARM architecture, path=%s", input ? input : "null");
     return false;
 #endif
 }

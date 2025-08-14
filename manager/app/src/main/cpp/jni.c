@@ -415,7 +415,7 @@ NativeBridgeNP(getManagersList, jobject) {
 }
 
 NativeBridge(verifyModuleSignature, jboolean, jstring modulePath) {
-#if defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__arm__) || defined(_M_ARM)
     if (!modulePath) {
         LogDebug("verifyModuleSignature: modulePath is null");
         return false;
@@ -428,7 +428,7 @@ NativeBridge(verifyModuleSignature, jboolean, jstring modulePath) {
     LogDebug("verifyModuleSignature: path=%s, result=%d", cModulePath, result);
     return result;
 #else
-    LogDebug("verifyModuleSignature: not supported on non-arm64 architecture");
+    LogDebug("verifyModuleSignature: not supported on non-ARM architecture");
     return false;
 #endif
 }
