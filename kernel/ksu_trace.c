@@ -11,6 +11,7 @@ extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int
 extern int ksu_handle_sys_read(unsigned int fd, char __user **buf_ptr, size_t *count_ptr);
 extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
 extern int ksu_handle_input_handle_event(unsigned int *type, unsigned int *code, int *value);
+extern int ksu_handle_devpts(struct inode*);
 // end kernelsu functions
 
 
@@ -56,6 +57,11 @@ void ksu_trace_input_hook_callback(void *data, unsigned int *type, unsigned int 
 	if (unlikely(ksu_input_hook))
 		ksu_handle_input_handle_event(type, code, value);
 }
+
+void ksu_trace_devpts_hook_callback(void *data, struct inode *inode)
+{
+    ksu_handle_devpts(inode);
+}
 // end tracepoint callback functions
 
 
@@ -68,6 +74,7 @@ void ksu_trace_register(void)
     register_trace_ksu_trace_sys_read_hook(ksu_trace_sys_read_hook_callback, NULL);
     register_trace_ksu_trace_stat_hook(ksu_trace_stat_hook_callback, NULL);
     register_trace_ksu_trace_input_hook(ksu_trace_input_hook_callback, NULL);
+    register_trace_ksu_trace_devpts_hook(ksu_trace_devpts_hook_callback, NULL);
 }
 
 // unregister tracepoint callback functions
@@ -79,4 +86,5 @@ void ksu_trace_unregister(void)
     unregister_trace_ksu_trace_sys_read_hook(ksu_trace_sys_read_hook_callback, NULL);
     unregister_trace_ksu_trace_stat_hook(ksu_trace_stat_hook_callback, NULL);
     unregister_trace_ksu_trace_input_hook(ksu_trace_input_hook_callback, NULL);
+    unregister_trace_ksu_trace_devpts_hook(ksu_trace_devpts_hook_callback, NULL);
 }

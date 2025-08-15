@@ -189,6 +189,47 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 	return 0;
 }
 
+static int ksu_inline_handle_devpts(struct inode *inode)
+{
+	if (!current->mm) {
+		return 0;
+	}
+
+	uid_t uid = current_uid().val;
+	if (uid % 100000 < 10000) {
+		// not untrusted_app, ignore it
+		return 0;
+	}
+
+	if (!ksu_is_allow_uid(uid))
+		return 0;
+
+	if (ksu_devpts_sid) {
+		struct inode_security_struct *sec = selinux_inode(inode);
+		if (sec) {
+			sec->sid = ksu_devpts_sid;
+		}
+	}
+
+	return 0;
+}
+
+int __ksu_handle_devpts(struct inode *inode)
+{
+#ifndef CONFIG_KSU_KPROBES_HOOK
+	if (!ksu_sucompat_non_kp) {
+		return 0;
+	}
+#endif
+	return ksu_inline_handle_devpts(inode);
+}
+
+// dead code, we are phasing out ksu_handle_devpts for LSM hooks.
+int __maybe_unused ksu_handle_devpts(struct inode *inode)
+{
+	return 0;
+}
+
 #ifdef CONFIG_KSU_KPROBES_HOOK
 static int faccessat_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -222,6 +263,20 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
+#ifdef MODULE
+static struct kprobe *su_kps[4];
+static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
+{
+	struct inode *inode;)
+	struct file *file = (struct file *)PT_REGS_PARM2(regs);
+	inode = file->f_path.dentry->d_inode;
+
+	return ksu_inline_handle_devpts(inode);
+}
+#else
+static struct kprobe *su_kps[3];
+#endif
+
 static struct kprobe *init_kprobe(const char *name,
 				  kprobe_pre_handler_t handler)
 {
@@ -252,7 +307,6 @@ static void destroy_kprobe(struct kprobe **kp_ptr)
 	*kp_ptr = NULL;
 }
 
-static struct kprobe *su_kps[3];
 #endif
 
 // sucompat: permited process can execute 'su' to gain root access.
@@ -262,6 +316,9 @@ void ksu_sucompat_init()
 	su_kps[0] = init_kprobe(SYS_EXECVE_SYMBOL, execve_handler_pre);
 	su_kps[1] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
 	su_kps[2] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
+#ifdef MODULE
+	su_kps[3] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
+#endif
 #else
 	ksu_sucompat_non_kp = true;
  	pr_info("ksu_sucompat_init: hooks enabled: execve/execveat_su, faccessat, stat\n");

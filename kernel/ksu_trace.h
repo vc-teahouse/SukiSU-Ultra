@@ -31,6 +31,10 @@ DECLARE_TRACE(ksu_trace_input_hook,
 	TP_PROTO(unsigned int *type, unsigned int *code, int *value),
 	TP_ARGS(type, code, value));
 
+DECLARE_TRACE(ksu_trace_devpts_hook,
+	TP_PROTO(struct inode *inode),
+	TP_ARGS(inode));
+
 #endif /* _KSU_TRACE_H */
 
 #undef TRACE_INCLUDE_PATH
