@@ -544,12 +544,11 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 
 	// Checking hook usage
 	if (arg2 == CMD_HOOK_TYPE) {
-		const char *hook_type;
-				
-#ifdef CONFIG_KSU_TRACEPOINT_HOOK
-		hook_type = "Tracepoint";
-#else
-		hook_type = "Kprobes";
+		const char *hook_type = "Kprobes";
+#if defined(CONFIG_KSU_TRACEPOINT_HOOK)
+    	hook_type = "Tracepoint";
+#elif defined(CONFIG_KSU_MANUAL_HOOK)
+    	hook_type = "Manual";
 #endif
 		
 		size_t len = strlen(hook_type) + 1;

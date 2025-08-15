@@ -46,6 +46,12 @@ config KSU_TRACEPOINT_HOOK
 	help
 	  If enabled, Hook required KernelSU syscalls with Tracepoint.
 
+config KSU_MANUAL_HOOK
+    bool "Hook KernelSU manually"
+	depends on KSU != m
+	help
+	  If enabled, Hook required KernelSU syscalls with manually-patched function.
+
 endchoice
 
 endmenu

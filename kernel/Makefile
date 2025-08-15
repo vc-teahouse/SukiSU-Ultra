@@ -98,6 +98,8 @@ ifeq ($(strip $(CONFIG_KSU_KPROBES_HOOK)),y)
 $(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
 else ifeq ($(strip $(CONFIG_KSU_TRACEPOINT_HOOK)),y)
 $(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
+else ifeq ($(strip $(CONFIG_KSU_MANUAL_HOOK)),y)
+$(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
 endif
 
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
