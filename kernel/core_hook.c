@@ -746,7 +746,13 @@ static bool should_umount(struct path *path)
 	defined(KSU_HAS_PATH_UMOUNT)
 static int ksu_path_umount(struct path *path, int flags)
 {
-	return path_umount(path, flags);
+
+	int ret = path_umount(path, flags);
+	(void)ret;
+#ifdef CONFIG_KSU_DEBUG
+	pr_info("%s: path: %s ret: %d\n", __func__, mnt, ret);
+#endif
+	return ret;
 }
 #define ksu_umount_mnt(__unused, path, flags) (ksu_path_umount(path, flags))
 #else
