@@ -21,9 +21,15 @@ SukiSU 可以集成到 GKI 和 non-GKI 内核中，并且已反向移植到 4.14
    <!-- - backslashxx's syscall manual hook: https://github.com/backslashxx/KernelSU/issues/5 (v1.5 version is not available at the moment, if you want to use it, please use v1.4 version, or standard KernelSU hooks)-->
 
    - 需要 `CONFIG_KSU_MANUAL_HOOK=y`
-   - 需要 [`guide/how-to-integrate.md`](guide/how-to-integrate.md)
+   - 需要 [`guide/how-to-integrate.md`](how-to-integrate.md)
    - 需要 [https://github.com/~](https://github.com/tiann/KernelSU/blob/main/website/docs/guide/how-to-integrate-for-non-gki.md#manually-modify-the-kernel-source)
 
+3. **Tracepoint Hook:**
+
+   - 自 SukiSU commit [49b01aad](https://github.com/SukiSU-Ultra/SukiSU-Ultra/commit/49b01aad74bcca6dba5a8a2e053bb54b648eb124) 引入的 hook 方法
+   - 需要 `CONFIG_KSU_TRACEPOINT_HOOK=y`
+   - 需要 [`guide/tracepoint-hook.md`](tracepoint-hook.md)
+   
 <!-- This part refer to [rsuntk/KernelSU](https://github.com/rsuntk/KernelSU). -->
 
 如果您能够构建可启动内核，有两种方法可以将 KernelSU 集成到内核源代码中：
