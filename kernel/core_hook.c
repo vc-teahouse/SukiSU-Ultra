@@ -1082,17 +1082,18 @@ static bool should_umount(struct path *path)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0) || \
 	defined(KSU_HAS_PATH_UMOUNT)
-static void ksu_path_umount(const char *mnt, struct path *path, int flags)
+static int ksu_path_umount(struct path *path, int flags)
 {
 	int ret = path_umount(path, flags);
 	(void)ret;
 #ifdef CONFIG_KSU_DEBUG
 	pr_info("%s: path: %s ret: %d\n", __func__, mnt, ret);
 #endif
+	return path_umount(path, flags);
 }
-#define ksu_umount_mnt(mnt, path, flags) (ksu_path_umount(mnt, path, flags))
+#define ksu_umount_mnt(__unused, path, flags) (ksu_path_umount(path, flags))
 #else
-static void ksu_sys_umount(const char *mnt, int flags)
+static int ksu_sys_umount(const char *mnt, int flags)
 {
 	char __user *usermnt = (char __user *)mnt;
 	mm_segment_t old_fs;
@@ -1106,7 +1107,8 @@ static void ksu_sys_umount(const char *mnt, int flags)
 	ret = sys_umount(usermnt, flags); // cuz asmlinkage long sys##name
 #endif
 	set_fs(old_fs);
-	pr_info("%s: path: %s ret: %d\n", __func__, usermnt, ret);
+	pr_info("%s was called, ret: %d\n", __func__, ret);
+	return ret;
 }
 
 #define ksu_umount_mnt(mnt, __unused, flags) \
@@ -1124,6 +1126,7 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 #endif
 {
 	struct path path;
+	int ret;
 	int err = kern_path(mnt, 0, &path);
 	if (err) {
 		return;
@@ -1148,6 +1151,12 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 #endif
 
 	ksu_umount_mnt(mnt, &path, flags);
+	ret = ksu_umount_mnt(mnt, &path, flags);
+	if (ret) {
+#ifdef CONFIG_KSU_DEBUG
+		pr_info("%s: path: %s, ret: %d\n", __func__, mnt, ret);
+#endif
+	}
 }
 
 #ifdef CONFIG_KSU_SUSFS_TRY_UMOUNT
