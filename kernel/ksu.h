@@ -51,7 +51,7 @@
 #define DYNAMIC_MANAGER_OP_GET 1
 #define DYNAMIC_MANAGER_OP_CLEAR 2
 
-struct dynamic_sign_user_config {
+struct dynamic_manager_user_config {
 	unsigned int operation;
 	unsigned int size;
 	char hash[65];
