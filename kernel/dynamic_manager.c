@@ -15,7 +15,7 @@
 #include <crypto/sha.h>
 #endif
 
-#include "dynamic_sign.h"
+#include "dynamic_manager.h"
 #include "klog.h" // IWYU pragma: keep
 #include "kernel_compat.h"
 #include "manager.h"
@@ -23,7 +23,7 @@
 #define MAX_MANAGERS 2
 
 // Dynamic sign configuration
-static struct dynamic_sign_config dynamic_sign = {
+static struct dynamic_manager_config dynamic_manager = {
     .size = 0x300, 
     .hash = "0000000000000000000000000000000000000000000000000000000000000000",
     .is_set = 0
@@ -32,21 +32,21 @@ static struct dynamic_sign_config dynamic_sign = {
 // Multi-manager state
 static struct manager_info active_managers[MAX_MANAGERS];
 static DEFINE_SPINLOCK(managers_lock);
-static DEFINE_SPINLOCK(dynamic_sign_lock);
+static DEFINE_SPINLOCK(dynamic_manager_lock);
 
 // Work queues for persistent storage
-static struct work_struct ksu_save_dynamic_sign_work;
-static struct work_struct ksu_load_dynamic_sign_work;
-static struct work_struct ksu_clear_dynamic_sign_work;
+static struct work_struct ksu_save_dynamic_manager_work;
+static struct work_struct ksu_load_dynamic_manager_work;
+static struct work_struct ksu_clear_dynamic_manager_work;
 
-bool ksu_is_dynamic_sign_enabled(void)
+bool ksu_is_dynamic_manager_enabled(void)
 {
     unsigned long flags;
     bool enabled;
     
-    spin_lock_irqsave(&dynamic_sign_lock, flags);
-    enabled = dynamic_sign.is_set;
-    spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+    spin_lock_irqsave(&dynamic_manager_lock, flags);
+    enabled = dynamic_manager.is_set;
+    spin_unlock_irqrestore(&dynamic_manager_lock, flags);
     
     return enabled;
 }
@@ -56,7 +56,7 @@ void ksu_add_manager(uid_t uid, int signature_index)
     unsigned long flags;
     int i;
     
-    if (!ksu_is_dynamic_sign_enabled()) {
+    if (!ksu_is_dynamic_manager_enabled()) {
         pr_info("Dynamic sign not enabled, skipping multi-manager add\n");
         return;
     }
@@ -94,7 +94,7 @@ void ksu_remove_manager(uid_t uid)
     unsigned long flags;
     int i;
     
-    if (!ksu_is_dynamic_sign_enabled()) {
+    if (!ksu_is_dynamic_manager_enabled()) {
         return;
     }
     
@@ -117,7 +117,7 @@ bool ksu_is_any_manager(uid_t uid)
     bool is_manager = false;
     int i;
     
-    if (!ksu_is_dynamic_sign_enabled()) {
+    if (!ksu_is_dynamic_manager_enabled()) {
         return false;
     }
     
@@ -145,7 +145,7 @@ int ksu_get_manager_signature_index(uid_t uid)
         return 1;
     }
     
-    if (!ksu_is_dynamic_sign_enabled()) {
+    if (!ksu_is_dynamic_manager_enabled()) {
         return -1;
     }
     
@@ -197,7 +197,7 @@ int ksu_get_active_managers(struct manager_list_info *info)
     }
     
     // Add dynamic managers
-    if (ksu_is_dynamic_sign_enabled()) {
+    if (ksu_is_dynamic_manager_enabled()) {
         spin_lock_irqsave(&managers_lock, flags);
         
         for (i = 0; i < MAX_MANAGERS && count < 2; i++) {
@@ -215,42 +215,42 @@ int ksu_get_active_managers(struct manager_list_info *info)
     return 0;
 }
 
-static void do_save_dynamic_sign(struct work_struct *work)
+static void do_save_dynamic_manager(struct work_struct *work)
 {
-    u32 magic = DYNAMIC_SIGN_FILE_MAGIC;
-    u32 version = DYNAMIC_SIGN_FILE_VERSION;
-    struct dynamic_sign_config config_to_save;
+    u32 magic = DYNAMIC_MANAGER_FILE_MAGIC;
+    u32 version = DYNAMIC_MANAGER_FILE_VERSION;
+    struct dynamic_manager_config config_to_save;
     loff_t off = 0;
     unsigned long flags;
     struct file *fp;
 
-    spin_lock_irqsave(&dynamic_sign_lock, flags);
-    config_to_save = dynamic_sign;
-    spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+    spin_lock_irqsave(&dynamic_manager_lock, flags);
+    config_to_save = dynamic_manager;
+    spin_unlock_irqrestore(&dynamic_manager_lock, flags);
 
     if (!config_to_save.is_set) {
         pr_info("Dynamic sign config not set, skipping save\n");
         return;
     }
 
-    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_SIGN, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
-        pr_err("save_dynamic_sign create file failed: %ld\n", PTR_ERR(fp));
+        pr_err("save_dynamic_manager create file failed: %ld\n", PTR_ERR(fp));
         return;
     }
 
     if (ksu_kernel_write_compat(fp, &magic, sizeof(magic), &off) != sizeof(magic)) {
-        pr_err("save_dynamic_sign write magic failed.\n");
+        pr_err("save_dynamic_manager write magic failed.\n");
         goto exit;
     }
 
     if (ksu_kernel_write_compat(fp, &version, sizeof(version), &off) != sizeof(version)) {
-        pr_err("save_dynamic_sign write version failed.\n");
+        pr_err("save_dynamic_manager write version failed.\n");
         goto exit;
     }
 
     if (ksu_kernel_write_compat(fp, &config_to_save, sizeof(config_to_save), &off) != sizeof(config_to_save)) {
-        pr_err("save_dynamic_sign write config failed.\n");
+        pr_err("save_dynamic_manager write config failed.\n");
         goto exit;
     }
 
@@ -260,48 +260,48 @@ exit:
     filp_close(fp, 0);
 }
 
-static void do_load_dynamic_sign(struct work_struct *work)
+static void do_load_dynamic_manager(struct work_struct *work)
 {
     loff_t off = 0;
     ssize_t ret = 0;
     struct file *fp = NULL;
     u32 magic;
     u32 version;
-    struct dynamic_sign_config loaded_config;
+    struct dynamic_manager_config loaded_config;
     unsigned long flags;
     int i;
 
-    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_SIGN, O_RDONLY, 0);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_RDONLY, 0);
     if (IS_ERR(fp)) {
         if (PTR_ERR(fp) == -ENOENT) {
-            pr_info("No saved dynamic sign config found\n");
+            pr_info("No saved dynamic manager config found\n");
         } else {
-            pr_err("load_dynamic_sign open file failed: %ld\n", PTR_ERR(fp));
+            pr_err("load_dynamic_manager open file failed: %ld\n", PTR_ERR(fp));
         }
         return;
     }
 
     if (ksu_kernel_read_compat(fp, &magic, sizeof(magic), &off) != sizeof(magic) ||
-        magic != DYNAMIC_SIGN_FILE_MAGIC) {
-        pr_err("dynamic sign file invalid magic: %x!\n", magic);
+        magic != DYNAMIC_MANAGER_FILE_MAGIC) {
+        pr_err("dynamic manager file invalid magic: %x!\n", magic);
         goto exit;
     }
 
     if (ksu_kernel_read_compat(fp, &version, sizeof(version), &off) != sizeof(version)) {
-        pr_err("dynamic sign read version failed\n");
+        pr_err("dynamic manager read version failed\n");
         goto exit;
     }
 
-    pr_info("dynamic sign file version: %d\n", version);
+    pr_info("dynamic manager file version: %d\n", version);
 
     ret = ksu_kernel_read_compat(fp, &loaded_config, sizeof(loaded_config), &off);
     if (ret <= 0) {
-        pr_info("load_dynamic_sign read err: %zd\n", ret);
+        pr_info("load_dynamic_manager read err: %zd\n", ret);
         goto exit;
     }
 
     if (ret != sizeof(loaded_config)) {
-        pr_err("load_dynamic_sign read incomplete config: %zd/%zu\n", ret, sizeof(loaded_config));
+        pr_err("load_dynamic_manager read incomplete config: %zd/%zu\n", ret, sizeof(loaded_config));
         goto exit;
     }
 
@@ -324,9 +324,9 @@ static void do_load_dynamic_sign(struct work_struct *work)
         }
     }
 
-    spin_lock_irqsave(&dynamic_sign_lock, flags);
-    dynamic_sign = loaded_config;
-    spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+    spin_lock_irqsave(&dynamic_manager_lock, flags);
+    dynamic_manager = loaded_config;
+    spin_unlock_irqrestore(&dynamic_manager_lock, flags);
 
     pr_info("Dynamic sign config loaded: size=0x%x, hash=%.16s...\n", 
             loaded_config.size, loaded_config.hash);
@@ -335,12 +335,12 @@ exit:
     filp_close(fp, 0);
 }
 
-static bool persistent_dynamic_sign(void)
+static bool persistent_dynamic_manager(void)
 {
-    return ksu_queue_work(&ksu_save_dynamic_sign_work);
+    return ksu_queue_work(&ksu_save_dynamic_manager_work);
 }
 
-static void do_clear_dynamic_sign(struct work_struct *work)
+static void do_clear_dynamic_manager(struct work_struct *work)
 {
     loff_t off = 0;
     struct file *fp;
@@ -348,15 +348,15 @@ static void do_clear_dynamic_sign(struct work_struct *work)
 
     memset(zero_buffer, 0, sizeof(zero_buffer));
 
-    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_SIGN, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    fp = ksu_filp_open_compat(KERNEL_SU_DYNAMIC_MANAGER, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (IS_ERR(fp)) {
-        pr_err("clear_dynamic_sign create file failed: %ld\n", PTR_ERR(fp));
+        pr_err("clear_dynamic_manager create file failed: %ld\n", PTR_ERR(fp));
         return;
     }
 
     // Write null bytes to overwrite the file content
     if (ksu_kernel_write_compat(fp, zero_buffer, sizeof(zero_buffer), &off) != sizeof(zero_buffer)) {
-        pr_err("clear_dynamic_sign write null bytes failed.\n");
+        pr_err("clear_dynamic_manager write null bytes failed.\n");
     } else {
         pr_info("Dynamic sign config file cleared successfully\n");
     }
@@ -364,12 +364,12 @@ static void do_clear_dynamic_sign(struct work_struct *work)
     filp_close(fp, 0);
 }
 
-static bool clear_dynamic_sign_file(void)
+static bool clear_dynamic_manager_file(void)
 {
-    return ksu_queue_work(&ksu_clear_dynamic_sign_work);
+    return ksu_queue_work(&ksu_clear_dynamic_manager_work);
 }
 
-int ksu_handle_dynamic_sign(struct dynamic_sign_user_config *config)
+int ksu_handle_dynamic_manager(struct dynamic_manager_user_config *config)
 {
     unsigned long flags;
     int ret = 0;
@@ -380,7 +380,7 @@ int ksu_handle_dynamic_sign(struct dynamic_sign_user_config *config)
     }
     
     switch (config->operation) {
-    case DYNAMIC_SIGN_OP_SET:
+    case DYNAMIC_MANAGER_OP_SET:
         if (config->size < 0x100 || config->size > 0x1000) {
             pr_err("invalid size: 0x%x\n", config->size);
             return -EINVAL;
@@ -400,106 +400,106 @@ int ksu_handle_dynamic_sign(struct dynamic_sign_user_config *config)
             }
         }
         
-        spin_lock_irqsave(&dynamic_sign_lock, flags);
-        dynamic_sign.size = config->size;
+        spin_lock_irqsave(&dynamic_manager_lock, flags);
+        dynamic_manager.size = config->size;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
-        strscpy(dynamic_sign.hash, config->hash, sizeof(dynamic_sign.hash));
+        strscpy(dynamic_manager.hash, config->hash, sizeof(dynamic_manager.hash));
 #else
-        strlcpy(dynamic_sign.hash, config->hash, sizeof(dynamic_sign.hash));
+        strlcpy(dynamic_manager.hash, config->hash, sizeof(dynamic_manager.hash));
 #endif
-        dynamic_sign.is_set = 1;
-        spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+        dynamic_manager.is_set = 1;
+        spin_unlock_irqrestore(&dynamic_manager_lock, flags);
         
-        persistent_dynamic_sign();
-        pr_info("dynamic sign updated: size=0x%x, hash=%.16s... (multi-manager enabled)\n", 
+        persistent_dynamic_manager();
+        pr_info("dynamic manager updated: size=0x%x, hash=%.16s... (multi-manager enabled)\n", 
                 config->size, config->hash);
         break;
         
-    case DYNAMIC_SIGN_OP_GET:
-        spin_lock_irqsave(&dynamic_sign_lock, flags);
-        if (dynamic_sign.is_set) {
-            config->size = dynamic_sign.size;
+    case DYNAMIC_MANAGER_OP_GET:
+        spin_lock_irqsave(&dynamic_manager_lock, flags);
+        if (dynamic_manager.is_set) {
+            config->size = dynamic_manager.size;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 13, 0)
-            strscpy(config->hash, dynamic_sign.hash, sizeof(config->hash));
+            strscpy(config->hash, dynamic_manager.hash, sizeof(config->hash));
 #else
-            strlcpy(config->hash, dynamic_sign.hash, sizeof(config->hash));
+            strlcpy(config->hash, dynamic_manager.hash, sizeof(config->hash));
 #endif
             ret = 0;
         } else {
             ret = -ENODATA;
         }
-        spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+        spin_unlock_irqrestore(&dynamic_manager_lock, flags);
         break;
         
-    case DYNAMIC_SIGN_OP_CLEAR:
-        spin_lock_irqsave(&dynamic_sign_lock, flags);
-        dynamic_sign.size = 0x300;
-        strcpy(dynamic_sign.hash, "0000000000000000000000000000000000000000000000000000000000000000");
-        dynamic_sign.is_set = 0;
-        spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+    case DYNAMIC_MANAGER_OP_CLEAR:
+        spin_lock_irqsave(&dynamic_manager_lock, flags);
+        dynamic_manager.size = 0x300;
+        strcpy(dynamic_manager.hash, "0000000000000000000000000000000000000000000000000000000000000000");
+        dynamic_manager.is_set = 0;
+        spin_unlock_irqrestore(&dynamic_manager_lock, flags);
         
         // Clear only dynamic managers, preserve default manager
         clear_dynamic_manager();
         
         // Clear file using the same method as save
-        clear_dynamic_sign_file();
+        clear_dynamic_manager_file();
         
         pr_info("Dynamic sign config cleared (multi-manager disabled)\n");
         break;
         
     default:
-        pr_err("Invalid dynamic sign operation: %d\n", config->operation);
+        pr_err("Invalid dynamic manager operation: %d\n", config->operation);
         return -EINVAL;
     }
 
     return ret;
 }
 
-bool ksu_load_dynamic_sign(void)
+bool ksu_load_dynamic_manager(void)
 {
-    return ksu_queue_work(&ksu_load_dynamic_sign_work);
+    return ksu_queue_work(&ksu_load_dynamic_manager_work);
 }
 
-void ksu_dynamic_sign_init(void)
+void ksu_dynamic_manager_init(void)
 {
     int i;
     
-    INIT_WORK(&ksu_save_dynamic_sign_work, do_save_dynamic_sign);
-    INIT_WORK(&ksu_load_dynamic_sign_work, do_load_dynamic_sign);
-    INIT_WORK(&ksu_clear_dynamic_sign_work, do_clear_dynamic_sign);
+    INIT_WORK(&ksu_save_dynamic_manager_work, do_save_dynamic_manager);
+    INIT_WORK(&ksu_load_dynamic_manager_work, do_load_dynamic_manager);
+    INIT_WORK(&ksu_clear_dynamic_manager_work, do_clear_dynamic_manager);
     
     // Initialize manager slots
     for (i = 0; i < MAX_MANAGERS; i++) {
         active_managers[i].is_active = false;
     }
 
-    ksu_load_dynamic_sign();
+    ksu_load_dynamic_manager();
     
     pr_info("Dynamic sign initialized with conditional multi-manager support\n");
 }
 
-void ksu_dynamic_sign_exit(void)
+void ksu_dynamic_manager_exit(void)
 {
     clear_dynamic_manager();
     
     // Save current config before exit
-    do_save_dynamic_sign(NULL);
+    do_save_dynamic_manager(NULL);
     pr_info("Dynamic sign exited with persistent storage\n");
 }
 
-// Get dynamic sign configuration for signature verification
-bool ksu_get_dynamic_sign_config(unsigned int *size, const char **hash)
+// Get dynamic manager configuration for signature verification
+bool ksu_get_dynamic_manager_config(unsigned int *size, const char **hash)
 {
     unsigned long flags;
     bool valid = false;
     
-    spin_lock_irqsave(&dynamic_sign_lock, flags);
-    if (dynamic_sign.is_set) {
-        if (size) *size = dynamic_sign.size;
-        if (hash) *hash = dynamic_sign.hash;
+    spin_lock_irqsave(&dynamic_manager_lock, flags);
+    if (dynamic_manager.is_set) {
+        if (size) *size = dynamic_manager.size;
+        if (hash) *hash = dynamic_manager.hash;
         valid = true;
     }
-    spin_unlock_irqrestore(&dynamic_sign_lock, flags);
+    spin_unlock_irqrestore(&dynamic_manager_lock, flags);
     
     return valid;
 }

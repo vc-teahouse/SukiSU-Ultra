@@ -431,18 +431,18 @@ class HomeViewModel : ViewModel() {
                     }
                 }
 
-                // 获取动态签名状态和管理器列表
+                // 获取动态管理器状态和管理器列表
                 val dynamicSignConfig = try {
-                    Natives.getDynamicSign()
+                    Natives.getDynamicManager()
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to get dynamic sign config", e)
+                    Log.w(TAG, "Failed to get dynamic manager config", e)
                     null
                 }
 
                 val isDynamicSignEnabled = try {
                     dynamicSignConfig?.isValid() == true
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to check dynamic sign validity", e)
+                    Log.w(TAG, "Failed to check dynamic manager validity", e)
                     false
                 }
 

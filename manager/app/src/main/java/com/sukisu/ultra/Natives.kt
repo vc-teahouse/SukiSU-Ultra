@@ -29,7 +29,7 @@ object Natives {
 
     const val MINIMAL_SUPPORTED_KPM = 12800
 
-    const val MINIMAL_SUPPORTED_DYNAMIC_SIGN = 13215
+    const val MINIMAL_SUPPORTED_DYNAMIC_MANAGER = 13215
 
     const val ROOT_UID = 0
     const val ROOT_GID = 0
@@ -107,28 +107,28 @@ object Natives {
     external fun getSusfsFeatureStatus(): SusfsFeatureStatus?
 
     /**
-     * Set dynamic signature configuration
+     * Set dynamic managerature configuration
      * @param size APK signature size
      * @param hash APK signature hash (64 character hex string)
      * @return true if successful, false otherwise
      */
-    external fun setDynamicSign(size: Int, hash: String): Boolean
+    external fun setDynamicManager(size: Int, hash: String): Boolean
 
 
     /**
-     * Get current dynamic signature configuration
-     * @return DynamicSignConfig object containing current configuration, or null if not set
+     * Get current dynamic managerature configuration
+     * @return DynamicManagerConfig object containing current configuration, or null if not set
      */
-    external fun getDynamicSign(): DynamicSignConfig?
+    external fun getDynamicManager(): DynamicManagerConfig?
 
     /**
-     * Clear dynamic signature configuration
+     * Clear dynamic managerature configuration
      * @return true if successful, false otherwise
      */
-    external fun clearDynamicSign(): Boolean
+    external fun clearDynamicManager(): Boolean
 
     /**
-     * Get active managers list when dynamic sign is enabled
+     * Get active managers list when dynamic manager is enabled
      * @return ManagersList object containing active managers, or null if failed or not enabled
      */
     external fun getManagersList(): ManagersList?
@@ -185,7 +185,7 @@ object Natives {
     @Immutable
     @Parcelize
     @Keep
-    data class DynamicSignConfig(
+    data class DynamicManagerConfig(
         val size: Int = 0,
         val hash: String = ""
     ) : Parcelable {

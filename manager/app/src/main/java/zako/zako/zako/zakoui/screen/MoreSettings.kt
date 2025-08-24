@@ -148,8 +148,8 @@ fun MoreSettingsScreen(
     var showDpiConfirmDialog by remember { mutableStateOf(false) }
     var showImageEditor by remember { mutableStateOf(false) }
 
-    // 动态签名配置状态
-    var dynamicSignConfig by remember { mutableStateOf<Natives.DynamicSignConfig?>(null) }
+    // 动态管理器配置状态
+    var dynamicSignConfig by remember { mutableStateOf<Natives.DynamicManagerConfig?>(null) }
     var isDynamicSignEnabled by remember { mutableStateOf(false) }
     var dynamicSignSize by remember { mutableStateOf("") }
     var dynamicSignHash by remember { mutableStateOf("") }
@@ -674,8 +674,8 @@ fun MoreSettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        // 初始化动态签名配置
-        dynamicSignConfig = Natives.getDynamicSign()
+        // 初始化动态管理器配置
+        dynamicSignConfig = Natives.getDynamicManager()
         dynamicSignConfig?.let { config ->
             if (config.isValid()) {
                 isDynamicSignEnabled = true
@@ -696,11 +696,11 @@ fun MoreSettingsScreen(
         }
     }
 
-    // 动态签名配置对话框
+    // 动态管理器配置对话框
     if (showDynamicSignDialog) {
         AlertDialog(
             onDismissRequest = { showDynamicSignDialog = false },
-            title = { Text(stringResource(R.string.dynamic_sign_title)) },
+            title = { Text(stringResource(R.string.dynamic_manager_title)) },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState())
@@ -718,7 +718,7 @@ fun MoreSettingsScreen(
                             onCheckedChange = { isDynamicSignEnabled = it }
                         )
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(stringResource(R.string.enable_dynamic_sign))
+                        Text(stringResource(R.string.enable_dynamic_manager))
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -773,18 +773,18 @@ fun MoreSettingsScreen(
                         if (isDynamicSignEnabled) {
                             val size = parseDynamicSignSize(dynamicSignSize)
                             if (size != null && size > 0 && dynamicSignHash.length == 64) {
-                                val success = Natives.setDynamicSign(size, dynamicSignHash)
+                                val success = Natives.setDynamicManager(size, dynamicSignHash)
                                 if (success) {
-                                    dynamicSignConfig = Natives.DynamicSignConfig(size, dynamicSignHash)
+                                    dynamicSignConfig = Natives.DynamicManagerConfig(size, dynamicSignHash)
                                     Toast.makeText(
                                         context,
-                                        context.getString(R.string.dynamic_sign_set_success),
+                                        context.getString(R.string.dynamic_manager_set_success),
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 } else {
                                     Toast.makeText(
                                         context,
-                                        context.getString(R.string.dynamic_sign_set_failed),
+                                        context.getString(R.string.dynamic_manager_set_failed),
                                         Toast.LENGTH_SHORT
                                     ).show()
                                 }
@@ -797,20 +797,20 @@ fun MoreSettingsScreen(
                                 return@Button
                             }
                         } else {
-                            val success = Natives.clearDynamicSign()
+                            val success = Natives.clearDynamicManager()
                             if (success) {
                                 dynamicSignConfig = null
                                 dynamicSignSize = ""
                                 dynamicSignHash = ""
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.dynamic_sign_disabled_success),
+                                    context.getString(R.string.dynamic_manager_disabled_success),
                                     Toast.LENGTH_SHORT
                                 ).show()
                             } else {
                                 Toast.makeText(
                                     context,
-                                    context.getString(R.string.dynamic_sign_clear_failed),
+                                    context.getString(R.string.dynamic_manager_clear_failed),
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 return@Button
@@ -1417,18 +1417,18 @@ fun MoreSettingsScreen(
                             }
                         )
                     }
-                    // 动态签名设置
-                    if (Natives.version >= Natives.MINIMAL_SUPPORTED_DYNAMIC_SIGN) {
+                    // 动态管理器设置
+                    if (Natives.version >= Natives.MINIMAL_SUPPORTED_DYNAMIC_MANAGER) {
                         SettingItem(
                             icon = Icons.Filled.Security,
-                            title = stringResource(R.string.dynamic_sign_title),
+                            title = stringResource(R.string.dynamic_manager_title),
                             subtitle = if (isDynamicSignEnabled) {
                                 stringResource(
-                                    R.string.dynamic_sign_enabled_summary,
+                                    R.string.dynamic_manager_enabled_summary,
                                     dynamicSignSize
                                 )
                             } else {
-                                stringResource(R.string.dynamic_sign_disabled)
+                                stringResource(R.string.dynamic_manager_disabled)
                             },
                             onClick = { showDynamicSignDialog = true }
                         )

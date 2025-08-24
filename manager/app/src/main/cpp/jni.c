@@ -341,43 +341,43 @@ NativeBridgeNP(getSusfsFeatureStatus, jobject) {
     return obj;
 }
 
-// dynamic sign
-NativeBridge(setDynamicSign, jboolean, jint size, jstring hash) {
+// dynamic manager
+NativeBridge(setDynamicManager, jboolean, jint size, jstring hash) {
     if (!hash) {
-        LogDebug("setDynamicSign: hash is null");
+        LogDebug("setDynamicManager: hash is null");
         return false;
     }
 
     const char* chash = GetEnvironment()->GetStringUTFChars(env, hash, nullptr);
-    bool result = set_dynamic_sign((unsigned int)size, chash);
+    bool result = set_dynamic_manager((unsigned int)size, chash);
     GetEnvironment()->ReleaseStringUTFChars(env, hash, chash);
 
-    LogDebug("setDynamicSign: size=0x%x, result=%d", size, result);
+    LogDebug("setDynamicManager: size=0x%x, result=%d", size, result);
     return result;
 }
 
-NativeBridgeNP(getDynamicSign, jobject) {
-    struct dynamic_sign_user_config config;
-    bool result = get_dynamic_sign(&config);
+NativeBridgeNP(getDynamicManager, jobject) {
+    struct dynamic_manager_user_config config;
+    bool result = get_dynamic_manager(&config);
 
     if (!result) {
-        LogDebug("getDynamicSign: failed to get dynamic sign config");
+        LogDebug("getDynamicManager: failed to get dynamic manager config");
         return NULL;
     }
 
-    jobject obj = CREATE_JAVA_OBJECT("com/sukisu/ultra/Natives$DynamicSignConfig");
-    jclass cls = GetEnvironment()->FindClass(env, "com/sukisu/ultra/Natives$DynamicSignConfig");
+    jobject obj = CREATE_JAVA_OBJECT("com/sukisu/ultra/Natives$DynamicManagerConfig");
+    jclass cls = GetEnvironment()->FindClass(env, "com/sukisu/ultra/Natives$DynamicManagerConfig");
 
     SET_INT_FIELD(obj, cls, size, (jint)config.size);
     SET_STRING_FIELD(obj, cls, hash, config.hash);
 
-    LogDebug("getDynamicSign: size=0x%x, hash=%.16s...", config.size, config.hash);
+    LogDebug("getDynamicManager: size=0x%x, hash=%.16s...", config.size, config.hash);
     return obj;
 }
 
-NativeBridgeNP(clearDynamicSign, jboolean) {
-    bool result = clear_dynamic_sign();
-    LogDebug("clearDynamicSign: result=%d", result);
+NativeBridgeNP(clearDynamicManager, jboolean) {
+    bool result = clear_dynamic_manager();
+    LogDebug("clearDynamicManager: result=%d", result);
     return result;
 }
 

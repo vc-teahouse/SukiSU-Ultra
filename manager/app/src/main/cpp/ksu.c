@@ -46,12 +46,12 @@ extern const char* zako_file_verrcidx2str(uint8_t index);
 #define CMD_ENABLE_KPM 100
 #define CMD_HOOK_TYPE 101
 #define CMD_GET_SUSFS_FEATURE_STATUS 102
-#define CMD_DYNAMIC_SIGN 103
+#define CMD_DYNAMIC_MANAGER 103
 #define CMD_GET_MANAGERS 104
 
-#define DYNAMIC_SIGN_OP_SET 0
-#define DYNAMIC_SIGN_OP_GET 1
-#define DYNAMIC_SIGN_OP_CLEAR 2
+#define DYNAMIC_MANAGER_OP_SET 0
+#define DYNAMIC_MANAGER_OP_GET 1
+#define DYNAMIC_MANAGER_OP_CLEAR 2
 
 static bool ksuctl(int cmd, void* arg1, void* arg2) {
     int32_t result = 0;
@@ -157,33 +157,33 @@ bool get_susfs_feature_status(struct susfs_feature_status* status) {
     return ksuctl(CMD_GET_SUSFS_FEATURE_STATUS, status, NULL);
 }
 
-bool set_dynamic_sign(unsigned int size, const char* hash) {
+bool set_dynamic_manager(unsigned int size, const char* hash) {
     if (hash == NULL) {
         return false;
     }
 
-    struct dynamic_sign_user_config config;
-    config.operation = DYNAMIC_SIGN_OP_SET;
+    struct dynamic_manager_user_config config;
+    config.operation = DYNAMIC_MANAGER_OP_SET;
     config.size = size;
     strncpy(config.hash, hash, sizeof(config.hash) - 1);
     config.hash[sizeof(config.hash) - 1] = '\0';
 
-    return ksuctl(CMD_DYNAMIC_SIGN, &config, NULL);
+    return ksuctl(CMD_DYNAMIC_MANAGER, &config, NULL);
 }
 
-bool get_dynamic_sign(struct dynamic_sign_user_config* config) {
+bool get_dynamic_manager(struct dynamic_manager_user_config* config) {
     if (config == NULL) {
         return false;
     }
 
-    config->operation = DYNAMIC_SIGN_OP_GET;
-    return ksuctl(CMD_DYNAMIC_SIGN, config, NULL);
+    config->operation = DYNAMIC_MANAGER_OP_GET;
+    return ksuctl(CMD_DYNAMIC_MANAGER, config, NULL);
 }
 
-bool clear_dynamic_sign() {
-    struct dynamic_sign_user_config config;
-    config.operation = DYNAMIC_SIGN_OP_CLEAR;
-    return ksuctl(CMD_DYNAMIC_SIGN, &config, NULL);
+bool clear_dynamic_manager() {
+    struct dynamic_manager_user_config config;
+    config.operation = DYNAMIC_MANAGER_OP_CLEAR;
+    return ksuctl(CMD_DYNAMIC_MANAGER, &config, NULL);
 }
 
 bool get_managers_list(struct manager_list_info* info) {

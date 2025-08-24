@@ -747,7 +747,7 @@ private fun InfoCard(
                         append(
                             when (signatureIndex) {
                                 0 -> "(${stringResource(R.string.default_signature)})"
-                                1 -> "(${stringResource(R.string.dynamic_signature)})"
+                                1 -> "(${stringResource(R.string.dynamic_managerature)})"
                                 else -> if (signatureIndex >= 2) "(${
                                     stringResource(
                                         R.string.signature_index,

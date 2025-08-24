@@ -12,7 +12,7 @@
 #include "manager.h"
 #include "throne_tracker.h"
 #include "kernel_compat.h"
-#include "dynamic_sign.h"
+#include "dynamic_manager.h"
 
 uid_t ksu_manager_uid = KSU_INVALID_UID;
 
@@ -196,7 +196,7 @@ FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
 			}
 
 			int signature_index = -1;
-			bool is_multi_manager = ksu_is_multi_manager_apk(dirpath, &signature_index);
+			bool is_multi_manager = ksu_is_dynamic_manager_apk(dirpath, &signature_index);
 
 			pr_info("Found new base.apk at path: %s, is_multi_manager: %d, signature_index: %d\n",
 				dirpath, is_multi_manager, signature_index);
@@ -401,7 +401,7 @@ void track_throne()
 	}
 	
 	// Check for dynamic managers
-	if (!dynamic_manager_exist && ksu_is_dynamic_sign_enabled()) {
+	if (!dynamic_manager_exist && ksu_is_dynamic_manager_enabled()) {
 		list_for_each_entry (np, &uid_list, list) {
 			if (ksu_is_any_manager(np->uid)) {
 				dynamic_manager_exist = true;
@@ -419,8 +419,8 @@ void track_throne()
 		pr_info("Searching manager...\n");
 		search_manager("/data/app", 2, &uid_list);
 		pr_info("Search manager finished\n");
-	} else if (!dynamic_manager_exist && ksu_is_dynamic_sign_enabled()) {
-		// Always perform search when called from dynamic sign rescan
+	} else if (!dynamic_manager_exist && ksu_is_dynamic_manager_enabled()) {
+		// Always perform search when called from dynamic manager rescan
 		pr_info("Dynamic sign enabled, Searching manager...\n");
 		search_manager("/data/app", 2, &uid_list);
 		pr_info("Search Dynamic sign manager finished\n");

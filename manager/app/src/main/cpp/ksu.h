@@ -29,11 +29,11 @@ bool is_lkm_mode();
 #define KSU_MAX_GROUPS 32
 #define KSU_SELINUX_DOMAIN 64
 
-#define DYNAMIC_SIGN_OP_SET 0
-#define DYNAMIC_SIGN_OP_GET 1
-#define DYNAMIC_SIGN_OP_CLEAR 2
+#define DYNAMIC_MANAGER_OP_SET 0
+#define DYNAMIC_MANAGER_OP_GET 1
+#define DYNAMIC_MANAGER_OP_CLEAR 2
 
-struct dynamic_sign_user_config {
+struct dynamic_manager_user_config {
     unsigned int operation;
     unsigned int size;
     char hash[65];
@@ -128,11 +128,11 @@ bool get_hook_type(char* hook_type, size_t size);
 
 bool get_susfs_feature_status(struct susfs_feature_status* status);
 
-bool set_dynamic_sign(unsigned int size, const char* hash);
+bool set_dynamic_manager(unsigned int size, const char* hash);
 
-bool get_dynamic_sign(struct dynamic_sign_user_config* config);
+bool get_dynamic_manager(struct dynamic_manager_user_config* config);
 
-bool clear_dynamic_sign();
+bool clear_dynamic_manager();
 
 bool get_managers_list(struct manager_list_info* info);
 

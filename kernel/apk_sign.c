@@ -15,7 +15,7 @@
 #endif
 
 #include "apk_sign.h"
-#include "dynamic_sign.h"
+#include "dynamic_manager.h"
 #include "klog.h" // IWYU pragma: keep
 #include "kernel_compat.h"
 #include "manager_sign.h"
@@ -109,7 +109,7 @@ static bool check_block(struct file *fp, u32 *size4, loff_t *pos, u32 *offset, i
 		if (i == 1) { // Dynamic Sign indexing
 			unsigned int size;
 			const char *hash;
-			if (ksu_get_dynamic_sign_config(&size, &hash)) {
+			if (ksu_get_dynamic_manager_config(&size, &hash)) {
 				sign_key.size = size;
 				sign_key.sha256 = hash;
 			}
@@ -219,8 +219,8 @@ static __always_inline bool check_v2_signature(char *path, bool check_multi_mana
 		return false;
 	}
 
-	// If you want to check for multi-manager APK signing, but dynamic signing is not enabled, skip
-	if (check_multi_manager && !ksu_is_dynamic_sign_enabled()) {
+	// If you want to check for multi-manager APK signing, but dynamic managering is not enabled, skip
+	if (check_multi_manager && !ksu_is_dynamic_manager_enabled()) {
 		filp_close(fp, 0);
 		return 0;
 	}
@@ -328,7 +328,7 @@ clean:
 		if (check_multi_manager) {
 			// 0: ShirkNeko/SukiSU, 1: Dynamic Sign
 			if (matched_index == 0 || matched_index == 1) {
-				pr_info("Multi-manager APK detected (dynamic_sign enabled): signature_index=%d\n", matched_index);
+				pr_info("Multi-manager APK detected (dynamic_manager enabled): signature_index=%d\n", matched_index);
 				return true;
 			}
 			return false;
@@ -369,7 +369,7 @@ bool is_manager_apk(char *path)
     return check_v2_signature(path, false, NULL);
 }
 
-bool ksu_is_multi_manager_apk(char *path, int *signature_index)
+bool ksu_is_dynamic_manager_apk(char *path, int *signature_index)
 {
     return check_v2_signature(path, true, signature_index);
 }
