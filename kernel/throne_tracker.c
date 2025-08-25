@@ -196,7 +196,8 @@ FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
 			}
 
 			int signature_index = -1;
-			bool is_multi_manager = ksu_is_dynamic_manager_apk(dirpath, &signature_index);
+			bool is_multi_manager = is_dynamic_manager_apk(
+				dirpath, &signature_index);
 
 			pr_info("Found new base.apk at path: %s, is_multi_manager: %d, signature_index: %d\n",
 				dirpath, is_multi_manager, signature_index);
