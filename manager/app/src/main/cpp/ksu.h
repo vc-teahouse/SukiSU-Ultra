@@ -54,7 +54,6 @@ struct susfs_feature_status {
     bool status_spoof_cmdline;
     bool status_open_redirect;
     bool status_magic_mount;
-    bool status_overlayfs_auto_kstat;
     bool status_sus_su;
 };
 

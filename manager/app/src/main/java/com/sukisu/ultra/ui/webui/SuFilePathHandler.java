@@ -76,15 +76,14 @@ public final class SuFilePathHandler implements WebViewAssetLoader.PathHandler {
      * The application should typically use a dedicated subdirectory for the files it intends to
      * expose and keep them separate from other files.
      *
-     * @param context {@link Context} that is used to access app's internal storage.
      * @param directory the absolute path of the exposed app internal storage directory from
      *                  which files can be loaded.
      * @throws IllegalArgumentException if the directory is not allowed.
      */
-    public SuFilePathHandler(@NonNull Context context, @NonNull File directory, Shell rootShell) {
+    public SuFilePathHandler(@NonNull File directory, Shell rootShell) {
         try {
             mDirectory = new File(getCanonicalDirPath(directory));
-            if (!isAllowedInternalStorageDir(context)) {
+            if (!isAllowedInternalStorageDir()) {
                 throw new IllegalArgumentException("The given directory \"" + directory
                         + "\" doesn't exist under an allowed app internal storage directory");
             }
@@ -96,7 +95,7 @@ public final class SuFilePathHandler implements WebViewAssetLoader.PathHandler {
         }
     }
 
-    private boolean isAllowedInternalStorageDir(@NonNull Context context) throws IOException {
+    private boolean isAllowedInternalStorageDir() throws IOException {
         String dir = getCanonicalDirPath(mDirectory);
 
         for (String forbiddenPath : FORBIDDEN_DATA_DIRS) {

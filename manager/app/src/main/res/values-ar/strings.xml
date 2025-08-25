@@ -239,8 +239,6 @@
     <string name="image_editor_hint">استخدم إصبعين لتكبير الصورة، وأصبع واحد لسحبها لضبط الموضع</string>
     <string name="reprovision">إعادة</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">ضرب النواة</string>
-    <string name="horizon_logs_label">السجلات:</string>
     <string name="horizon_flash_complete">الفلاش اكتمل</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">جار التحضير</string>

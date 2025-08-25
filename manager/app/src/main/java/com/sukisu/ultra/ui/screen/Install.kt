@@ -338,7 +338,7 @@ private fun RebootDialog(
 sealed class InstallMethod {
     data class SelectFile(
         val uri: Uri? = null,
-        @StringRes override val label: Int = R.string.select_file,
+        @param:StringRes override val label: Int = R.string.select_file,
         override val summary: String?
     ) : InstallMethod()
 
@@ -355,7 +355,7 @@ sealed class InstallMethod {
     data class HorizonKernel(
         val uri: Uri? = null,
         val slot: String? = null,
-        @StringRes override val label: Int = R.string.horizon_kernel,
+        @param:StringRes override val label: Int = R.string.horizon_kernel,
         override val summary: String? = null
     ) : InstallMethod()
 
@@ -413,7 +413,7 @@ private fun SelectInstallMethod(
 
                     else -> null
                 }
-                option?.let {
+                option?.let { it ->
                     selectedOption = it
                     onSelected(it)
                 }
@@ -682,7 +682,7 @@ private fun SelectInstallMethod(
 @Composable
 fun rememberSelectKmiDialog(onSelected: (String?) -> Unit): DialogHandle {
     return rememberCustomDialog { dismiss ->
-        val supportedKmi by produceState(initialValue = emptyList<String>()) {
+        val supportedKmi by produceState(initialValue = emptyList()) {
             value = getSupportedKmis()
         }
         val options = supportedKmi.map { value ->

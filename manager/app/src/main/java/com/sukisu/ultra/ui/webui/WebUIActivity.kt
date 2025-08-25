@@ -58,7 +58,7 @@ class WebUIActivity : ComponentActivity() {
             .setDomain("mui.kernelsu.org")
             .addPathHandler(
                 "/",
-                SuFilePathHandler(this, webRoot, rootShell)
+                SuFilePathHandler(webRoot, rootShell)
             )
             .build()
 

@@ -33,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -94,9 +93,6 @@ fun AppProfileTemplateScreen(
         }
     }
 
-    val cardColorUse = MaterialTheme.colorScheme.surfaceVariant
-    val cardAlpha = CardConfig.cardAlpha
-
     Scaffold(
         topBar = {
             val context = LocalContext.current
@@ -108,10 +104,6 @@ fun AppProfileTemplateScreen(
             }
             TopBar(
                 onBack = dropUnlessResumed { navigator.popBackStack() },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = cardColorUse.copy(alpha = cardAlpha),
-                    scrolledContainerColor = cardColorUse.copy(alpha = cardAlpha)
-                ),
                 onSync = {
                     scope.launch { viewModel.fetchTemplates(true) }
                 },
@@ -209,7 +201,7 @@ private fun TemplateItem(
                 FlowRow {
                     LabelText(label = "UID: ${template.uid}")
                     LabelText(label = "GID: ${template.gid}")
-                    LabelText(label = template.context,)
+                    LabelText(label = template.context)
                     if (template.local) {
                         LabelText(label = "local")
                     } else {
@@ -228,7 +220,6 @@ private fun TopBar(
     onSync: () -> Unit = {},
     onImport: () -> Unit = {},
     onExport: () -> Unit = {},
-    colors: TopAppBarColors,
     scrollBehavior: TopAppBarScrollBehavior? = null
 ) {
     val colorScheme = MaterialTheme.colorScheme

@@ -6,11 +6,9 @@ import com.sukisu.ultra.ui.util.getKpmVersion
 import com.sukisu.ultra.ui.util.getModuleCount
 import com.sukisu.ultra.ui.util.getSuperuserCount
 import com.sukisu.ultra.ui.util.rootAvailable
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
 
 object AppData {
     object DataRefreshManager {
@@ -33,12 +31,6 @@ object AppData {
             _kpmModuleCount.value = getKpmModuleCountUse()
         }
 
-        /**
-         * 异步刷新所有数据
-         */
-        suspend fun refreshDataAsync() = withContext(Dispatchers.IO) {
-            refreshData()
-        }
     }
 
     /**
@@ -86,7 +78,7 @@ object AppData {
         return try {
             if (!rootAvailable()) return ""
             val version = getKpmVersion()
-            if (version.isEmpty()) "" else version
+            version.ifEmpty { "" }
         } catch (e: Exception) {
             "Error: ${e.message}"
         }

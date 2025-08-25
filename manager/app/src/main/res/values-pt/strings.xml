@@ -237,8 +237,6 @@
     <string name="image_editor_hint">Use dois dedos para ampliar a imagem e um dedo para arrastá-la para ajustar a posição</string>
     <string name="reprovision">Restituição</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">Kernel Flashing</string>
-    <string name="horizon_logs_label">Logs:</string>
     <string name="horizon_flash_complete">Flash concluído</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">Preparando…</string>

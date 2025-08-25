@@ -113,7 +113,7 @@ fun KernelFlashScreen(
                 worker.start()
 
                 // 监听日志更新
-                while (!flashState.isCompleted && flashState.error.isEmpty()) {
+                while (flashState.error.isEmpty()) {
                     if (flashState.logs.isNotEmpty()) {
                         logText = flashState.logs.joinToString("\n")
                         logContent.clear()
@@ -126,9 +126,6 @@ fun KernelFlashScreen(
                     logText += "\n${flashState.error}\n"
                     logContent.append("\n${flashState.error}\n")
                     KernelFlashStateHolder.isFlashing = false
-                } else if (flashState.isCompleted) {
-                    logText += "\n${context.getString(R.string.horizon_flash_complete)}\n\n\n"
-                    logContent.append("\n${context.getString(R.string.horizon_flash_complete)}\n\n\n")
                 }
             }
         } else {

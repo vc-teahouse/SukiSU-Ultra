@@ -221,7 +221,7 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
                     }
 
                     // 所有模块签名验证通过，直接安装
-                    if (verificationResults.all { it.value }) {
+                    if (verificationResults.all { it -> it.value }) {
                         try {
                             navigator.navigate(FlashScreenDestination(FlashIt.FlashModules(selectedModules)))
                             viewModel.markNeedRefresh()

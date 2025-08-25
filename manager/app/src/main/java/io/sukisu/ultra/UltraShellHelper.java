@@ -23,8 +23,7 @@ public class UltraShellHelper {
         return result.contains("exists");
     }
 
-    public static boolean CopyFileTo(String path, String target) {
-        String result = runCmd("cp -f '" + path + "' '" + target + "' 2>&1");
-        return !result.contains("cp: ");
+    public static void CopyFileTo(String path, String target) {
+        runCmd("cp -f '" + path + "' '" + target + "' 2>&1");
     }
 }

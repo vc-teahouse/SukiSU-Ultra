@@ -239,8 +239,6 @@
     <string name="image_editor_hint">Utilisez deux doigts pour zoomer l\'image, et un doigt pour le faire glisser pour ajuster la position</string>
     <string name="reprovision">Remise à disposition</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">Clignotement du noyau</string>
-    <string name="horizon_logs_label">Journaux:</string>
     <string name="horizon_flash_complete">Flash terminé</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">Préparation de…</string>

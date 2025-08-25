@@ -237,8 +237,6 @@
     <string name="image_editor_hint">Usa dos dedos para acercar la imagen, y un dedo para arrastrarla para ajustar la posición</string>
     <string name="reprovision">Reaprovisionamiento</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">Parpadeo Kernel</string>
-    <string name="horizon_logs_label">Registros:</string>
     <string name="horizon_flash_complete">Flashear completo</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">Preparando…</string>

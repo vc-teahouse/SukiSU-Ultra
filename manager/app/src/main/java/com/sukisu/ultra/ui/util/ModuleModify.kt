@@ -314,7 +314,6 @@ object ModuleModify {
     ): androidx.activity.result.ActivityResultLauncher<Intent> {
         var showRestoreDialog by remember { mutableStateOf(false) }
         var restoreConfirmResult by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
-        var pendingUri by remember { mutableStateOf<Uri?>(null) }
 
         // 显示恢复确认对话框
         RestoreConfirmationDialog(
@@ -334,7 +333,6 @@ object ModuleModify {
         ) { result ->
             if (result.resultCode == android.app.Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
-                    pendingUri = uri
                     scope.launch {
                         val confirmResult = CompletableDeferred<Boolean>()
                         restoreConfirmResult = confirmResult
@@ -377,7 +375,6 @@ object ModuleModify {
     ): androidx.activity.result.ActivityResultLauncher<Intent> {
         var showAllowlistRestoreDialog by remember { mutableStateOf(false) }
         var allowlistRestoreConfirmResult by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
-        var pendingUri by remember { mutableStateOf<Uri?>(null) }
 
         // 显示允许列表恢复确认对话框
         AllowlistRestoreConfirmationDialog(
@@ -397,7 +394,6 @@ object ModuleModify {
         ) { result ->
             if (result.resultCode == android.app.Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
-                    pendingUri = uri
                     scope.launch {
                         val confirmResult = CompletableDeferred<Boolean>()
                         allowlistRestoreConfirmResult = confirmResult

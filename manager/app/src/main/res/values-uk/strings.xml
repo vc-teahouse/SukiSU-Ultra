@@ -242,8 +242,6 @@
     <string name="image_editor_hint">Використовуйте два пальці для масштабування зображення та один палець для перетягування, щоб налаштувати положення</string>
     <string name="reprovision">Переналаштувати</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">Прошивка ядра</string>
-    <string name="horizon_logs_label">Логи:</string>
     <string name="horizon_flash_complete">Прошивка завершена</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">Підготовка…</string>

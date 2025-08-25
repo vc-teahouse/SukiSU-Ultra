@@ -49,7 +49,7 @@ suspend fun initPlatform() = withContext(Dispatchers.IO) {
             delay(1000)
         }
 
-        return@withContext active
+        return@withContext true
     } catch (e: Exception) {
         Log.e("KsuLibSu", "Failed to initialize platform", e)
         return@withContext false

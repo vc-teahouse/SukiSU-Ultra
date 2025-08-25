@@ -239,8 +239,6 @@
     <string name="image_editor_hint">Use two fingers to zoom the image, and one finger to drag it to adjust the position</string>
     <string name="reprovision">Reprovision</string>
     <!-- Kernel Flash Progress Related -->
-    <string name="horizon_flash_title">Kernel Flashing</string>
-    <string name="horizon_logs_label">Logs:</string>
     <string name="horizon_flash_complete">Flash Complete</string>
     <!-- Flash Status Related -->
     <string name="horizon_preparing">Preparing…</string>
