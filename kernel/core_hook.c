@@ -1154,7 +1154,6 @@ static void ksu_try_umount(const char *mnt, bool check_mnt, int flags)
 	}
 #endif
 
-	ksu_umount_mnt(mnt, &path, flags);
 	ret = ksu_umount_mnt(mnt, &path, flags);
 	if (ret) {
 #ifdef CONFIG_KSU_DEBUG
