@@ -61,6 +61,10 @@
     GetEnvironment()->NewObject(env, cls, constructor, __VA_ARGS__); \
 })
 
+#ifdef NDEBUG
+#define LogDebug(...) (void)0
+#else
 #define LogDebug(...) __android_log_print(ANDROID_LOG_DEBUG, "KernelSU", __VA_ARGS__)
+#endif
 
 #endif
