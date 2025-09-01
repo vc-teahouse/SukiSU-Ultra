@@ -2,6 +2,7 @@
 
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 import com.android.build.gradle.tasks.PackageAndroidArtifact
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.agp.app)
@@ -41,6 +42,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            vcsInfo.include = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         /**debug {
