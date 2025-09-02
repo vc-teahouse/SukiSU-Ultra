@@ -23,7 +23,7 @@
 extern void escape_to_root();
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
-static bool ksu_sucompat_non_kp __read_mostly = true;
+static bool ksu_sucompat_hook_state __read_mostly = true;
 #endif
 
 static void __user *userspace_stack_buffer(const void *d, size_t len)
@@ -55,7 +55,7 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 	const char su[] = SU_PATH;
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (!ksu_sucompat_hook_state) {
  		return 0;
  	}
 #endif
@@ -82,7 +82,7 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 	const char su[] = SU_PATH;
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (!ksu_sucompat_hook_state) {
  		return 0;
  	}
 #endif
@@ -131,7 +131,7 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	const char su[] = SU_PATH;
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
+	if (!ksu_sucompat_hook_state) {
  		return 0;
  	}
 #endif
@@ -165,7 +165,7 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 	char path[sizeof(su) + 1];
 
 #ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp){
+	if (!ksu_sucompat_hook_state){
  		return 0;
  	}
 #endif
@@ -189,8 +189,13 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 	return 0;
 }
 
-static int ksu_inline_handle_devpts(struct inode *inode)
+int ksu_handle_devpts(struct inode *inode)
 {
+#ifndef CONFIG_KSU_KPROBES_HOOK
+	if (!ksu_sucompat_hook_state)
+		return 0;
+#endif
+
 	if (!current->mm) {
 		return 0;
 	}
@@ -211,22 +216,6 @@ static int ksu_inline_handle_devpts(struct inode *inode)
 		}
 	}
 
-	return 0;
-}
-
-int __ksu_handle_devpts(struct inode *inode)
-{
-#ifndef CONFIG_KSU_KPROBES_HOOK
-	if (!ksu_sucompat_non_kp) {
-		return 0;
-	}
-#endif
-	return ksu_inline_handle_devpts(inode);
-}
-
-// dead code, we are phasing out ksu_handle_devpts for LSM hooks.
-int __maybe_unused ksu_handle_devpts(struct inode *inode)
-{
 	return 0;
 }
 
@@ -263,7 +252,6 @@ static int execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 					  NULL);
 }
 
-#ifdef MODULE
 static struct kprobe *su_kps[4];
 static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -275,11 +263,8 @@ static int pts_unix98_lookup_pre(struct kprobe *p, struct pt_regs *regs)
 	inode = (struct inode *)PT_REGS_PARM2(regs);
 #endif
 
-	return ksu_inline_handle_devpts(inode);
+	return ksu_handle_devpts(inode);
 }
-#else
-static struct kprobe *su_kps[3];
-#endif
 
 static struct kprobe *init_kprobe(const char *name,
 				  kprobe_pre_handler_t handler)
@@ -320,11 +305,9 @@ void ksu_sucompat_init()
 	su_kps[0] = init_kprobe(SYS_EXECVE_SYMBOL, execve_handler_pre);
 	su_kps[1] = init_kprobe(SYS_FACCESSAT_SYMBOL, faccessat_handler_pre);
 	su_kps[2] = init_kprobe(SYS_NEWFSTATAT_SYMBOL, newfstatat_handler_pre);
-#ifdef MODULE
 	su_kps[3] = init_kprobe("pts_unix98_lookup", pts_unix98_lookup_pre);
-#endif
 #else
-	ksu_sucompat_non_kp = true;
+	ksu_sucompat_hook_state = true;
  	pr_info("ksu_sucompat_init: hooks enabled: execve/execveat_su, faccessat, stat\n");
 #endif
 }
@@ -336,7 +319,7 @@ void ksu_sucompat_exit()
 		destroy_kprobe(&su_kps[i]);
 	}
 #else
-	ksu_sucompat_non_kp = false;
+	ksu_sucompat_hook_state = false;
  	pr_info("ksu_sucompat_exit: hooks disabled: execve/execveat_su, faccessat, stat\n");
 #endif
 }
