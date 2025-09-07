@@ -1,9 +1,9 @@
 [versions]
 accompanist-drawablepainter = "0.37.3"
-agp = "8.12.2"
+agp = "8.13.0"
 gson = "2.13.1"
-kotlin = "2.1.21"
-ksp = "2.1.21-2.0.1"
+kotlin = "2.2.10"
+ksp = "2.2.10-2.0.2"
 compose-bom = "2025.08.01"
 lifecycle = "2.9.3"
 navigation = "2.9.3"
