@@ -286,7 +286,7 @@ class HorizonKernelWorker(
     }
 
     /**
-     * 执行KMP修补操作
+     * 执行KPM修补操作
      */
     private fun performKpmPatch() {
         try {
@@ -311,11 +311,11 @@ class HorizonKernelWorker(
 
             state.addLog(context.getString(R.string.kpm_found_image_file, imageFile))
 
-            // 复制KMP工具到Image文件所在目录
+            // 复制KPM工具到Image文件所在目录
             runCommand(true, "cp $workDir/kptools $imageDir/")
             runCommand(true, "cp $workDir/kpimg $imageDir/")
 
-            // 执行KMP修补命令
+            // 执行KPM修补命令
             val patchCommand = if (kpmUndoPatch) {
                 "cd $imageDir && chmod a+rx kptools && ./kptools -u -s 123 -i Image -k kpimg -o oImage && mv oImage Image"
             } else {
@@ -335,10 +335,10 @@ class HorizonKernelWorker(
                 else context.getString(R.string.kpm_patch_success)
             )
 
-            // 清理KMP工具文件
+            // 清理KPM工具文件
             runCommand(true, "rm -f $imageDir/kptools $imageDir/kpimg $imageDir/oImage")
 
-            // 使用Java方式重新打包ZIP文件
+            // 重新打包ZIP文件
             val originalFileName = File(filePath).name
             val patchedFilePath = "$workDir/patched_$originalFileName"
 
