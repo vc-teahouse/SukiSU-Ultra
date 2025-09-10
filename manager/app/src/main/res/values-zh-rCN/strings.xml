@@ -620,4 +620,34 @@
     <string name="module_signature_invalid_message">未经签名的模块可能不完整。为了对设备进行保护，已阻止安装此模块。</string>
     <string name="module_signature_verification_failed">未经签名的模块可能不完整。你想安装来自未知发布者的模块吗？</string>
     <string name="home_hook_type">钩子类型</string>
+    <!-- KPM修补相关字符串 -->
+    <string name="kpm_patch_options">KPM修补</string>
+    <string name="kpm_patch_description">用于添加附加的KPM功能</string>
+    <string name="enable_kpm_patch">KPM修补</string>
+    <string name="kpm_patch_switch_description">在刷写前对内核镜像进行KPM修补</string>
+    <string name="enable_kpm_undo_patch">KPM撤销修补</string>
+    <string name="kpm_undo_patch_switch_description">撤销之前应用的KPM修补</string>
+    <string name="kpm_patch_enabled">KPM修补已启用</string>
+    <string name="kpm_undo_patch_enabled">KPM撤销修补已启用</string>
+    <string name="kpm_patch_mode">KPM修补模式</string>
+    <string name="kpm_undo_patch_mode">KPM撤销修补模式</string>
+    <!-- KPM工作流程相关 -->
+    <string name="kpm_preparing_tools">准备KPM修补工具</string>
+    <string name="kpm_applying_patch">正在应用KPM修补</string>
+    <string name="kpm_undoing_patch">正在撤销KPM修补</string>
+    <string name="kpm_tools_prepared">KPM工具准备完成</string>
+    <string name="kpm_found_image_file">找到Image文件: %s</string>
+    <string name="kpm_patch_success">KPM修补成功</string>
+    <string name="kpm_undo_patch_success">KPM撤销修补成功</string>
+    <string name="kpm_file_repacked">文件重新打包完成</string>
+    <!-- KPM错误信息 -->
+    <string name="kpm_extract_kptools_failed">提取kptools工具失败</string>
+    <string name="kpm_extract_kpimg_failed">提取kpimg文件失败</string>
+    <string name="kpm_prepare_tools_failed">准备KPM工具失败: %s</string>
+    <string name="kpm_extract_zip_failed">解压压缩包失败</string>
+    <string name="kpm_image_file_not_found">未找到Image文件</string>
+    <string name="kpm_patch_failed">KPM修补失败</string>
+    <string name="kpm_undo_patch_failed">KPM撤销修补失败</string>
+    <string name="kpm_repack_zip_failed">重新打包压缩文件失败</string>
+    <string name="kpm_patch_operation_failed">KPM修补操作失败: %s</string>
 </resources>

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -66,6 +67,8 @@ import com.sukisu.ultra.ui.util.*
 fun InstallScreen(navigator: DestinationsNavigator) {
     var installMethod by remember { mutableStateOf<InstallMethod?>(null) }
     var lkmSelection by remember { mutableStateOf<LkmSelection>(LkmSelection.KmiNone) }
+    var kpmPatchEnabled by remember { mutableStateOf(false) }
+    var kpmUndoPatch by remember { mutableStateOf(false) }
     val context = LocalContext.current
     var showRebootDialog by remember { mutableStateOf(false) }
     var showSlotSelectionDialog by remember { mutableStateOf(false) }
@@ -102,7 +105,9 @@ fun InstallScreen(navigator: DestinationsNavigator) {
                         navigator.navigate(
                             KernelFlashScreenDestination(
                                 kernelUri = uri,
-                                selectedSlot = method.slot
+                                selectedSlot = method.slot,
+                                kpmPatchEnabled = kpmPatchEnabled,
+                                kpmUndoPatch = kpmUndoPatch
                             )
                         )
                     }
@@ -154,7 +159,6 @@ fun InstallScreen(navigator: DestinationsNavigator) {
         }
     }
 
-
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -188,7 +192,12 @@ fun InstallScreen(navigator: DestinationsNavigator) {
                     } else {
                         installMethod = method
                     }
-                }
+                },
+                kpmPatchEnabled = kpmPatchEnabled,
+                onKpmPatchChanged = { kpmPatchEnabled = it },
+                kpmUndoPatch = kpmUndoPatch,
+                onKpmUndoPatchChanged = { kpmUndoPatch = it },
+                selectedMethod = installMethod
             )
 
             Column(
@@ -244,6 +253,33 @@ fun InstallScreen(navigator: DestinationsNavigator) {
                                 ),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+
+                    // KPM 状态显示卡片
+                    if (kpmPatchEnabled || kpmUndoPatch) {
+                        ElevatedCard(
+                            colors = getCardColors(MaterialTheme.colorScheme.surfaceVariant),
+                            elevation = getCardElevation(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .shadow(
+                                    elevation = cardElevation,
+                                    shape = MaterialTheme.shapes.medium,
+                                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                )
+                        ) {
+                            Text(
+                                text = stringResource(
+                                    if (kpmUndoPatch) R.string.kpm_undo_patch_enabled
+                                    else R.string.kpm_patch_enabled
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(16.dp),
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -327,7 +363,12 @@ sealed class InstallMethod {
 @Composable
 private fun SelectInstallMethod(
     isGKI: Boolean = false,
-    onSelected: (InstallMethod) -> Unit = {}
+    onSelected: (InstallMethod) -> Unit = {},
+    kpmPatchEnabled: Boolean = false,
+    onKpmPatchChanged: (Boolean) -> Unit = {},
+    kpmUndoPatch: Boolean = false,
+    onKpmUndoPatchChanged: (Boolean) -> Unit = {},
+    selectedMethod: InstallMethod? = null
 ) {
     val rootAvailable = rootAvailable()
     val isAbDevice = isAbDevice()
@@ -335,9 +376,9 @@ private fun SelectInstallMethod(
     val selectFileTip = stringResource(
         id = R.string.select_file_tip,
         if (isInitBoot()) {
-    "init_boot / vendor_boot ${stringResource(R.string.select_file_tip_vendor)}"
-} else {
-    "boot"
+            "init_boot / vendor_boot ${stringResource(R.string.select_file_tip_vendor)}"
+        } else {
+            "boot"
         }
     )
 
@@ -537,7 +578,7 @@ private fun SelectInstallMethod(
                 elevation = getCardElevation(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = if (selectedMethod is InstallMethod.HorizonKernel) 0.dp else 12.dp)
                     .clip(MaterialTheme.shapes.large)
             ) {
                 MaterialTheme(
@@ -630,6 +671,137 @@ private fun SelectInstallMethod(
                                         }
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // KPM 修补选项卡片
+            if (selectedMethod is InstallMethod.HorizonKernel && selectedMethod.uri != null) {
+                ElevatedCard(
+                    colors = getCardColors(MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = getCardElevation(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                        .clip(MaterialTheme.shapes.large)
+                ) {
+                    MaterialTheme(
+                        colorScheme = MaterialTheme.colorScheme.copy(
+                            surface = if (CardConfig.isCustomBackgroundEnabled) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        ListItem(
+                            leadingContent = {
+                                Icon(
+                                    Icons.Filled.Security,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.tertiary
+                                )
+                            },
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.kpm_patch_options),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    stringResource(R.string.kpm_patch_description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = 16.dp
+                        )
+                    ) {
+                        // KPM 修补开关
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.medium)
+                                .clickable {
+                                    if (!kpmPatchEnabled) {
+                                        onKpmPatchChanged(true)
+                                        if (kpmUndoPatch) onKpmUndoPatchChanged(false)
+                                    } else {
+                                        onKpmPatchChanged(false)
+                                    }
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Switch(
+                                checked = kpmPatchEnabled,
+                                onCheckedChange = { enabled ->
+                                    onKpmPatchChanged(enabled)
+                                    if (enabled && kpmUndoPatch) onKpmUndoPatchChanged(false)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.enable_kpm_patch),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = stringResource(R.string.kpm_patch_switch_description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // KPM 撤销修补开关
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(MaterialTheme.shapes.medium)
+                                .clickable {
+                                    if (!kpmUndoPatch) {
+                                        onKpmUndoPatchChanged(true)
+                                        if (kpmPatchEnabled) onKpmPatchChanged(false)
+                                    } else {
+                                        onKpmUndoPatchChanged(false)
+                                    }
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Switch(
+                                checked = kpmUndoPatch,
+                                onCheckedChange = { enabled ->
+                                    onKpmUndoPatchChanged(enabled)
+                                    if (enabled && kpmPatchEnabled) onKpmPatchChanged(false)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.tertiary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.tertiaryContainer
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.enable_kpm_undo_patch),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = stringResource(R.string.kpm_undo_patch_switch_description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }

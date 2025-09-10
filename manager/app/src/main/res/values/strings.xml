@@ -628,4 +628,34 @@ Important Note:\n
     <string name="module_signature_invalid_message">Unsigned modules may be incomplete. To protect your device, installation of this module has been blocked</string>
     <string name="module_signature_verification_failed">Unsigned modules may be incomplete. Do you want to allow the following module from an unknown publisher to install in this device?</string>
     <string name="home_hook_type">Hook type</string>
+    <!-- KPM patching related strings -->
+    <string name="kpm_patch_options">KPM Patch</string>
+    <string name="kpm_patch_description">For adding additional KPM features</string>
+    <string name="enable_kpm_patch">KPM Patch</string>
+    <string name="kpm_patch_switch_description">Apply KPM patch to kernel image before flashing</string>
+    <string name="enable_kpm_undo_patch">KPM Undo Patch</string>
+    <string name="kpm_undo_patch_switch_description">Undo previously applied KPM patch</string>
+    <string name="kpm_patch_enabled">KPM patch enabled</string>
+    <string name="kpm_undo_patch_enabled">KPM undo patch enabled</string>
+    <string name="kpm_patch_mode">KPM Patch Mode</string>
+    <string name="kpm_undo_patch_mode">KPM Undo Patch Mode</string>
+    <!-- KPM workflow related -->
+    <string name="kpm_preparing_tools">Preparing KPM tools</string>
+    <string name="kpm_applying_patch">Applying KPM patch</string>
+    <string name="kpm_undoing_patch">Undoing KPM patch</string>
+    <string name="kpm_tools_prepared">KPM tools prepared</string>
+    <string name="kpm_found_image_file">Found Image file: %s</string>
+    <string name="kpm_patch_success">KPM patch applied successfully</string>
+    <string name="kpm_undo_patch_success">KPM patch undone successfully</string>
+    <string name="kpm_file_repacked">File repacked successfully</string>
+    <!-- KPM error messages -->
+    <string name="kpm_extract_kptools_failed">Failed to extract kptools</string>
+    <string name="kpm_extract_kpimg_failed">Failed to extract kpimg file</string>
+    <string name="kpm_prepare_tools_failed">Failed to prepare KPM tools: %s</string>
+    <string name="kpm_extract_zip_failed">Failed to extract zip file</string>
+    <string name="kpm_image_file_not_found">Image file not found</string>
+    <string name="kpm_patch_failed">KPM patch failed</string>
+    <string name="kpm_undo_patch_failed">KPM undo patch failed</string>
+    <string name="kpm_repack_zip_failed">Failed to repack zip file</string>
+    <string name="kpm_patch_operation_failed">KPM patch operation failed: %s</string>
 </resources>
