@@ -308,6 +308,7 @@ class HorizonKernelWorker(
 
             val imageFile = findImageResult.lines().first().trim()
             val imageDir = File(imageFile).parent
+            val imageName = File(imageFile).name
 
             state.addLog(context.getString(R.string.kpm_found_image_file, imageFile))
 
@@ -317,9 +318,9 @@ class HorizonKernelWorker(
 
             // 执行KPM修补命令
             val patchCommand = if (kpmUndoPatch) {
-                "cd $imageDir && chmod a+rx kptools && ./kptools -u -s 123 -i Image -k kpimg -o oImage && mv oImage Image"
+                "cd $imageDir && chmod a+rx kptools && ./kptools -u -s 123 -i $imageName -k kpimg -o oImage && mv oImage $imageName"
             } else {
-                "cd $imageDir && chmod a+rx kptools && ./kptools -p -s 123 -i Image -k kpimg -o oImage && mv oImage Image"
+                "cd $imageDir && chmod a+rx kptools && ./kptools -p -s 123 -i $imageName -k kpimg -o oImage && mv oImage $imageName"
             }
 
             val patchResult = runCommand(true, patchCommand)
