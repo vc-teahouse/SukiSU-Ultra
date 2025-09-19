@@ -589,6 +589,7 @@ fun ensureUidScannerExecutable(): Boolean {
     val result = ShellUtils.fastCmdResult(shell, "chmod 755 $targetPath")
     return result
 }
+private const val targetPath = "/data/adb/uid_scanner"
 
 fun setUidAutoScan(enabled: Boolean): Boolean {
     val shell = getRootShell()
@@ -597,7 +598,7 @@ fun setUidAutoScan(enabled: Boolean): Boolean {
     }
 
     val enableValue = if (enabled) 1 else 0
-    val cmd = "${getUidScannerDaemonPath()} --auto-scan $enableValue && ${getUidScannerDaemonPath()} reload"
+    val cmd = "$targetPath --auto-scan $enableValue && $targetPath reload"
     val result = ShellUtils.fastCmdResult(shell, cmd)
     return result
 }
@@ -609,7 +610,7 @@ fun setUidMultiUserScan(enabled: Boolean): Boolean {
     }
 
     val enableValue = if (enabled) 1 else 0
-    val cmd = "${getUidScannerDaemonPath()} --multi-user $enableValue && ${getUidScannerDaemonPath()} reload"
+    val cmd = "$targetPath --multi-user $enableValue && $targetPath reload"
     val result = ShellUtils.fastCmdResult(shell, cmd)
     return result
 }
