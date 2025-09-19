@@ -47,10 +47,11 @@ import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
 import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
 import com.sukisu.ultra.ui.util.LocalSnackbarHost
-import com.sukisu.ultra.ui.util.cleanRuntimeEnvironment
 import com.sukisu.ultra.ui.util.getBugreportFile
+import com.sukisu.ultra.ui.util.getRootShell
 import com.sukisu.ultra.ui.util.setUidAutoScan
 import com.sukisu.ultra.ui.util.setUidMultiUserScan
+import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -201,7 +202,6 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                                 uidAutoScanEnabled = enabled
                                                 prefs.edit { putBoolean("uid_auto_scan", enabled) }
 
-                                                // 如果关闭了用户态扫描，则同时关闭多用户扫描
                                                 if (!enabled) {
                                                     uidMultiUserScanEnabled = false
                                                     prefs.edit { putBoolean("uid_multi_user_scan", false) }
@@ -273,13 +273,18 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                                 content = context.getString(R.string.clean_runtime_environment_confirm)
                                             )
                                             if (result == ConfirmResult.Confirmed) {
-                                                uidAutoScanEnabled = false
-                                                prefs.edit { putBoolean("uid_auto_scan", false) }
+                                                val cleanResult = cleanRuntimeEnvironment()
+                                                if (cleanResult) {
+                                                    uidAutoScanEnabled = false
+                                                    prefs.edit { putBoolean("uid_auto_scan", false) }
 
-                                                uidMultiUserScanEnabled = false
-                                                prefs.edit { putBoolean("uid_multi_user_scan", false) }
+                                                    uidMultiUserScanEnabled = false
+                                                    prefs.edit { putBoolean("uid_multi_user_scan", false) }
 
-                                                snackBarHost.showSnackbar(context.getString(R.string.clean_runtime_environment_success))
+                                                    snackBarHost.showSnackbar(context.getString(R.string.clean_runtime_environment_success))
+                                                } else {
+                                                    snackBarHost.showSnackbar(context.getString(R.string.clean_runtime_environment_failed))
+                                                }
                                             }
                                         }
                                     }
@@ -451,6 +456,23 @@ fun SettingScreen(navigator: DestinationsNavigator) {
 
             Spacer(modifier = Modifier.height(SPACING_LARGE))
         }
+    }
+}
+
+fun cleanRuntimeEnvironment(): Boolean {
+    val shell = getRootShell()
+    return try {
+        try {
+            ShellUtils.fastCmd(shell, "/data/adb/uid_scanner stop")
+        } catch (_: Exception) {
+        }
+        ShellUtils.fastCmdResult(shell, "rm -rf /data/misc/user_uid")
+        ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/uid_scanner")
+        ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/ksu/bin/user_uid")
+        ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/service.d/uid_scanner.sh")
+        true
+    } catch (_: Exception) {
+        false
     }
 }
 

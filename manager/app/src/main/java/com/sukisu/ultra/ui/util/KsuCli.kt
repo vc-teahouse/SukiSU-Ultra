@@ -614,13 +614,3 @@ fun setUidMultiUserScan(enabled: Boolean): Boolean {
     val result = ShellUtils.fastCmdResult(shell, cmd)
     return result
 }
-
-fun cleanRuntimeEnvironment(): Boolean {
-    val shell = getRootShell()
-    val cmd = "$targetPath stop && rm -f /data/misc/user_uid && rm -rf $targetPath && rm -rf /data/adb/ksu/bin/user_uid && rm -rf /data/adb/service.d/uid_scanner.sh"
-    return try {
-        ShellUtils.fastCmdResult(shell, cmd)
-    } catch (_: Exception) {
-        false
-    }
-}
