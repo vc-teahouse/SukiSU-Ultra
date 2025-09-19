@@ -47,6 +47,7 @@ import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
 import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
 import com.sukisu.ultra.ui.util.LocalSnackbarHost
+import com.sukisu.ultra.ui.util.cleanRuntimeEnvironment
 import com.sukisu.ultra.ui.util.getBugreportFile
 import com.sukisu.ultra.ui.util.setUidAutoScan
 import com.sukisu.ultra.ui.util.setUidMultiUserScan
@@ -247,6 +248,38 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                                         e.message ?: ""
                                                     )
                                                 )
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                            // 清理运行环境
+                            AnimatedVisibility(
+                                visible = uidAutoScanEnabled,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                val confirmDialog = rememberConfirmDialog()
+                                val scope = rememberCoroutineScope()
+
+                                SettingItem(
+                                    icon = Icons.Filled.CleaningServices,
+                                    title = stringResource(R.string.clean_runtime_environment),
+                                    summary = stringResource(R.string.clean_runtime_environment_summary),
+                                    onClick = {
+                                        scope.launch {
+                                            val result = confirmDialog.awaitConfirm(
+                                                title = context.getString(R.string.clean_runtime_environment),
+                                                content = context.getString(R.string.clean_runtime_environment_confirm)
+                                            )
+                                            if (result == ConfirmResult.Confirmed) {
+                                                uidAutoScanEnabled = false
+                                                prefs.edit { putBoolean("uid_auto_scan", false) }
+
+                                                uidMultiUserScanEnabled = false
+                                                prefs.edit { putBoolean("uid_multi_user_scan", false) }
+
+                                                snackBarHost.showSnackbar(context.getString(R.string.clean_runtime_environment_success))
                                             }
                                         }
                                     }

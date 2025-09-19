@@ -660,4 +660,10 @@
     <string name="uid_multi_user_scan_summary">开启后将扫描所有用户的应用，包括工作资料等</string>
     <string name="uid_scanner_setting_failed">设置失败，请检查权限</string>
     <string name="uid_scanner_setting_error">设置失败: %s</string>
+    <string name="clean_runtime_environment">清理运行环境</string>
+    <string name="clean_runtime_environment_summary">清理运行时文件并停止扫描服务</string>
+    <string name="clean_runtime_environment_confirm">您确定要清理运行环境吗？这将停止扫描服务并删除相关文件</string>
+    <string name="clean_runtime_environment_success">运行环境清理成功</string>
+    <string name="clean_runtime_environment_failed">运行环境清理失败</string>
+    <string name="clean_runtime_environment_error">清理运行环境时出错：%s</string>
 </resources>

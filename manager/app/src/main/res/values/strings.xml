@@ -668,4 +668,10 @@ Important Note:\n
     <string name="uid_multi_user_scan_summary">When enabled, scans applications for all users, including work profiles</string>
     <string name="uid_scanner_setting_failed">Setting failed, please check permissions</string>
     <string name="uid_scanner_setting_error">Setting failed: %s</string>
+    <string name="clean_runtime_environment">Clean Runtime Environment</string>
+    <string name="clean_runtime_environment_summary">Clean up runtime files and stop the scanner service</string>
+    <string name="clean_runtime_environment_confirm">Are you sure you want to clean the runtime environment? This will stop the scanner service and remove related files.</string>
+    <string name="clean_runtime_environment_success">Runtime environment cleaned successfully</string>
+    <string name="clean_runtime_environment_failed">Failed to clean runtime environment</string>
+    <string name="clean_runtime_environment_error">Error cleaning runtime environment: %s</string>
 </resources>
