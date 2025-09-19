@@ -48,6 +48,8 @@ import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
 import com.sukisu.ultra.ui.util.LocalSnackbarHost
 import com.sukisu.ultra.ui.util.getBugreportFile
+import com.sukisu.ultra.ui.util.setUidAutoScan
+import com.sukisu.ultra.ui.util.setUidMultiUserScan
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -127,7 +129,7 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                 navigator.navigate(AppProfileTemplateScreenDestination)
                             }
                         )
-                        
+
                         // 卸载模块开关
                         var umountChecked by rememberSaveable {
                             mutableStateOf(Natives.isDefaultUmountModules())
@@ -177,6 +179,80 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                 forceSignatureVerification = enabled
                             }
                         )
+                        if (Natives.version >= Natives.MINIMAL_SUPPORTED_UID_SCANNER) {
+                            var uidAutoScanEnabled by rememberSaveable {
+                                mutableStateOf(prefs.getBoolean("uid_auto_scan", false))
+                            }
+
+                            var uidMultiUserScanEnabled by rememberSaveable {
+                                mutableStateOf(prefs.getBoolean("uid_multi_user_scan", false))
+                            }
+                            // 用户态扫描应用列表开关
+                            SwitchItem(
+                                icon = Icons.Filled.Scanner,
+                                title = stringResource(R.string.uid_auto_scan_title),
+                                summary = stringResource(R.string.uid_auto_scan_summary),
+                                checked = uidAutoScanEnabled,
+                                onCheckedChange = { enabled ->
+                                    scope.launch {
+                                        try {
+                                            if (setUidAutoScan(enabled)) {
+                                                uidAutoScanEnabled = enabled
+                                                prefs.edit { putBoolean("uid_auto_scan", enabled) }
+
+                                                // 如果关闭了用户态扫描，则同时关闭多用户扫描
+                                                if (!enabled) {
+                                                    uidMultiUserScanEnabled = false
+                                                    prefs.edit { putBoolean("uid_multi_user_scan", false) }
+                                                }
+                                            } else {
+                                                snackBarHost.showSnackbar(context.getString(R.string.uid_scanner_setting_failed))
+                                            }
+                                        } catch (e: Exception) {
+                                            snackBarHost.showSnackbar(
+                                                context.getString(
+                                                    R.string.uid_scanner_setting_error,
+                                                    e.message ?: ""
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            )
+
+                            // 多用户应用扫描开关 - 仅在启用用户态扫描时显示
+                            AnimatedVisibility(
+                                visible = uidAutoScanEnabled,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                SwitchItem(
+                                    icon = Icons.Filled.Groups,
+                                    title = stringResource(R.string.uid_multi_user_scan_title),
+                                    summary = stringResource(R.string.uid_multi_user_scan_summary),
+                                    checked = uidMultiUserScanEnabled,
+                                    onCheckedChange = { enabled ->
+                                        scope.launch {
+                                            try {
+                                                if (setUidMultiUserScan(enabled)) {
+                                                    uidMultiUserScanEnabled = enabled
+                                                    prefs.edit { putBoolean("uid_multi_user_scan", enabled) }
+                                                } else {
+                                                    snackBarHost.showSnackbar(context.getString(R.string.uid_scanner_setting_failed))
+                                                }
+                                            } catch (e: Exception) {
+                                                snackBarHost.showSnackbar(
+                                                    context.getString(
+                                                        R.string.uid_scanner_setting_error,
+                                                        e.message ?: ""
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             }

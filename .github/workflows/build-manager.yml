@@ -10,6 +10,7 @@ on:
       - 'userspace/ksud/**'
       - 'userspace/susfs/**'
       - 'userspace/kpmmgr/**'
+      - 'userspace/user_scanner/**'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -110,6 +111,19 @@ jobs:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
 
+  build-user_scanner:
+    if: ${{ always() }}
+    needs: [ check-build-lkm, build-lkm ]
+    strategy:
+      matrix:
+        include:
+          - target: All-linux-android
+            os: ubuntu-latest
+    uses: ./.github/workflows/user_scanner.yml
+    with:
+      target: ${{ matrix.target }}
+      os: ${{ matrix.os }}
+
   build-ksud:
     if: ${{ always() }}
     needs: [ check-build-lkm, build-lkm ]
@@ -184,6 +198,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Download all userscanner artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: userscanner-all-linux-android
+          path: .
+
       - name: Download arm64 susfs
         uses: actions/download-artifact@v4
         with:
@@ -232,6 +252,15 @@ jobs:
         run: |
           mkdir -p app/src/main/jniLibs/arm64-v8a
           cp -f ../arm64-v8a/zakozakozako ../manager/app/src/main/jniLibs/arm64-v8a/libzakozakozako.so
+
+      - name: Copy user_scanner to app jniLibs
+        run: |
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          mkdir -p app/src/main/jniLibs/x86_64
+          mkdir -p app/src/main/jniLibs/armeabi-v7a
+          cp -f ../arm64-v8a/uid_scanner ../manager/app/src/main/jniLibs/arm64-v8a/uid_scanner.so
+          cp -f ../x86_64/uid_scanner ../manager/app/src/main/jniLibs/x86_64/uid_scanner.so
+          cp -f ../armeabi-v7a/uid_scanner ../manager/app/src/main/jniLibs/armeabi-v7a/uid_scanner.so
 
       - name: Build with Gradle
         run: ./gradlew clean assembleRelease

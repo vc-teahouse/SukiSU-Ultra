@@ -653,4 +653,11 @@
     <!-- KPM选项单选按钮组字符串 -->
     <string name="kpm_follow_kernel_file">跟随内核</string>
     <string name="kpm_follow_kernel_description">原样使用内核，不进行任何 KPM 修改</string>
+    <!-- UID Scanner Settings -->
+    <string name="uid_auto_scan_title">用户态扫描应用列表</string>
+    <string name="uid_auto_scan_summary">开启后将使用用户态扫描应用列表，提高稳定性 (因内核扫描应用列表出现卡死等问题可以尝试打开此选项) </string>
+    <string name="uid_multi_user_scan_title">多用户应用扫描</string>
+    <string name="uid_multi_user_scan_summary">开启后将扫描所有用户的应用，包括工作资料等</string>
+    <string name="uid_scanner_setting_failed">设置失败，请检查权限</string>
+    <string name="uid_scanner_setting_error">设置失败: %s</string>
 </resources>

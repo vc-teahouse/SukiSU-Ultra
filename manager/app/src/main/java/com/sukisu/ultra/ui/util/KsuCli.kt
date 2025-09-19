@@ -569,3 +569,47 @@ fun getZygiskImplement(): String {
     Log.i(TAG, "Zygisk implement: $result")
     return result
 }
+
+fun getUidScannerDaemonPath(): String {
+    return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libuid_scanner.so"
+}
+
+fun ensureUidScannerExecutable(): Boolean {
+    val shell = getRootShell()
+    val uidScannerPath = getUidScannerDaemonPath()
+    val targetPath = "/data/adb/uid_scanner"
+
+    if (!ShellUtils.fastCmdResult(shell, "test -f $targetPath")) {
+        val copyResult = ShellUtils.fastCmdResult(shell, "cp $uidScannerPath $targetPath")
+        if (!copyResult) {
+            return false
+        }
+    }
+
+    val result = ShellUtils.fastCmdResult(shell, "chmod 755 $targetPath")
+    return result
+}
+
+fun setUidAutoScan(enabled: Boolean): Boolean {
+    val shell = getRootShell()
+    if (!ensureUidScannerExecutable()) {
+        return false
+    }
+
+    val enableValue = if (enabled) 1 else 0
+    val cmd = "${getUidScannerDaemonPath()} --auto-scan $enableValue && ${getUidScannerDaemonPath()} reload"
+    val result = ShellUtils.fastCmdResult(shell, cmd)
+    return result
+}
+
+fun setUidMultiUserScan(enabled: Boolean): Boolean {
+    val shell = getRootShell()
+    if (!ensureUidScannerExecutable()) {
+        return false
+    }
+
+    val enableValue = if (enabled) 1 else 0
+    val cmd = "${getUidScannerDaemonPath()} --multi-user $enableValue && ${getUidScannerDaemonPath()} reload"
+    val result = ShellUtils.fastCmdResult(shell, cmd)
+    return result
+}
