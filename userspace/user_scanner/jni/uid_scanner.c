@@ -209,7 +209,19 @@ int retry_operation(int (*operation)(void), const char *op_name) {
 }
 
 void ensure_directory_exists(void) {
-    system("mkdir -p /data/misc/user_uid");
+    const char *path = "/data/misc/user_uid";
+    struct stat st;
+
+    if (stat(path, &st) != 0) {
+        if (mkdir(path, 0777) != 0) {
+            LOGE("Failed to create directory %s: %s", path, strerror(errno));
+            return;
+        }
+    }
+
+    if (chmod(path, 0777) != 0) {
+        LOGE("Failed to chmod directory %s: %s", path, strerror(errno));
+    }
 }
 
 void parse_config_line(const char *key, const char *value) {
