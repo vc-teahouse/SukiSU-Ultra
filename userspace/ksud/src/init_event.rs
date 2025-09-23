@@ -9,8 +9,6 @@ use std::path::Path;
 pub fn on_post_data_fs() -> Result<()> {
     ksucalls::report_post_fs_data();
 
-    kpm::start_kpm_watcher()?;
-
     utils::umask(0);
 
     #[cfg(unix)]
@@ -72,6 +70,14 @@ pub fn on_post_data_fs() -> Result<()> {
         warn!("apply root profile sepolicy failed: {e}");
     }
 
+    if let Err(e) = kpm::start_kpm_watcher() {
+        warn!("KPM: Failed to start KPM watcher: {}", e);
+    }
+
+    if let Err(e) = kpm::load_kpm_modules() {
+        warn!("KPM: Failed to load KPM modules: {}", e);
+    }
+
     // mount temp dir
     if !Path::new(NO_TMPFS_PATH).exists() {
         if let Err(e) = mount(
@@ -108,9 +114,6 @@ pub fn on_post_data_fs() -> Result<()> {
     }
 
     run_stage("post-mount", true);
-
-    // load kpm modules
-    kpm::load_kpm_modules()?;
 
     Ok(())
 }
