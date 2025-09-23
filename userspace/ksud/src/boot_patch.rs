@@ -465,7 +465,7 @@ pub fn restore(
         let output_dir = std::env::current_dir()?;
         let now = chrono::Utc::now();
         let output_image = output_dir.join(format!(
-            "kernelsu_next_restore_{}.img",
+            "kernelsu_restore_{}.img",
             now.format("%Y%m%d_%H%M%S")
         ));
 
@@ -729,7 +729,7 @@ fn do_patch(
         let output_dir = out.unwrap_or(std::env::current_dir()?);
         let now = chrono::Utc::now();
         let output_image = output_dir.join(format!(
-            "kernelsu_next_patched_{}.img",
+            "kernelsu_patched_{}.img",
             now.format("%Y%m%d_%H%M%S")
         ));
 
