@@ -116,6 +116,11 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 	if (!filename)
 		return 0;
 
+	// not /system/bin/init, not /init, not /system/bin/app_process (64/32 thingy)
+	// return 0;
+	if (likely(strcmp(filename, "/system/bin/init") && strcmp(filename, "/init")
+		&& !strstarts(filename, "/system/bin/app_process") ))
+		return 0;
 
 	// debug! remove me!
 	pr_info("%s: filename: %s argv1: %s envp_len: %zu\n", __func__, filename, argv1, envp_len);
@@ -144,6 +149,9 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 			ksu_android_ns_fs_check();
 		}
 	}
+
+	if (!envp || !envp_len)
+		goto first_app_process;
 
 	// /init without argv1/useless-argv1 but usable envp
 	// untested! TODO: test and debug me!
@@ -441,34 +449,46 @@ bool ksu_is_safe_mode()
 }
 
 #ifdef CONFIG_KSU_KPROBES_HOOK
-extern int ksu_bprm_check(struct linux_binprm *bprm);
-
-static int bprm_check_handler_pre(struct kprobe *p, struct pt_regs *regs)
-{
-	struct linux_binprm *bprm_local = (struct linux_binprm *)PT_REGS_PARM1(regs);
-
-	return ksu_bprm_check(bprm_local);
-};
-
 static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
 	struct pt_regs *real_regs = PT_REAL_REGS(regs);
-	const char __user **filename_user =
-		(const char **)&PT_REGS_PARM1(real_regs);
+	const char __user *filename_user = (const char __user *)PT_REGS_PARM1(real_regs);
+	const char __user *const __user *__argv = (const char __user *const __user *)PT_REGS_PARM2(real_regs);
 
+	const char __user *arg1_user = NULL;
 	char path[32];
+	char argv1[32] = {0};
 
 	if (!filename_user)
 		return 0;
 
-	// remember up ahead is ** so deref it with *
-	long len = ksu_strncpy_from_user_nofault(path, *filename_user, 32);
-	if (len <= 0)
+	if (ksu_copy_from_user_retry(path, filename_user, sizeof(path)))
 		return 0;
 
 	path[sizeof(path) - 1] = '\0';
 
-	return ksu_handle_pre_ksud(path);
+	if (__argv) {
+		// grab argv[1] pointer
+		// this looks like
+		/* 
+		 * 0x1000 ./program << this is __argv
+		 * 0x1001 -o 
+		 * 0x1002 arg
+		*/
+		if (ksu_copy_from_user_retry(&arg1_user, __argv + 1, sizeof(arg1_user)))
+			goto submit; // copy argv[1] pointer fail, probably no argv1 !!
+
+		if (arg1_user)
+			ksu_copy_from_user_retry(argv1, arg1_user, sizeof(argv1));
+	}
+
+submit:
+	argv1[sizeof(argv1) - 1] = '\0';
+#ifdef CONFIG_KSU_DEBUG
+	pr_info("%s: filename: %s argv[1]:%s\n", __func__, path, argv1);
+#endif
+
+	return ksu_handle_bprm_ksud(path, argv1, "no_envp", strlen("no_envp"));
 }
 
 static int sys_read_handler_pre(struct kprobe *p, struct pt_regs *regs)
@@ -490,12 +510,7 @@ static int input_handle_event_handler_pre(struct kprobe *p,
 	return ksu_handle_input_handle_event(type, code, value);
 }
 
-static struct kprobe bprm_check_kp = {
-	.symbol_name = "security_bprm_check",
-	.pre_handler = bprm_check_handler_pre,
-};
-
-static struct kprobe sys_execve_kp = {
+static struct kprobe execve_kp = {
 	.symbol_name = SYS_EXECVE_SYMBOL,
 	.pre_handler = sys_execve_handler_pre,
 };
@@ -510,39 +525,6 @@ static struct kprobe input_event_kp = {
 	.pre_handler = input_handle_event_handler_pre,
 };
 
-static struct kprobe *execve_kprobe = NULL;
-
-static int register_execve_kprobe(void)
-{
-	int ret;
-
-	ret = register_kprobe(&sys_execve_kp);
-	if (ret == 0) {
-		execve_kprobe = &sys_execve_kp;
-		pr_info("ksud: registered sys_execve_kprobe\n");
-		return 0;
-	}
-
-	ret = register_kprobe(&bprm_check_kp);
-	if (ret == 0) {
-		execve_kprobe = &bprm_check_kp;
-		pr_info("ksud: registered bprm_check_kprobe\n");
-		return 0;
-	}
-
-	pr_err("ksud: failed to register sys_execve_kprobe (%d)\n", ret);
-	return ret;
-}
-
-static void unregister_execve_kprobe(void)
-{
-	if (execve_kprobe) {
-		unregister_kprobe(execve_kprobe);
-		pr_info("ksud: unregistered %s\n",
-			execve_kprobe == &bprm_check_kp ? "bprm_check_kprobe" : "sys_execve_kprobe");
-		execve_kprobe = NULL;
-	}
-}
 
 static void do_stop_vfs_read_hook(struct work_struct *work)
 {
@@ -551,7 +533,7 @@ static void do_stop_vfs_read_hook(struct work_struct *work)
 
 static void do_stop_execve_hook(struct work_struct *work)
 {
-	unregister_execve_kprobe();
+	unregister_kprobe(&execve_kp);
 }
 
 static void do_stop_input_hook(struct work_struct *work)
@@ -604,9 +586,8 @@ void ksu_ksud_init()
 #ifdef CONFIG_KSU_KPROBES_HOOK
 	int ret;
 
-	ret = register_execve_kprobe();
-	if (ret)
-		pr_err("ksud: failed to register any execve kprobe\n");
+	ret = register_kprobe(&execve_kp);
+	pr_info("ksud: execve_kp: %d\n", ret);
 
 	ret = register_kprobe(&vfs_read_kp);
 	pr_info("ksud: vfs_read_kp: %d\n", ret);
@@ -623,7 +604,7 @@ void ksu_ksud_init()
 void ksu_ksud_exit()
 {
 #ifdef CONFIG_KSU_KPROBES_HOOK
-	unregister_execve_kprobe();
+	unregister_kprobe(&execve_kp);
 	// this should be done before unregister vfs_read_kp
 	// unregister_kprobe(&vfs_read_kp);
 	unregister_kprobe(&input_event_kp);
