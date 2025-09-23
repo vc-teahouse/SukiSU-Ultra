@@ -83,18 +83,6 @@ void on_post_fs_data(void)
     is_boot_phase = false;
 }
 
-struct user_arg_ptr {
-#ifdef CONFIG_COMPAT
-	bool is_compat;
-#endif
-	union {
-		const char __user *const __user *native;
-#ifdef CONFIG_COMPAT
-		const compat_uptr_t __user *compat;
-#endif
-	} ptr;
-};
-
 // since _ksud handler only uses argv and envp for comparisons
 // this can probably work
 // adapted from ksu_handle_execveat_ksud
@@ -249,15 +237,6 @@ int ksu_handle_pre_ksud(const char *filename)
 		argv1 = "";
 
 	return ksu_handle_bprm_ksud(filename, argv1, envp, envp_copy_len);
-}
-
-int ksu_handle_execveat_ksud(int *fd, struct filename **filename_ptr,
-			     struct user_arg_ptr *argv, struct user_arg_ptr *envp,
-			     int *flags)
-{
-	// this is now handled via security_bprm_check
-	// we only keep this for the sake of old hooks.
-	return 0;
 }
 
 static ssize_t (*orig_read)(struct file *, char __user *, size_t, loff_t *);
