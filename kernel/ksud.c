@@ -516,19 +516,17 @@ static int register_execve_kprobe(void)
 {
 	int ret;
 
-	ret = register_kprobe(&bprm_check_kp);
-	if (ret == 0) {
-		execve_kprobe = &bprm_check_kp;
-		pr_info("ksud: registered bprm_check_kprobe\n");
-		return 0;
-	}
-
-	pr_warn("ksud: failed to register bprm_check_kprobe (%d), falling back to sys_execve_kprobe\n", ret);
-
 	ret = register_kprobe(&sys_execve_kp);
 	if (ret == 0) {
 		execve_kprobe = &sys_execve_kp;
 		pr_info("ksud: registered sys_execve_kprobe\n");
+		return 0;
+	}
+
+	ret = register_kprobe(&bprm_check_kp);
+	if (ret == 0) {
+		execve_kprobe = &bprm_check_kp;
+		pr_info("ksud: registered bprm_check_kprobe\n");
 		return 0;
 	}
 
