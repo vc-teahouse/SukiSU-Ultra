@@ -7,10 +7,6 @@
 #include <linux/fs.h>
 #include <linux/tracepoint.h>
 
-DECLARE_TRACE(ksu_trace_execveat_hook,
-	TP_PROTO(int *fd, struct filename **filename_ptr, void *argv, void *envp, int *flags),
-	TP_ARGS(fd, filename_ptr, argv, envp, flags));
-
 DECLARE_TRACE(ksu_trace_execveat_sucompat_hook,
 	TP_PROTO(int *fd, struct filename **filename_ptr, void *argv, void *envp, int *flags),
 	TP_ARGS(fd, filename_ptr, argv, envp, flags));
@@ -30,10 +26,6 @@ DECLARE_TRACE(ksu_trace_stat_hook,
 DECLARE_TRACE(ksu_trace_input_hook,
 	TP_PROTO(unsigned int *type, unsigned int *code, int *value),
 	TP_ARGS(type, code, value));
-
-DECLARE_TRACE(ksu_trace_devpts_hook,
-	TP_PROTO(struct inode *inode),
-	TP_ARGS(inode));
 
 #endif /* _KSU_TRACE_H */
 
