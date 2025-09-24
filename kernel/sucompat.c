@@ -222,7 +222,8 @@ int __ksu_handle_devpts(struct inode *inode)
 	if (likely(!ksu_is_allow_uid(uid)))
 		return 0;
 
-		struct inode_security_struct *sec = selinux_inode(inode);
+	struct inode_security_struct *sec = selinux_inode(inode);
+
 	if (ksu_devpts_sid && sec)
 		sec->sid = ksu_devpts_sid;
 
