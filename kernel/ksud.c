@@ -424,23 +424,37 @@ bool ksu_is_safe_mode()
 #ifdef CONFIG_KSU_KPROBES_HOOK
 static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
+	/*
+	asmlinkage int sys_execve(const char __user *filenamei,
+				  const char __user *const __user *argv,
+				  const char __user *const __user *envp, struct pt_regs *regs)
+	*/
 	struct pt_regs *real_regs = PT_REAL_REGS(regs);
 	const char __user *filename_user = (const char __user *)PT_REGS_PARM1(real_regs);
 	const char __user *const __user *__argv = (const char __user *const __user *)PT_REGS_PARM2(real_regs);
-
-	const char __user *arg1_user = NULL;
+	const char __user *const __user *__envp = (const char __user *const __user *)PT_REGS_PARM3(real_regs);
 	char path[32];
-	char argv1[32] = {0};
 
 	if (!filename_user)
 		return 0;
 
+// filename stage
 	if (ksu_copy_from_user_retry(path, filename_user, sizeof(path)))
 		return 0;
 
 	path[sizeof(path) - 1] = '\0';
 
+	// not /system/bin/init, not /init, not /system/bin/app_process (64/32 thingy)
+	// we dont care !!
+	if (likely(strcmp(path, "/system/bin/init") && strcmp(path, "/init")
+		&& !strstarts(path, "/system/bin/app_process") ))
+		return 0;
+
+// argv stage
+	char argv1[32] = {0};
+	// memzero_explicit(argv1, 32);
 	if (__argv) {
+		const char __user *arg1_user = NULL;
 		// grab argv[1] pointer
 		// this looks like
 		/* 
@@ -449,19 +463,82 @@ static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 		 * 0x1002 arg
 		*/
 		if (ksu_copy_from_user_retry(&arg1_user, __argv + 1, sizeof(arg1_user)))
-			goto submit; // copy argv[1] pointer fail, probably no argv1 !!
+			goto no_argv1; // copy argv[1] pointer fail, probably no argv1 !!
 
 		if (arg1_user)
 			ksu_copy_from_user_retry(argv1, arg1_user, sizeof(argv1));
 	}
 
-submit:
+no_argv1:
 	argv1[sizeof(argv1) - 1] = '\0';
-#ifdef CONFIG_KSU_DEBUG
-	pr_info("%s: filename: %s argv[1]:%s\n", __func__, path, argv1);
-#endif
 
-	return ksu_handle_bprm_ksud(path, argv1, "no_envp", strlen("no_envp"));
+// envp stage
+	#define ENVP_MAX 256
+	char envp[ENVP_MAX] = {0};
+	char *dst = envp;
+	size_t envp_len = 0;
+	int i = 0; // to track user pointer offset from __envp
+
+	// memzero_explicit(envp, ENVP_MAX);
+
+	if (__envp) {
+		do {
+			const char __user *env_entry_user = NULL;
+			// this is also like argv above
+			/*
+			 * 0x1001 PATH=/bin
+			 * 0x1002 VARIABLE=value
+			 * 0x1002 some_more_env_var=1
+			 */
+
+			// check if pointer exists
+			if (ksu_copy_from_user_retry(&env_entry_user, __envp + i, sizeof(env_entry_user)))
+				break; 
+
+			// check if no more env entry
+			if (!env_entry_user)
+				break; 
+			
+			// probably redundant to while condition but ok
+			if (envp_len >= ENVP_MAX - 1)
+				break;
+
+			// copy strings from env_entry_user pointer that we collected
+			// also break if failed
+			if (ksu_copy_from_user_retry(dst, env_entry_user, ENVP_MAX - envp_len))
+				break;
+
+			// get the length of that new copy above
+			// get lngth of dst as far as ENVP_MAX - current collected envp_len
+			size_t len = strnlen(dst, ENVP_MAX - envp_len);
+			if (envp_len + len + 1 > ENVP_MAX)
+				break; // if more than 255 bytes, bail
+
+			dst[len] = '\0';
+			// collect total number of copied strings
+			envp_len = envp_len + len + 1;
+			// increment dst address since we need to put something on next iter
+			dst = dst + len + 1;
+			// pointer walk, __envp + i
+			i++;
+		} while (envp_len < ENVP_MAX);
+	}
+
+	/*
+	at this point, we shoul've collected envp from
+		* 0x1001 PATH=/bin
+		* 0x1002 VARIABLE=value
+		* 0x1002 some_more_env_var=1
+	to
+		* 0x1234 PATH=/bin\0VARIABLE=value\0some_more_env_var=1\0\0\0\0
+	*/
+
+	envp[ENVP_MAX - 1] = '\0';
+
+#ifdef CONFIG_KSU_DEBUG
+	pr_info("%s: filename: %s argv[1]:%s envp_len: %zu\n", __func__, path, argv1, envp_len);
+#endif
+	return ksu_handle_bprm_ksud(path, argv1, envp, envp_len);
 }
 
 static int sys_read_handler_pre(struct kprobe *p, struct pt_regs *regs)
