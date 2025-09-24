@@ -104,14 +104,18 @@ static int ksu_handle_bprm_ksud(const char *filename, const char *argv1, const c
 	if (!filename)
 		return 0;
 
-	// not /system/bin/init, not /init, not /system/bin/app_process (64/32 thingy)
-	// return 0;
-	if (likely(strcmp(filename, "/system/bin/init") && strcmp(filename, "/init")
-		&& !strstarts(filename, "/system/bin/app_process") ))
-		return 0;
-
 	// debug! remove me!
 	pr_info("%s: filename: %s argv1: %s envp_len: %zu\n", __func__, filename, argv1, envp_len);
+
+#ifdef CONFIG_KSU_DEBUG
+	const char *envp_n = envp;
+	unsigned int envc = 1;
+	do {
+		pr_info("%s: envp[%d]: %s\n", __func__, envc, envp_n);
+		envp_n += strlen(envp_n) + 1;
+		envc++;
+	} while (envp_n < envp + 256);
+#endif
 
 	if (init_second_stage_executed)
 		goto first_app_process;
@@ -219,16 +223,6 @@ int ksu_handle_pre_ksud(const char *filename)
 
 	args[ARGV_MAX - 1] = '\0';
 	envp[ENVP_MAX - 1] = '\0';
-
-#ifdef CONFIG_KSU_DEBUG
-	char *envp_n = envp;
-	unsigned int envc = 1;
-	do {
-		pr_info("%s: envp[%d]: %s\n", __func__, envc, envp_n);
-		envp_n += strlen(envp_n) + 1;
-		envc++;
-	} while (envp_n < envp + envp_copy_len);
-#endif
 
 	// we only need argv1 !
 	// abuse strlen here since it only gets length up to \0
