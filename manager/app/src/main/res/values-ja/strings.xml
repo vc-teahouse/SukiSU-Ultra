@@ -413,8 +413,6 @@
     <string name="susfs_try_umount_added_success">追加されたパスのアンマウントに成功しました: %s</string>
     <string name="susfs_try_umount_added_saved">アンマウントのパスの保存に成功しました: %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">実行を確認してアンマウントを試す</string>
-    <string name="susfs_run_umount_confirm_message">設定されたすべてのアンマウントの試行操作が直ちに実行されます。続行してもよろしいですか？</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">SUS パスをリセット</string>
     <string name="susfs_reset_paths_message">すべての SUS パスの構成が消去されます。続行してもよろしいですか？</string>
@@ -513,7 +511,6 @@
     <string name="susfs_hide_mounts_current_setting">現在の設定: %s</string>
     <string name="susfs_hide_mounts_setting_all">すべてのプロセスを非表示</string>
     <string name="susfs_hide_mounts_setting_non_ksu">非 KSU プロセスのみ非表示</string>
-    <string name="susfs_run">実行</string>
     <string name="kernel_simple_kernel">簡潔モードなカーネル バージョン</string>
     <string name="kernel_simple_kernel_summary">SukiSU のカーネル バージョンによって表示されるクリーンモードを有効または無効します。</string>
     <string name="susfs_android_data_path_set">Android データパスが設定されました: %s</string>
@@ -555,10 +552,6 @@
     <string name="kstat_config_updated">Kstat の構成を更新</string>
     <string name="kstat_path_updated">Kstat のパスを更新</string>
     <string name="susfs_update_full_clone">フルクローンの SuSFS を更新</string>
-    <string name="umount_zygote_iso_service">Zygote 分離サービスをアンマウント</string>
-    <string name="umount_zygote_iso_service_description">このオプションを有効化すると、システムの起動時に Zygote 分離サービスのマウントポイントがアンマウントされます。</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote 分離サービスのアンマウントが有効です</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote 分離サービスのアンマウントが無効です</string>
     <string name="app_paths_section">アプリのパス</string>
     <string name="other_paths_section">その他のパス</string>
     <string name="add_custom_path">その他</string>

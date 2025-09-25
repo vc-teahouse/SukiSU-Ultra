@@ -413,8 +413,6 @@
     <string name="susfs_try_umount_added_success">Попытка размонтировать путь успешно добавлена： %s</string>
     <string name="susfs_try_umount_added_saved">Попытка размонтировать путь успешно сохранена： %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">Подтверждение запуска попробовать размонтировать</string>
-    <string name="susfs_run_umount_confirm_message">Это немедленно выполнит все настроенные операции размонтирования. Вы уверены, что хотите продолжить?</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">Сбросить SUS пути</string>
     <string name="susfs_reset_paths_message">Это очистит все конфигурации пути SUS. Вы уверены, что хотите продолжить?</string>
@@ -513,7 +511,6 @@
     <string name="susfs_hide_mounts_current_setting">Текущие настройки: %s</string>
     <string name="susfs_hide_mounts_setting_all">Скрыть для всех процессов</string>
     <string name="susfs_hide_mounts_setting_non_ksu">Скрыть только для процессов, не связанных с KSU</string>
-    <string name="susfs_run">Запустить</string>
     <string name="kernel_simple_kernel">Скрыть доп. информацию о ядре</string>
     <string name="kernel_simple_kernel_summary">Включить или отключить чистый режим, отображаемой версии ядра SukiSU</string>
     <string name="susfs_android_data_path_set">Путь к данным Android был установлен на: %s</string>
@@ -555,10 +552,6 @@
     <string name="kstat_config_updated">Обновить конфиг Kstat</string>
     <string name="kstat_path_updated">Обновить путь Kstat</string>
     <string name="susfs_update_full_clone">Полное обновление клона SuSFS</string>
-    <string name="umount_zygote_iso_service">Размонтировать сервис изоляции Zygote</string>
-    <string name="umount_zygote_iso_service_description">Включите эту опцию, чтобы размонтировать точки монтирования Zygote при запуске системы</string>
-    <string name="umount_zygote_iso_service_enabled">Размонтирование служб Zygote включено</string>
-    <string name="umount_zygote_iso_service_disabled">Размонтирование служб Zygote выключено</string>
     <string name="app_paths_section">Путь к приложению</string>
     <string name="other_paths_section">Другие пути</string>
     <string name="add_custom_path">Другое</string>

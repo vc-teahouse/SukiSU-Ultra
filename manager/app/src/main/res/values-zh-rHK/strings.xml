@@ -408,8 +408,6 @@
     <string name="susfs_try_umount_added_success">嘗試 umount 路徑添加成功： %s</string>
     <string name="susfs_try_umount_added_saved">嘗試 umount 路徑存儲成功： %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">確認運行嘗試卸載</string>
-    <string name="susfs_run_umount_confirm_message">這將立即執行所有已配置嘅嘗試卸載操作，確定要繼續嗎？</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">重置 SuS 路徑</string>
     <string name="susfs_reset_paths_message">這將清除所有 SuS 路徑配置，確定要繼續嗎？</string>
@@ -508,7 +506,6 @@
     <string name="susfs_hide_mounts_current_setting">而家嘅配置: %s</string>
     <string name="susfs_hide_mounts_setting_all">對所有程序隱藏</string>
     <string name="susfs_hide_mounts_setting_non_ksu">淨係對非 KS&gt; 程序隱藏</string>
-    <string name="susfs_run">執行</string>
     <string name="kernel_simple_kernel">核心版本簡潔模式</string>
     <string name="kernel_simple_kernel_summary">啟用或者禁用 SukiSU 核心版本顯示嘅簡潔模式</string>
     <string name="susfs_android_data_path_set">Android Data 路徑已配置為: %s</string>
@@ -550,10 +547,6 @@
     <string name="kstat_config_updated">Kstat 配置更新</string>
     <string name="kstat_path_updated">Kstat 路徑更新</string>
     <string name="susfs_update_full_clone">Susfs 完整克隆更新</string>
-    <string name="umount_zygote_iso_service">解除安裝 Zygote 隔離服務</string>
-    <string name="umount_zygote_iso_service_description">啟用此選項將喺系統啟動時解除安裝 Zygote 隔離服務掛載點</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote 隔離服務解除安裝已啟用</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote 隔離服務解除安裝已禁用</string>
     <string name="app_paths_section">應用路徑</string>
     <string name="other_paths_section">其他路徑</string>
     <string name="add_custom_path">其他</string>

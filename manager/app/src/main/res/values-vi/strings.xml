@@ -411,8 +411,6 @@
     <string name="susfs_try_umount_added_success">Đường dẫn Try Umount đã thêm thành công: %s</string>
     <string name="susfs_try_umount_added_saved">Đường dẫn Try Umount đã lưu thành công: %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">Xác nhận chạy Try Umount</string>
-    <string name="susfs_run_umount_confirm_message">Thao tác này sẽ áp dụng ngay lập tức tất cả các thiết lập Try Umount đã cấu hình. Bạn có chắc chắn muốn tiếp tục không?</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">Khôi phục Đường dẫn SuS</string>
     <string name="susfs_reset_paths_message">Thao tác này sẽ xóa tất cả các cấu hình Đường dẫn SuS. Bạn có chắc chắn muốn tiếp tục không?</string>
@@ -511,7 +509,6 @@
     <string name="susfs_hide_mounts_current_setting">Cài đặt hiện tại: %s</string>
     <string name="susfs_hide_mounts_setting_all">Ẩn khỏi tất cả các tiến trình</string>
     <string name="susfs_hide_mounts_setting_non_ksu">Chỉ ẩn đối với các tiến trình không phải KSU</string>
-    <string name="susfs_run">Chạy</string>
     <string name="kernel_simple_kernel">Hiển thị tóm tắt \"Phiên bản Kernel\"</string>
     <string name="kernel_simple_kernel_summary">Tóm tắt hiển thị phiên bản Kernel cho ngắn gọn</string>
     <string name="susfs_android_data_path_set">Đường dẫn Android Data đã được đặt thành: %s</string>
@@ -553,10 +550,6 @@
     <string name="kstat_config_updated">Cập nhật cấu hình Kstat</string>
     <string name="kstat_path_updated">Cập nhật Đường dẫn Kstat</string>
     <string name="susfs_update_full_clone">Cập nhật bản sao SuSFS đầy đủ</string>
-    <string name="umount_zygote_iso_service">Umount dịch vụ cô lập Zygote</string>
-    <string name="umount_zygote_iso_service_description">Umount các điểm dịch vụ cô lập Zygote khi khởi động hệ thống</string>
-    <string name="umount_zygote_iso_service_enabled">Umount dịch vụ cô lập Zygote đã bật</string>
-    <string name="umount_zygote_iso_service_disabled">Umount dịch vụ cô lập Zygote đã tắt</string>
     <string name="app_paths_section">Đường dẫn ứng dụng</string>
     <string name="other_paths_section">Đường dẫn khác</string>
     <string name="add_custom_path">Khác</string>

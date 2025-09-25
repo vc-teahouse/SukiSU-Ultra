@@ -411,8 +411,6 @@
     <string name="susfs_try_umount_added_success">尝试 umount 路径添加成功： %s</string>
     <string name="susfs_try_umount_added_saved">尝试 umount 路径保存成功： %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">确认运行尝试卸载</string>
-    <string name="susfs_run_umount_confirm_message">这将立即执行所有已配置的尝试卸载操作，确定要继续吗？</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">重置 SuS 路径</string>
     <string name="susfs_reset_paths_message">这将清除所有 SuS 路径配置，确定要继续吗？</string>
@@ -511,7 +509,6 @@
     <string name="susfs_hide_mounts_current_setting">当前设置: %s</string>
     <string name="susfs_hide_mounts_setting_all">对所有进程隐藏</string>
     <string name="susfs_hide_mounts_setting_non_ksu">仅对非 KSU 进程隐藏</string>
-    <string name="susfs_run">运行</string>
     <string name="kernel_simple_kernel">内核版本简洁模式</string>
     <string name="kernel_simple_kernel_summary">启用或禁用 SukiSU 内核版本显示的简洁模式</string>
     <string name="susfs_android_data_path_set">Android Data 路径已设置为: %s</string>
@@ -553,10 +550,6 @@
     <string name="kstat_config_updated">Kstat 配置更新</string>
     <string name="kstat_path_updated">Kstat 路径更新</string>
     <string name="susfs_update_full_clone">Susfs 完整克隆更新</string>
-    <string name="umount_zygote_iso_service">卸载 Zygote 隔离服务</string>
-    <string name="umount_zygote_iso_service_description">启用此选项将在系统启动时卸载 Zygote 隔离服务挂载点</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote 隔离服务卸载已启用</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote 隔离服务卸载已禁用</string>
     <string name="app_paths_section">应用路径</string>
     <string name="other_paths_section">其他路径</string>
     <string name="add_custom_path">其他</string>
@@ -635,20 +628,15 @@
     <string name="kpm_preparing_tools">准备 KPM 修补工具</string>
     <string name="kpm_applying_patch">正在应用 KPM 修补</string>
     <string name="kpm_undoing_patch">正在撤销 KPM 修补</string>
-    <string name="kpm_tools_prepared">KPM 工具准备完成</string>
     <string name="kpm_found_image_file">找到 Image 文件: %s</string>
     <string name="kpm_patch_success">KPM 修补成功</string>
     <string name="kpm_undo_patch_success">KPM 撤销修补成功</string>
     <string name="kpm_file_repacked">文件重新打包完成</string>
     <!-- KPM错误信息 -->
-    <string name="kpm_extract_kptools_failed">提取 kptools 工具失败</string>
-    <string name="kpm_extract_kpimg_failed">提取 kpimg 文件失败</string>
-    <string name="kpm_prepare_tools_failed">准备 KPM 工具失败: %s</string>
     <string name="kpm_extract_zip_failed">解压压缩包失败</string>
     <string name="kpm_image_file_not_found">未找到 Image 文件</string>
     <string name="kpm_patch_failed">KPM 修补失败</string>
     <string name="kpm_undo_patch_failed">KPM 撤销修补失败</string>
-    <string name="kpm_repack_zip_failed">重新打包压缩文件失败</string>
     <string name="kpm_patch_operation_failed">KPM 修补操作失败: %s</string>
     <!-- KPM选项单选按钮组字符串 -->
     <string name="kpm_follow_kernel_file">跟随内核</string>
@@ -665,5 +653,4 @@
     <string name="clean_runtime_environment_confirm">您确定要清理运行环境吗？这将停止扫描服务并删除相关文件</string>
     <string name="clean_runtime_environment_success">运行环境清理成功</string>
     <string name="clean_runtime_environment_failed">运行环境清理失败</string>
-    <string name="clean_runtime_environment_error">清理运行环境时出错：%s</string>
 </resources>

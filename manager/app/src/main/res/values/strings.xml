@@ -413,8 +413,6 @@
     <string name="susfs_try_umount_added_success">Try to umount path added successfully： %s</string>
     <string name="susfs_try_umount_added_saved">Attempted umount path save succeeded： %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">Confirm Run Try Umount</string>
-    <string name="susfs_run_umount_confirm_message">This will immediately execute all configured try umount operations. Are you sure you want to continue?</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">Reset SUS Paths</string>
     <string name="susfs_reset_paths_message">This will clear all SUS path configurations. Are you sure you want to continue?</string>
@@ -513,7 +511,6 @@
     <string name="susfs_hide_mounts_current_setting">Current setting: %s</string>
     <string name="susfs_hide_mounts_setting_all">Hide for all processes</string>
     <string name="susfs_hide_mounts_setting_non_ksu">Hide only for non-KSU processes</string>
-    <string name="susfs_run">Run</string>
     <string name="kernel_simple_kernel">Kernel Version Concise Mode</string>
     <string name="kernel_simple_kernel_summary">Enable or disable the clean mode displayed by the SukiSU kernel version</string>
     <string name="susfs_android_data_path_set">Android Data path has been set to: %s</string>
@@ -555,10 +552,6 @@
     <string name="kstat_config_updated">Kstat config update</string>
     <string name="kstat_path_updated">Kstat path update</string>
     <string name="susfs_update_full_clone">Susfs update full clone</string>
-    <string name="umount_zygote_iso_service">Unmount Zygote Isolation Service</string>
-    <string name="umount_zygote_iso_service_description">Enable this option to unmount Zygote isolation service mount points at system startup</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote isolation service unmount enabled</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote isolation service unmount disabled</string>
     <string name="app_paths_section">Application Path</string>
     <string name="other_paths_section">Other paths</string>
     <string name="add_custom_path">Other</string>
@@ -643,20 +636,15 @@ Important Note:\n
     <string name="kpm_preparing_tools">Preparing KPM tools</string>
     <string name="kpm_applying_patch">Applying KPM patch</string>
     <string name="kpm_undoing_patch">Undoing KPM patch</string>
-    <string name="kpm_tools_prepared">KPM tools prepared</string>
     <string name="kpm_found_image_file">Found Image file: %s</string>
     <string name="kpm_patch_success">KPM patch applied successfully</string>
     <string name="kpm_undo_patch_success">KPM patch undone successfully</string>
     <string name="kpm_file_repacked">File repacked successfully</string>
     <!-- KPM error messages -->
-    <string name="kpm_extract_kptools_failed">Failed to extract kptools</string>
-    <string name="kpm_extract_kpimg_failed">Failed to extract kpimg file</string>
-    <string name="kpm_prepare_tools_failed">Failed to prepare KPM tools: %s</string>
     <string name="kpm_extract_zip_failed">Failed to extract zip file</string>
     <string name="kpm_image_file_not_found">Image file not found</string>
     <string name="kpm_patch_failed">KPM patch failed</string>
     <string name="kpm_undo_patch_failed">KPM undo patch failed</string>
-    <string name="kpm_repack_zip_failed">Failed to repack zip file</string>
     <string name="kpm_patch_operation_failed">KPM patch operation failed: %s</string>
     <!-- KPM option radio group strings -->
     <string name="kpm_follow_kernel_file">Follow Kernel</string>
@@ -673,5 +661,4 @@ Important Note:\n
     <string name="clean_runtime_environment_confirm">Are you sure you want to clean the runtime environment? This will stop the scanner service and remove related files.</string>
     <string name="clean_runtime_environment_success">Runtime environment cleaned successfully</string>
     <string name="clean_runtime_environment_failed">Failed to clean runtime environment</string>
-    <string name="clean_runtime_environment_error">Error cleaning runtime environment: %s</string>
 </resources>

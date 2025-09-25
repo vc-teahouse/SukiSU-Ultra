@@ -411,8 +411,6 @@
     <string name="susfs_try_umount_added_success">Bağlamayı kaldırmayı dene yolu başarıyla eklendi: %s</string>
     <string name="susfs_try_umount_added_saved">Bağlamayı kaldırmayı dene yolu kaydetme başarılı: %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">Bağlamayı Kaldırmayı Dene Çalıştırmayı Onayla</string>
-    <string name="susfs_run_umount_confirm_message">Bu, yapılandırılmış tüm bağlamayı kaldırmayı dene işlemlerini hemen çalıştıracaktır. Devam etmek istiyor musunuz?</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">SUS Yollarını Sıfırla</string>
     <string name="susfs_reset_paths_message">Bu, tüm SUS yol yapılandırmalarını temizleyecektir. Devam etmek istiyor musunuz?</string>
@@ -511,7 +509,6 @@
     <string name="susfs_hide_mounts_current_setting">Mevcut ayar: %s</string>
     <string name="susfs_hide_mounts_setting_all">Tüm işlemler için gizle</string>
     <string name="susfs_hide_mounts_setting_non_ksu">Sadece KSU dışı işlemler için gizle</string>
-    <string name="susfs_run">Çalıştır</string>
     <string name="kernel_simple_kernel">Çekirdek Sürümü Özet Modu</string>
     <string name="kernel_simple_kernel_summary">SukiSU çekirdek sürümünün gösterdiği sade modu etkinleştirin veya devre dışı bırakın</string>
     <string name="susfs_android_data_path_set">Android Veri yolu şuna ayarlandı: %s</string>
@@ -553,10 +550,6 @@
     <string name="kstat_config_updated">Kstat yapılandırması güncellendi</string>
     <string name="kstat_path_updated">Kstat yolu güncellendi</string>
     <string name="susfs_update_full_clone">Susfs tam klon güncellemesi</string>
-    <string name="umount_zygote_iso_service">Zygote İzolasyon Servisi Bağlantısını Kes</string>
-    <string name="umount_zygote_iso_service_description">Sistem başlangıcında Zygote izolasyon servisi bağlama noktalarının bağlantısını kesmek için bu seçeneği etkinleştirin</string>
-    <string name="umount_zygote_iso_service_enabled">Zygote izolasyon servisi bağlantı kesme etkinleştirildi</string>
-    <string name="umount_zygote_iso_service_disabled">Zygote izolasyon servisi bağlantı kesme devre dışı bırakıldı</string>
     <string name="app_paths_section">Uygulama Yolu</string>
     <string name="other_paths_section">Diğer yollar</string>
     <string name="add_custom_path">Diğer</string>

@@ -413,8 +413,6 @@
     <string name="susfs_try_umount_added_success">Jalur coba umount berhasil ditambahkan： %s</string>
     <string name="susfs_try_umount_added_saved">Jalur coba umount berhasil disimpan： %s</string>
     <!-- SuSFS Run Umount -->
-    <string name="susfs_run_umount_confirm_title">Konfirmasi Jalankan Coba Umount</string>
-    <string name="susfs_run_umount_confirm_message">Ini akan segera mengeksekusi semua operasi umount yang dikonfigurasi. Apakah Anda yakin ingin melanjutkan?</string>
     <!-- SuSFS Reset Categories -->
     <string name="susfs_reset_paths_title">Setel Ulang Jalur SUS</string>
     <string name="susfs_reset_paths_message">Ini akan menghapus semua konfigurasi jalur SUS. Apakah Anda yakin ingin melanjutkan?</string>
@@ -513,7 +511,6 @@
     <string name="susfs_hide_mounts_current_setting">Pengaturan saat ini: %s</string>
     <string name="susfs_hide_mounts_setting_all">Sembunyikan untuk semua proses</string>
     <string name="susfs_hide_mounts_setting_non_ksu">Sembunyikan hanya untuk proses non-KSU</string>
-    <string name="susfs_run">Jalankan</string>
     <string name="kernel_simple_kernel">Mode Ringkas Versi Kernel</string>
     <string name="kernel_simple_kernel_summary">Aktifkan atau nonaktifkan mode bersih yang ditampilkan oleh versi kernel SukiSU</string>
     <string name="susfs_android_data_path_set">Jalur Data Android telah diatur ke: %s</string>
@@ -555,10 +552,6 @@
     <string name="kstat_config_updated">Pembaruan konfigurasi Kstat</string>
     <string name="kstat_path_updated">Pembaruan jalur Kstat</string>
     <string name="susfs_update_full_clone">Pembaruan full clone Susfs</string>
-    <string name="umount_zygote_iso_service">Lepas Layanan Isolasi Zygote</string>
-    <string name="umount_zygote_iso_service_description">Aktifkan opsi ini untuk melepaskan titik pemasangan layanan isolasi Zygote saat sistem mulai</string>
-    <string name="umount_zygote_iso_service_enabled">Lepas layanan isolasi Zygote diaktifkan</string>
-    <string name="umount_zygote_iso_service_disabled">Lepas layanan isolasi Zygote dinonaktifkan</string>
     <string name="app_paths_section">Jalur Aplikasi</string>
     <string name="other_paths_section">Jalur lainnya</string>
     <string name="add_custom_path">Lainnya</string>
