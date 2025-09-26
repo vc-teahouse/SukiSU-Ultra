@@ -557,36 +557,28 @@ fun getKpmVersion(): String {
 
 fun getZygiskImplement(): String {
     val shell = getRootShell()
-    val modulesPath = "/data/adb/modules"
 
-    return try {
-        val moduleDirs = shell.newJob()
-            .add("ls $modulesPath")
-            .to(ArrayList<String>(), null)
-            .exec()
-            .out
+    val zygiskModuleIds = listOf(
+        "zygisksu",
+        "rezygisk",
+        "shirokozygisk"
+    )
 
-        moduleDirs.firstNotNullOfOrNull { moduleName ->
-            if (!moduleName.matches(Regex(".*[a-zA-Z]*zygisk[a-zA-Z]*.*", RegexOption.IGNORE_CASE))) {
-                return@firstNotNullOfOrNull null
+    for (moduleId in zygiskModuleIds) {
+        val modulePath = "/data/adb/modules/$moduleId"
+        when {
+            ShellUtils.fastCmdResult(shell, "test -f $modulePath/module.prop && test ! -f $modulePath/disable") -> {
+                val result = ShellUtils.fastCmd(shell, "grep '^name=' $modulePath/module.prop | cut -d'=' -f2")
+                Log.i(TAG, "Zygisk implement: $result")
+                return result
             }
-
-            if (moduleName.contains("lsposed", ignoreCase = true)) {
-                return@firstNotNullOfOrNull null
-            }
-
-            val modulePath = "$modulesPath/$moduleName"
-            val isEnabled = ShellUtils.fastCmdResult(shell, "test -f $modulePath/module.prop && test ! -f $modulePath/disable")
-            if (!isEnabled) return@firstNotNullOfOrNull null
-            ShellUtils.fastCmd(shell, "grep '^name=' $modulePath/module.prop | cut -d'=' -f2")
-                .takeIf { it.isNotBlank() }
-        } ?: "None"
-    } catch (_: Exception) {
-        "None"
-    }.also { result ->
-        Log.i(TAG, "Zygisk implement: $result")
+        }
     }
+
+    Log.i(TAG, "Zygisk implement: None")
+    return "None"
 }
+
 fun getUidScannerDaemonPath(): String {
     return ksuApp.applicationInfo.nativeLibraryDir + File.separator + "libuid_scanner.so"
 }
