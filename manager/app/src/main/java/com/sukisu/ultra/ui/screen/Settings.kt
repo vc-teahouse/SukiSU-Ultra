@@ -46,11 +46,7 @@ import com.sukisu.ultra.ui.theme.CardConfig
 import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
 import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
-import com.sukisu.ultra.ui.util.LocalSnackbarHost
-import com.sukisu.ultra.ui.util.getBugreportFile
-import com.sukisu.ultra.ui.util.getRootShell
-import com.sukisu.ultra.ui.util.setUidAutoScan
-import com.sukisu.ultra.ui.util.setUidMultiUserScan
+import com.sukisu.ultra.ui.util.*
 import com.topjohnwu.superuser.ShellUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -181,6 +177,7 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                                 forceSignatureVerification = enabled
                             }
                         )
+                        // UID 扫描开关
                         if (Natives.version >= Natives.MINIMAL_SUPPORTED_UID_SCANNER) {
                             var uidAutoScanEnabled by rememberSaveable {
                                 mutableStateOf(prefs.getBoolean("uid_auto_scan", false))
@@ -189,6 +186,17 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                             var uidMultiUserScanEnabled by rememberSaveable {
                                 mutableStateOf(prefs.getBoolean("uid_multi_user_scan", false))
                             }
+
+                            LaunchedEffect(Unit) {
+                                uidAutoScanEnabled = Natives.isUidScannerEnabled()
+                                uidMultiUserScanEnabled = getUidMultiUserScan()
+
+                                prefs.edit {
+                                    putBoolean("uid_auto_scan", uidAutoScanEnabled)
+                                    putBoolean("uid_multi_user_scan", uidMultiUserScanEnabled)
+                                }
+                            }
+
                             // 用户态扫描应用列表开关
                             SwitchItem(
                                 icon = Icons.Filled.Scanner,
@@ -280,6 +288,8 @@ fun SettingScreen(navigator: DestinationsNavigator) {
 
                                                     uidMultiUserScanEnabled = false
                                                     prefs.edit { putBoolean("uid_multi_user_scan", false) }
+
+                                                    Natives.setUidScannerEnabled(false)
 
                                                     snackBarHost.showSnackbar(context.getString(R.string.clean_runtime_environment_success))
                                                 } else {
@@ -470,6 +480,7 @@ fun cleanRuntimeEnvironment(): Boolean {
         ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/uid_scanner")
         ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/ksu/bin/user_uid")
         ShellUtils.fastCmdResult(shell, "rm -rf /data/adb/service.d/uid_scanner.sh")
+        Natives.clearUidScannerEnvironment()
         true
     } catch (_: Exception) {
         false

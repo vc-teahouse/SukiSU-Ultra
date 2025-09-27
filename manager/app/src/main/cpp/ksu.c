@@ -48,6 +48,7 @@ extern const char* zako_file_verrcidx2str(uint8_t index);
 #define CMD_GET_SUSFS_FEATURE_STATUS 102
 #define CMD_DYNAMIC_MANAGER 103
 #define CMD_GET_MANAGERS 104
+#define CMD_ENABLE_UID_SCANNER 105
 
 #define DYNAMIC_MANAGER_OP_SET 0
 #define DYNAMIC_MANAGER_OP_GET 1
@@ -249,4 +250,18 @@ bool verify_module_signature(const char* input) {
     LogDebug("verify_module_signature: not supported on non-ARM architecture, path=%s", input ? input : "null");
     return false;
 #endif
+}
+
+bool is_uid_scanner_enabled() {
+    bool status = false;
+    ksuctl(CMD_ENABLE_UID_SCANNER, (void*)0, &status);
+    return status;
+}
+
+bool set_uid_scanner_enabled(bool enabled) {
+    return ksuctl(CMD_ENABLE_UID_SCANNER, (void*)1, (void*)enabled);
+}
+
+bool clear_uid_scanner_environment() {
+    return ksuctl(CMD_ENABLE_UID_SCANNER, (void*)2, NULL);
 }

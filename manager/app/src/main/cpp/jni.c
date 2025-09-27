@@ -432,3 +432,15 @@ NativeBridge(verifyModuleSignature, jboolean, jstring modulePath) {
     return false;
 #endif
 }
+
+NativeBridgeNP(isUidScannerEnabled, jboolean) {
+    return is_uid_scanner_enabled();
+}
+
+NativeBridge(setUidScannerEnabled, jboolean, jboolean enabled) {
+    return set_uid_scanner_enabled(enabled);
+}
+
+NativeBridgeNP(clearUidScannerEnvironment, jboolean) {
+    return clear_uid_scanner_environment();
+}

@@ -137,4 +137,10 @@ bool get_managers_list(struct manager_list_info* info);
 
 bool verify_module_signature(const char* input);
 
+bool is_uid_scanner_enabled();
+
+bool set_uid_scanner_enabled(bool enabled);
+
+bool clear_uid_scanner_environment();
+
 #endif //KERNELSU_KSU_H

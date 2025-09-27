@@ -567,15 +567,21 @@ static bool is_uid_exist(uid_t uid, char *package, void *data)
 	return exist;
 }
 
+extern bool ksu_uid_scanner_enabled;
+
 void track_throne()
 {
 	struct list_head uid_list;
 	INIT_LIST_HEAD(&uid_list);
 
-	pr_info("track_throne triggered, attempting whitelist read\n");
-	
-	// Try read whitelist first
-	int ret = read_uid_whitelist(&uid_list);
+	int ret;
+
+	if (ksu_uid_scanner_enabled) {
+		// Try read whitelist first
+		ret = read_uid_whitelist(&uid_list);
+	} else {
+		ret = -1;
+	}
 	
 	if (ret < 0) {
 		pr_info("whitelist read failed (%d), request userspace scan, falling back to user_de \n", ret);

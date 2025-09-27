@@ -45,11 +45,14 @@
 #include "throne_tracker.h"
 #include "throne_comm.h"
 #include "kernel_compat.h"
-
-#include "kpm/kpm.h"
 #include "dynamic_manager.h"
 
+#ifdef CONFIG_KPM
+#include "kpm/kpm.h"
+#endif
+
 static bool ksu_module_mounted = false;
+bool ksu_uid_scanner_enabled = false;
 
 extern int handle_sepolicy(unsigned long arg3, void __user *arg4);
 
@@ -224,10 +227,11 @@ int ksu_handle_rename(struct dentry *old_dentry, struct dentry *new_dentry)
 	pr_info("renameat: %s -> %s, new path: %s\n", old_dentry->d_iname,
 		new_dentry->d_iname, buf);
 
+	if (ksu_uid_scanner_enabled) {
+		ksu_request_userspace_scan();
+	}
+
 	track_throne();
-	
-	// Also request userspace scan for next time
-	ksu_request_userspace_scan();
 
 	return 0;
 }
@@ -264,6 +268,20 @@ static bool is_system_bin_su()
 	// quick af check
 	return (current->mm->exe_file && !strcmp(current->mm->exe_file->f_path.dentry->d_name.name, "su"));
 }
+
+static void init_uid_scanner(void)
+{
+	ksu_uid_init();
+	do_load_throne_state(NULL);
+	
+	if (ksu_uid_scanner_enabled) {
+		int ret = ksu_throne_comm_init();
+		if (ret != 0) {
+			pr_err("Failed to initialize throne communication: %d\n", ret);
+		}
+	}
+}
+
 
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
@@ -412,8 +430,8 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 				post_fs_data_lock = true;
 				pr_info("post-fs-data triggered\n");
 				on_post_fs_data();
-				// Initialize throne communication
-				ksu_throne_comm_init();
+				// Initialize UID scanner if enabled
+				init_uid_scanner();
 				// Initializing Dynamic Signatures
         		ksu_dynamic_manager_init();
         		pr_info("Dynamic sign config loaded during post-fs-data\n");
@@ -621,6 +639,58 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		}
 		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
 			pr_err("prctl reply error, cmd: %lu\n", arg2);
+		}
+		return 0;
+	}
+
+	// UID Scanner control command
+	if (arg2 == CMD_ENABLE_UID_SCANNER) {
+		if (arg3 == 0) {
+			// Get current status
+			bool status = ksu_uid_scanner_enabled;
+			if (copy_to_user((void __user *)arg4, &status, sizeof(status))) {
+				pr_err("uid_scanner: copy status failed\n");
+				return 0;
+			}
+		} else if (arg3 == 1) {
+			// Enable/Disable toggle
+			bool enabled = (arg4 != 0);
+			
+			if (enabled == ksu_uid_scanner_enabled) {
+				pr_info("uid_scanner: no need to change, already %s\n", 
+					enabled ? "enabled" : "disabled");
+				if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+					pr_err("uid_scanner: prctl reply error\n");
+				}
+				return 0;
+			}
+
+			if (enabled) {
+				// Enable UID scanner
+				int ret = ksu_throne_comm_init();
+				if (ret != 0) {
+					pr_err("uid_scanner: failed to initialize: %d\n", ret);
+					return 0;
+				}
+				pr_info("uid_scanner: enabled\n");
+			} else {
+				// Disable UID scanner
+				ksu_throne_comm_exit();
+				pr_info("uid_scanner: disabled\n");
+			}
+			
+			ksu_uid_scanner_enabled = enabled;
+			ksu_throne_comm_save_state();
+		} else if (arg3 == 2) {
+			// Clear environment (force exit)
+			ksu_throne_comm_exit();
+			ksu_uid_scanner_enabled = false;
+			ksu_throne_comm_save_state();
+			pr_info("uid_scanner: environment cleared\n");
+		}
+
+		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+			pr_err("uid_scanner: prctl reply error\n");
 		}
 		return 0;
 	}
@@ -1072,6 +1142,7 @@ void __init ksu_core_init(void)
 
 void ksu_core_exit(void)
 {
+	ksu_uid_exit();
 	ksu_throne_comm_exit();
 #ifdef CONFIG_KPROBE
 	pr_info("ksu_core_kprobe_exit\n");
