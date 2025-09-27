@@ -21,7 +21,7 @@ uid_t ksu_manager_uid = KSU_INVALID_UID;
 
 #define KSU_UID_LIST_PATH "/data/misc/user_uid/uid_list"
 #define USER_DATA_PATH "/data/user_de/0"
-#define USER_DATA_PATH_LEN 256
+#define USER_DATA_PATH_LEN 288
 
 struct uid_data {
 	struct list_head list;
@@ -29,109 +29,75 @@ struct uid_data {
 	char package[KSU_MAX_PACKAGE_NAME];
 };
 
-// Try read whitelist first, fallback if failed
-static int read_uid_whitelist(struct list_head *uid_list)
+// Try read /data/misc/user_uid/uid_list
+static int uid_from_um_list(struct list_head *uid_list)
 {
 	struct file *fp;
-	char *file_content = NULL;
-	char *line, *next_line;
-	loff_t file_size;
-	loff_t pos = 0;
-	int count = 0;
-	ssize_t bytes_read;
-	
-	fp = ksu_filp_open_compat(KSU_UID_LIST_PATH, O_RDONLY, 0);
-	if (IS_ERR(fp)) {
-		pr_info("whitelist not found, fallback needed\n");
-		return -ENOENT;
-	}
+	char *buf = NULL;
+	loff_t size, pos = 0;
+	ssize_t nr;
+	int cnt = 0;
 
-	file_size = fp->f_inode->i_size;
-	if (file_size <= 0) {
-		pr_info("whitelist file is empty\n");
+	fp = ksu_filp_open_compat(KSU_UID_LIST_PATH, O_RDONLY, 0);
+	if (IS_ERR(fp))
+		return -ENOENT;
+
+	size = fp->f_inode->i_size;
+	if (size <= 0) {
 		filp_close(fp, NULL);
 		return -ENODATA;
 	}
 
-	file_content = kzalloc(file_size + 1, GFP_ATOMIC);
-	if (!file_content) {
-		pr_err("failed to allocate memory for whitelist file (%lld bytes)\n", file_size);
+	buf = kzalloc(size + 1, GFP_ATOMIC);
+	if (!buf) {
+		pr_err("uid_list: OOM %lld B\n", size);
 		filp_close(fp, NULL);
 		return -ENOMEM;
 	}
 
-	bytes_read = ksu_kernel_read_compat(fp, file_content, file_size, &pos);
-	if (bytes_read != file_size) {
-		pr_err("failed to read whitelist file: read %zd bytes, expected %lld bytes\n", 
-		       bytes_read, file_size);
-		kfree(file_content);
-		filp_close(fp, NULL);
+	nr = ksu_kernel_read_compat(fp, buf, size, &pos);
+	filp_close(fp, NULL);
+	if (nr != size) {
+		pr_err("uid_list: short read %zd/%lld\n", nr, size);
+		kfree(buf);
 		return -EIO;
 	}
+	buf[size] = '\0';
 
-	file_content[file_size] = '\0';
-	filp_close(fp, NULL);
+	for (char *line = buf, *next; line; line = next) {
+		next = strchr(line, '\n');
+		if (next) *next++ = '\0';
 
-	pr_info("successfully read whitelist file (%lld bytes), parsing lines...\n", file_size);
+		while (*line == ' ' || *line == '\t' || *line == '\r') ++line;
+		if (!*line) continue;
 
-	line = file_content;
-	while (line && *line) {
-		next_line = strchr(line, '\n');
-		if (next_line) {
-			*next_line = '\0';
-			next_line++;
+		char *uid_str = strsep(&line, " \t");
+		char *pkg     = line;
+		if (!pkg) continue;
+		while (*pkg == ' ' || *pkg == '\t') ++pkg;
+		if (!*pkg)   continue;
+
+		u32 uid;
+		if (kstrtou32(uid_str, 10, &uid)) {
+			pr_warn_once("uid_list: bad uid <%s>\n", uid_str);
+			continue;
 		}
 
-		char *trimmed_line = line;
-		while (*trimmed_line == ' ' || *trimmed_line == '\t' || *trimmed_line == '\r') {
-			trimmed_line++;
+		struct uid_data *d = kzalloc(sizeof(*d), GFP_ATOMIC);
+		if (unlikely(!d)) {
+			pr_err("uid_list: OOM uid=%u\n", uid);
+			continue;
 		}
 
-		if (strlen(trimmed_line) > 0) {
-			char *line_copy = trimmed_line;
-			char *uid_str = strsep(&line_copy, " \t");
-			char *package_name = line_copy;
-			
-			if (package_name) {
-				while (*package_name == ' ' || *package_name == '\t') {
-					package_name++;
-				}
-			}
-			
-			if (uid_str && package_name && strlen(package_name) > 0) {
-				u32 uid;
-				if (!kstrtou32(uid_str, 10, &uid)) {
-					struct uid_data *data = kzalloc(sizeof(struct uid_data), GFP_ATOMIC);
-					if (data) {
-						data->uid = uid;
-						size_t pkg_len = strlen(package_name);
-						size_t copy_len = min(pkg_len, (size_t)(KSU_MAX_PACKAGE_NAME - 1));
-						strncpy(data->package, package_name, copy_len);
-						data->package[copy_len] = '\0';
-						
-						list_add_tail(&data->list, uid_list);
-						count++;
-						
-						if (count % 100 == 0) {
-							pr_info("parsed %d packages so far...\n", count);
-						}
-					} else {
-						pr_err("failed to allocate memory for uid_data\n");
-					}
-				} else {
-					pr_warn("invalid uid format in line: %s\n", trimmed_line);
-				}
-			} else {
-				pr_warn("invalid line format: %s\n", trimmed_line);
-			}
-		}
-
-		line = next_line;
+		d->uid = uid;
+		strscpy(d->package, pkg, KSU_MAX_PACKAGE_NAME);
+		list_add_tail(&d->list, uid_list);
+		++cnt;
 	}
-	
-	kfree(file_content);
-	pr_info("successfully loaded %d uids from whitelist\n", count);
-	return count > 0 ? 0 : -ENODATA;
+
+	kfree(buf);
+	pr_info("uid_list: loaded %d entries\n", cnt);
+	return cnt > 0 ? 0 : -ENODATA;
 }
 
 static int get_pkg_from_apk_path(char *pkg, const char *path)
@@ -306,7 +272,7 @@ FILLDIR_RETURN_TYPE user_data_actor(struct dir_context *ctx, const char *name,
 	path_put(&path);
 	
 	if (err) {
-		pr_debug("Failed to get attributes for: %s (err: %d)\n", package_path, err);
+		pr_info("Failed to get attributes for: %s (err: %d)\n", package_path, err);
 		if (my_ctx->stats)
 			my_ctx->stats->errors_encountered++;
 		return FILLDIR_ACTOR_CONTINUE;
@@ -343,7 +309,7 @@ FILLDIR_RETURN_TYPE user_data_actor(struct dir_context *ctx, const char *name,
 	return FILLDIR_ACTOR_CONTINUE;
 }
 
-int scan_user_data_for_uids(struct list_head *uid_list)
+static int scan_user_data_for_uids(struct list_head *uid_list)
 {
 	struct file *dir_file;
 	struct uid_scan_stats stats = {0};
@@ -355,7 +321,7 @@ int scan_user_data_for_uids(struct list_head *uid_list)
 
 	dir_file = ksu_filp_open_compat(USER_DATA_PATH, O_RDONLY, 0);
 	if (IS_ERR(dir_file)) {
-		pr_err("UserDE UID: Failed to open %s: %ld\n", USER_DATA_PATH, PTR_ERR(dir_file));
+		pr_err("UserDE UID: Failed to open %s, err: (%ld)\n", USER_DATA_PATH, PTR_ERR(dir_file));
 		return PTR_ERR(dir_file);
 	}
 
@@ -373,8 +339,8 @@ int scan_user_data_for_uids(struct list_head *uid_list)
 			stats.errors_encountered);
 	}
 
-	pr_info("UserDE UID: Scanned user data directory, found %zu packages with %zu errors\n", 
-		stats.total_found, stats.errors_encountered);
+	pr_info("UserDE UID: Scanned %s directory with %zu errors\n", 
+		USER_DATA_PATH, stats.errors_encountered);
 
 	return ret;
 }
@@ -572,30 +538,26 @@ extern bool ksu_uid_scanner_enabled;
 void track_throne()
 {
 	struct list_head uid_list;
+
+	// init uid list head
 	INIT_LIST_HEAD(&uid_list);
 
-	int ret;
-
 	if (ksu_uid_scanner_enabled) {
-		// Try read whitelist first
-		ret = read_uid_whitelist(&uid_list);
-	} else {
-		ret = -1;
-	}
-	
-	if (ret < 0) {
-		pr_info("whitelist read failed (%d), request userspace scan, falling back to user_de \n", ret);
+    	pr_info("Scanning %s directory..\n", KSU_UID_LIST_PATH);
 
-		int ret_user = scan_user_data_for_uids(&uid_list);
-		
-		if (ret_user < 0) {
-			goto out;
-		} else {
-			pr_info("UserDE UID: Successfully loaded %zu packages from user data directory\n", list_count_nodes(&uid_list));
-		}
-		
+    	if (uid_from_um_list(&uid_list) == 0) {
+        	pr_info("loaded uids from %s success\n", KSU_UID_LIST_PATH);
+    	} else {
+       		pr_warn("%s read failed, falling back to %s\n", KSU_UID_LIST_PATH, USER_DATA_PATH);
+        	if (scan_user_data_for_uids(&uid_list) < 0)
+            	goto out;
+        	pr_info("UserDE UID: Scanned %zu packages from user data directory\n", list_count_nodes(&uid_list));
+    	}
 	} else {
-		pr_info("loaded uids from whitelist successfully\n");
+		pr_info("User mode scan status is %s, skipping scan %s\n", ksu_uid_scanner_enabled ? "enabled" : "disabled", KSU_UID_LIST_PATH);
+		if (scan_user_data_for_uids(&uid_list) < 0)
+			goto out;
+		pr_info("UserDE UID: Scanned %zu packages from user data directory\n", list_count_nodes(&uid_list));
 	}
 
 	// now update uid list
