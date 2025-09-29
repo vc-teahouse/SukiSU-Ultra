@@ -464,7 +464,7 @@ fun AddTryUmountDialog(
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = umountModeExpanded) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true),
                             shape = RoundedCornerShape(8.dp)
                         )
                         ExposedDropdownMenu(

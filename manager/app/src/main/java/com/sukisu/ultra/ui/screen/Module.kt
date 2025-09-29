@@ -84,7 +84,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-// 菜单项数据类
 data class ModuleBottomSheetMenuItem(
     val icon: ImageVector,
     val titleRes: Int,
@@ -93,7 +92,7 @@ data class ModuleBottomSheetMenuItem(
 
 /**
  * @author ShirkNeko
- * @date 2025/5/31.
+ * @date 2025/9/29.
  */
 @SuppressLint("ResourceType", "AutoboxingStateCreation")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,24 +101,21 @@ data class ModuleBottomSheetMenuItem(
 fun ModuleScreen(navigator: DestinationsNavigator) {
     val viewModel = viewModel<ModuleViewModel>()
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("settings",MODE_PRIVATE)
+    val prefs = context.getSharedPreferences("settings", MODE_PRIVATE)
     val snackBarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
     val confirmDialog = rememberConfirmDialog()
     var lastClickTime by remember { mutableStateOf(0L) }
 
-    // 签名验证弹窗状态
     var showSignatureDialog by remember { mutableStateOf(false) }
     var signatureDialogMessage by remember { mutableStateOf("") }
     var isForceVerificationFailed by remember { mutableStateOf(false) }
     var pendingInstallAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
-    // 初始化缓存系统
     LaunchedEffect(Unit) {
         viewModel.initializeCache(context)
     }
 
-    // BottomSheet状态
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
@@ -280,7 +276,6 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
     val backupLauncher = ModuleModify.rememberModuleBackupLauncher(context, snackBarHost)
     val restoreLauncher = ModuleModify.rememberModuleRestoreLauncher(context, snackBarHost)
 
-
     LaunchedEffect(Unit) {
         if (viewModel.moduleList.isEmpty() || viewModel.isNeedRefresh) {
             viewModel.sortEnabledFirst = prefs.getBoolean("module_sort_enabled_first", false)
@@ -291,7 +286,6 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
 
     val isSafeMode = Natives.isSafeMode
     val hasMagisk = hasMagisk()
-
     val hideInstallButton = isSafeMode || hasMagisk
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -300,7 +294,6 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
         contract = ActivityResultContracts.StartActivityForResult()
     ) { viewModel.fetchModuleList() }
 
-    // BottomSheet菜单项
     val bottomSheetMenuItems = remember {
         listOf(
             ModuleBottomSheetMenuItem(
@@ -478,7 +471,6 @@ fun ModuleScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        // BottomSheet
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = {
@@ -620,7 +612,6 @@ private fun ModuleBottomSheetContent(
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
 
-        // 排序选项
         Column(
             modifier = Modifier.padding(horizontal = 24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -682,7 +673,6 @@ private fun ModuleBottomSheetContent(
 
 @Composable
 private fun ModuleBottomSheetMenuItemView(menuItem: ModuleBottomSheetMenuItem) {
-    // 添加交互状态
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -810,7 +800,6 @@ private fun ModuleList(
             return
         }
 
-        // changelog is not empty, show it and wait for confirm
         val confirmResult = confirmDialog.awaitConfirm(
             changelogText,
             content = changelog,
@@ -901,6 +890,7 @@ private fun ModuleList(
             reboot()
         }
     }
+
     PullToRefreshBox(
         modifier = boxModifier,
         onRefresh = {
@@ -1003,7 +993,6 @@ private fun ModuleList(
                             }
                         )
 
-                        // fix last item shadow incomplete in LazyColumn
                         Spacer(Modifier.height(1.dp))
                     }
                 }
@@ -1011,7 +1000,6 @@ private fun ModuleList(
         }
 
         DownloadListener(context, onInstallModule)
-
     }
 }
 
@@ -1044,7 +1032,6 @@ fun ModuleItem(
         val indication = LocalIndication.current
         val viewModel = viewModel<ModuleViewModel>()
 
-        // 使用缓存系统获取模块大小
         val sizeStr = remember(module.dirId) {
             viewModel.getModuleSize(module.dirId)
         }
@@ -1152,10 +1139,8 @@ fun ModuleItem(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .combinedClickable(
-                                    onClick = {
-                                    },
+                                    onClick = { },
                                     onLongClick = {
-                                        // 长按复制updateJson地址
                                         val clipData = ClipData.newPlainText(
                                             "Update JSON URL",
                                             module.updateJson
@@ -1163,7 +1148,6 @@ fun ModuleItem(
                                         clipboardManager.setPrimaryClip(clipData)
                                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
 
-                                        // 显示复制成功的提示
                                         Toast.makeText(
                                             context,
                                             context.getString(R.string.module_update_json_copied),
@@ -1202,8 +1186,8 @@ fun ModuleItem(
                 maxLines = 4,
                 textDecoration = textDecoration,
             )
-            if (!isHideTagRow) {
 
+            if (!isHideTagRow) {
                 Spacer(modifier = Modifier.height(12.dp))
                 // 文件夹名称和大小标签
                 Row(
@@ -1276,8 +1260,7 @@ fun ModuleItem(
                         onClick = { onClick(module) },
                         interactionSource = interactionSource,
                         contentPadding = ButtonDefaults.TextButtonContentPadding,
-
-                        ) {
+                    ) {
                         Icon(
                             modifier = Modifier.size(20.dp),
                             imageVector = Icons.AutoMirrored.Outlined.Wysiwyg,

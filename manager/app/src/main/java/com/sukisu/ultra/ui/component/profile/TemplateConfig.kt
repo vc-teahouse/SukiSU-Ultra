@@ -43,7 +43,7 @@ fun TemplateConfig(
         ) {
             OutlinedTextField(
                 modifier = Modifier
-                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth(),
                 readOnly = true,
                 label = { Text(stringResource(R.string.profile_template)) },

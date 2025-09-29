@@ -67,16 +67,12 @@ enum class AppPriority(val value: Int) {
     DEFAULT(3) // 默认应用
 }
 
-// 菜单项数据类
 data class BottomSheetMenuItem(
     val icon: ImageVector,
     val titleRes: Int,
     val onClick: () -> Unit
 )
 
-/**
- * 获取应用的优先级
- */
 private fun getAppPriority(app: SuperUserViewModel.AppInfo): AppPriority {
     return when {
         app.allowSu -> AppPriority.ROOT
@@ -85,9 +81,6 @@ private fun getAppPriority(app: SuperUserViewModel.AppInfo): AppPriority {
     }
 }
 
-/**
- * 获取多选模式的主按钮图标
- */
 private fun getMultiSelectMainIcon(isExpanded: Boolean): ImageVector {
     return if (isExpanded) {
         Icons.Filled.Close
@@ -96,9 +89,6 @@ private fun getMultiSelectMainIcon(isExpanded: Boolean): ImageVector {
     }
 }
 
-/**
- * 获取单选模式的主按钮图标
- */
 private fun getSingleSelectMainIcon(isExpanded: Boolean): ImageVector {
     return if (isExpanded) {
         Icons.Filled.Close
@@ -122,17 +112,14 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
     val context = LocalContext.current
     val snackBarHostState = remember { SnackbarHostState() }
 
-    // 使用ViewModel中的状态，这些状态现在都会从SharedPreferences中加载并自动保存
     val selectedCategory = viewModel.selectedCategory
     val currentSortType = viewModel.currentSortType
 
-    // BottomSheet状态
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    // 添加备份和还原启动器
     val backupLauncher = ModuleModify.rememberAllowlistBackupLauncher(context, snackBarHostState)
     val restoreLauncher = ModuleModify.rememberAllowlistRestoreLauncher(context, snackBarHostState)
 
@@ -145,8 +132,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
 
     LaunchedEffect(viewModel.search) {
         if (viewModel.search.isEmpty()) {
-            // 取消自动滚动到顶部的行为
-            // listState.scrollToItem(0)
+            // Optional: scroll to top when clearing search
         }
     }
 
@@ -234,7 +220,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
         apps
     }
 
-    // 计算应用数量
     val appCounts = remember(viewModel.appList, viewModel.showSystemApps) {
         mapOf(
             AppCategory.ALL to viewModel.appList.size,
@@ -244,7 +229,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
         )
     }
 
-    // BottomSheet菜单项
     val bottomSheetMenuItems = remember(viewModel.showSystemApps) {
         listOf(
             BottomSheetMenuItem(
@@ -299,7 +283,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
         )
     }
 
-    // 记录FAB展开状态用于图标动画
     var isFabExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -311,7 +294,7 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(stringResource(R.string.superuser))
-                        // 显示当前分类和应用数量
+
                         if (selectedCategory != AppCategory.ALL) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
@@ -413,7 +396,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                 buttonSpacing = 72.dp,
                 animationDurationMs = 300,
                 staggerDelayMs = 50,
-                // 根据模式选择不同的图标
                 mainButtonIcon = if (viewModel.showBatchActions && viewModel.selectedApps.isNotEmpty()) {
                     getMultiSelectMainIcon(isFabExpanded)
                 } else {
@@ -458,7 +440,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                     )
                 }
 
-                // 当没有应用显示时显示加载动画或空状态
                 if (filteredAndSortedApps.isEmpty()) {
                     item {
                         Box(
@@ -467,7 +448,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
                                 .height(400.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            // 根据加载状态显示不同内容
                             if ((viewModel.isRefreshing || viewModel.appList.isEmpty()) && viewModel.search.isEmpty()) {
                                 LoadingAnimation(
                                     isLoading = true
@@ -484,7 +464,6 @@ fun SuperUserScreen(navigator: DestinationsNavigator) {
             }
         }
 
-        // BottomSheet
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = {
@@ -594,7 +573,6 @@ private fun BottomSheetContent(
             }
         }
 
-        // 应用分类选项
         Spacer(modifier = Modifier.height(24.dp))
         HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp))
 
@@ -702,7 +680,6 @@ private fun CategoryChip(
                 }
             }
 
-            // 应用数量
             Text(
                 text = "$appCount apps",
                 style = MaterialTheme.typography.labelSmall,
@@ -718,7 +695,6 @@ private fun CategoryChip(
 
 @Composable
 private fun BottomSheetMenuItemView(menuItem: BottomSheetMenuItem) {
-    // 添加交互状态
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -897,9 +873,6 @@ fun LabelText(label: String) {
     }
 }
 
-/**
- * 加载动画组件
- */
 @Composable
 private fun LoadingAnimation(
     modifier: Modifier = Modifier,
@@ -907,7 +880,6 @@ private fun LoadingAnimation(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "loading")
 
-    // 透明度动画
     val alpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
         targetValue = 1f,
@@ -928,7 +900,6 @@ private fun LoadingAnimation(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // 进度指示器
             LinearProgressIndicator(
                 modifier = Modifier
                     .width(200.dp)
@@ -940,9 +911,6 @@ private fun LoadingAnimation(
     }
 }
 
-/**
- * 空状态组件
- */
 @Composable
 @SuppressLint("ModifierParameter")
 private fun EmptyState(

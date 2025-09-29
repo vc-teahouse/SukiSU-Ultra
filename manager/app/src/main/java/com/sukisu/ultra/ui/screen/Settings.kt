@@ -56,7 +56,7 @@ import java.time.format.DateTimeFormatter
 
 /**
  * @author ShirkNeko
- * @date 2025/5/31.
+ * @date 2025/9/29.
  */
 private val SPACING_SMALL = 3.dp
 private val SPACING_MEDIUM = 8.dp
@@ -77,7 +77,6 @@ fun SettingScreen(navigator: DestinationsNavigator) {
     }
 
     Scaffold(
-        // containerColor = MaterialTheme.colorScheme.surfaceBright,
         topBar = {
             TopBar(scrollBehavior = scrollBehavior)
         },
@@ -792,7 +791,6 @@ enum class UninstallType(val title: Int, val message: Int, val icon: ImageVector
 fun rememberUninstallDialog(onSelected: (UninstallType) -> Unit): DialogHandle {
     return rememberCustomDialog { dismiss ->
         val options = listOf(
-            // UninstallType.TEMPORARY,
             UninstallType.PERMANENT,
             UninstallType.RESTORE_STOCK_IMAGE
         )

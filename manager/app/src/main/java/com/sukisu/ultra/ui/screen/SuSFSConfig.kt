@@ -118,7 +118,6 @@ fun SuSFSConfigScreen(
     var showAddAppPathDialog by remember { mutableStateOf(false) }
     var showAddMountDialog by remember { mutableStateOf(false) }
     var showAddUmountDialog by remember { mutableStateOf(false) }
-    var showRunUmountDialog by remember { mutableStateOf(false) }
     var showAddKstatStaticallyDialog by remember { mutableStateOf(false) }
     var showAddKstatDialog by remember { mutableStateOf(false) }
 
@@ -1090,12 +1089,12 @@ fun SuSFSConfigScreen(
                 .padding(horizontal = 12.dp)
         ) {
             // 标签页
-            ScrollableTabRow(
+            PrimaryScrollableTabRow(
                 selectedTabIndex = allTabs.indexOf(selectedTab),
-                edgePadding = 0.dp,
                 modifier = Modifier.fillMaxWidth(),
                 containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                edgePadding = 0.dp
             ) {
                 allTabs.forEach { tab ->
                     Tab(
@@ -1262,7 +1261,6 @@ fun SuSFSConfigScreen(
                             tryUmounts = tryUmounts,
                             isLoading = isLoading,
                             onAddUmount = { showAddUmountDialog = true },
-                            onRunUmount = { showRunUmountDialog = true },
                             onRemoveUmount = { umountEntry ->
                                 coroutineScope.launch {
                                     isLoading = true
@@ -1467,7 +1465,7 @@ private fun BasicSettingsContent(
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = scriptLocationExpanded) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .menuAnchor(MenuAnchorType.PrimaryEditable, true),
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, true),
                 shape = RoundedCornerShape(8.dp),
                 enabled = !isLoading
             )

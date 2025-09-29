@@ -187,14 +187,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        lifecycleScope.launch {
-            try {
-                homeViewModel.initializeData()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
         // 数据刷新协程
         DataRefreshUtils.startDataRefreshCoroutine(lifecycleScope)
         DataRefreshUtils.startSettingsMonitorCoroutine(lifecycleScope, this, settingsStateFlow)
@@ -228,7 +220,6 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 superUserViewModel.fetchAppList()
-                homeViewModel.initializeData()
                 DataRefreshUtils.refreshData(lifecycleScope)
             } catch (e: Exception) {
                 e.printStackTrace()

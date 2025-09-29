@@ -394,7 +394,6 @@ fun TryUmountContent(
     tryUmounts: Set<String>,
     isLoading: Boolean,
     onAddUmount: () -> Unit,
-    onRunUmount: () -> Unit,
     onRemoveUmount: (String) -> Unit,
     onEditUmount: ((String) -> Unit)? = null,
 ) {

@@ -57,13 +57,14 @@ import com.sukisu.ultra.ui.util.module.LatestVersionInfo
 import com.sukisu.ultra.ui.util.reboot
 import com.sukisu.ultra.ui.viewmodel.HomeViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.random.Random
 
 /**
  * @author ShirkNeko
- * @date 2025/5/31.
+ * @date 2025/9/29.
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Destination<RootGraph>(start = true)
@@ -74,15 +75,12 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(key1 = navigator) {
-        coroutineScope.launch {
-            viewModel.refreshAllData(context)
-        }
-    }
-
-    LaunchedEffect(Unit) {
         viewModel.loadUserSettings(context)
-        viewModel.initializeData()
-        viewModel.checkForUpdates(context)
+        coroutineScope.launch {
+            viewModel.loadCoreData()
+            delay(100)
+            viewModel.loadExtendedData(context)
+        }
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -92,27 +90,18 @@ fun HomeScreen(navigator: DestinationsNavigator) {
         topBar = {
             TopBar(
                 scrollBehavior = scrollBehavior,
-                navigator = navigator
+                navigator = navigator,
+                isDataLoaded = viewModel.isCoreDataLoaded
             )
         },
         contentWindowInsets = WindowInsets.safeDrawing.only(
             WindowInsetsSides.Top + WindowInsetsSides.Horizontal
         )
     ) { innerPadding ->
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = false,
-            onRefresh = {
-                coroutineScope.launch {
-                    viewModel.refreshAllData(context)
-                }
-            }
-        )
-
         Box(
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .pullRefresh(pullRefreshState)
         ) {
             Column(
                 modifier = Modifier
@@ -121,50 +110,69 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     .padding(top = 12.dp, start = 16.dp, end = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatusCard(
-                    systemStatus = viewModel.systemStatus,
-                    onClickInstall = {
-                        navigator.navigate(InstallScreenDestination)
-                    }
-                )
+                // 状态卡片
+                if (viewModel.isCoreDataLoaded) {
+                    StatusCard(
+                        systemStatus = viewModel.systemStatus,
+                        onClickInstall = {
+                            navigator.navigate(InstallScreenDestination)
+                        }
+                    )
 
-                if (viewModel.systemStatus.requireNewKernel) {
-                    WarningCard(
-                        stringResource(id = R.string.require_kernel_version).format(
-                            Natives.getSimpleVersionFull(),
-                            Natives.MINIMAL_SUPPORTED_KERNEL_FULL
+                    // 警告信息
+                    if (viewModel.systemStatus.requireNewKernel) {
+                        WarningCard(
+                            stringResource(id = R.string.require_kernel_version).format(
+                                Natives.getSimpleVersionFull(),
+                                Natives.MINIMAL_SUPPORTED_KERNEL_FULL
+                            )
                         )
+                    }
+
+                    if (viewModel.systemStatus.ksuVersion != null && !viewModel.systemStatus.isRootAvailable) {
+                        WarningCard(
+                            stringResource(id = R.string.grant_root_failed)
+                        )
+                    }
+                }
+
+                // 更新检查
+                if (viewModel.isExtendedDataLoaded) {
+                    val checkUpdate = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                        .getBoolean("check_update", true)
+                    if (checkUpdate) {
+                        UpdateCard()
+                    }
+
+                    // 信息卡片
+                    InfoCard(
+                        systemInfo = viewModel.systemInfo,
+                        isSimpleMode = viewModel.isSimpleMode,
+                        isHideSusfsStatus = viewModel.isHideSusfsStatus,
+                        isHideZygiskImplement = viewModel.isHideZygiskImplement,
+                        showKpmInfo = viewModel.showKpmInfo,
+                        lkmMode = viewModel.systemStatus.lkmMode,
                     )
-                }
 
-                if (viewModel.systemStatus.ksuVersion != null && !viewModel.systemStatus.isRootAvailable) {
-                    WarningCard(
-                        stringResource(id = R.string.grant_root_failed)
-                    )
-                }
-
-                val checkUpdate = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-                    .getBoolean("check_update", true)
-                if (checkUpdate) {
-                    UpdateCard()
-                }
-
-                InfoCard(
-                    systemInfo = viewModel.systemInfo,
-                    isSimpleMode = viewModel.isSimpleMode,
-                    isHideSusfsStatus = viewModel.isHideSusfsStatus,
-                    isHideZygiskImplement = viewModel.isHideZygiskImplement,
-                    showKpmInfo = viewModel.showKpmInfo,
-                    lkmMode = viewModel.systemStatus.lkmMode,
-                )
-
-                if (!viewModel.isSimpleMode) {
-                    if (!viewModel.isHideLinkCard) {
+                    // 链接卡片
+                    if (!viewModel.isSimpleMode && !viewModel.isHideLinkCard) {
                         ContributionCard()
                         DonateCard()
                         LearnMoreCard()
                     }
                 }
+
+                if (!viewModel.isExtendedDataLoaded) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -231,7 +239,8 @@ fun RebootDropdownItem(@StringRes id: Int, reason: String = "") {
 @Composable
 private fun TopBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
-    navigator: DestinationsNavigator
+    navigator: DestinationsNavigator,
+    isDataLoaded: Boolean = false
 ) {
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
@@ -253,44 +262,46 @@ private fun TopBar(
             scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
         ),
         actions = {
-            // SuSFS 配置按钮
-            if (getSuSFS() == "Supported" && SuSFSManager.isBinaryAvailable(context)) {
-                IconButton(onClick = {
-                    navigator.navigate(SuSFSConfigScreenDestination)
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.Tune,
-                        contentDescription = stringResource(R.string.susfs_config_setting_title)
-                    )
-                }
-            }
-
-            // 重启按钮
-            var showDropdown by remember { mutableStateOf(false) }
-            KsuIsValid {
-                IconButton(onClick = {
-                    showDropdown = true
-                }) {
-                    Icon(
-                        imageVector = Icons.Filled.PowerSettingsNew,
-                        contentDescription = stringResource(id = R.string.reboot)
-                    )
-
-                    DropdownMenu(expanded = showDropdown, onDismissRequest = {
-                        showDropdown = false
+            if (isDataLoaded) {
+                // SuSFS 配置按钮
+                if (getSuSFS() == "Supported" && SuSFSManager.isBinaryAvailable(context)) {
+                    IconButton(onClick = {
+                        navigator.navigate(SuSFSConfigScreenDestination)
                     }) {
-                        RebootDropdownItem(id = R.string.reboot)
+                        Icon(
+                            imageVector = Icons.Filled.Tune,
+                            contentDescription = stringResource(R.string.susfs_config_setting_title)
+                        )
+                    }
+                }
 
-                        val pm =
-                            LocalContext.current.getSystemService(Context.POWER_SERVICE) as PowerManager?
-                        @Suppress("DEPRECATION")
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && pm?.isRebootingUserspaceSupported == true) {
-                            RebootDropdownItem(id = R.string.reboot_userspace, reason = "userspace")
+                // 重启按钮
+                var showDropdown by remember { mutableStateOf(false) }
+                KsuIsValid {
+                    IconButton(onClick = {
+                        showDropdown = true
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.PowerSettingsNew,
+                            contentDescription = stringResource(id = R.string.reboot)
+                        )
+
+                        DropdownMenu(expanded = showDropdown, onDismissRequest = {
+                            showDropdown = false
+                        }) {
+                            RebootDropdownItem(id = R.string.reboot)
+
+                            val pm =
+                                LocalContext.current.getSystemService(Context.POWER_SERVICE) as PowerManager?
+                            @Suppress("DEPRECATION")
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && pm?.isRebootingUserspaceSupported == true) {
+                                RebootDropdownItem(id = R.string.reboot_userspace, reason = "userspace")
+                            }
+                            RebootDropdownItem(id = R.string.reboot_recovery, reason = "recovery")
+                            RebootDropdownItem(id = R.string.reboot_bootloader, reason = "bootloader")
+                            RebootDropdownItem(id = R.string.reboot_download, reason = "download")
+                            RebootDropdownItem(id = R.string.reboot_edl, reason = "edl")
                         }
-                        RebootDropdownItem(id = R.string.reboot_recovery, reason = "recovery")
-                        RebootDropdownItem(id = R.string.reboot_bootloader, reason = "bootloader")
-                        RebootDropdownItem(id = R.string.reboot_download, reason = "download")
-                        RebootDropdownItem(id = R.string.reboot_edl, reason = "edl")
                     }
                 }
             }
@@ -731,7 +742,7 @@ private fun InfoCard(
                 systemInfo.seLinuxStatus,
                 icon = Icons.Default.Security,
             )
-            
+
             if (!isHideZygiskImplement && !isSimpleMode && systemInfo.zygiskImplement != "None") {
                 InfoCardItem(
                     stringResource(R.string.home_zygisk_implement),
@@ -741,7 +752,6 @@ private fun InfoCard(
             }
 
             if (!isSimpleMode) {
-                // 根据showKpmInfo决定是否显示KPM信息
                 if (lkmMode != true && !showKpmInfo) {
                     val displayVersion =
                         if (systemInfo.kpmVersion.isEmpty() || systemInfo.kpmVersion.startsWith("Error")) {
