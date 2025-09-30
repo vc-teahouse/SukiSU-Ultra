@@ -64,6 +64,10 @@ bool ksu_input_hook __read_mostly = true;
 #endif
 bool ksu_execveat_hook __read_mostly = true;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+bool susfs_is_sus_su_ready = false;
+#endif // #ifdef CONFIG_KSU_SUSFS_SUS_SU
+
 u32 ksu_devpts_sid;
 
 // Detect whether it is on or not
@@ -673,6 +677,10 @@ static void stop_vfs_read_hook(void)
 #else
 	ksu_vfs_read_hook = false;
 	pr_info("stop vfs_read_hook\n");
+#endif
+#ifdef CONFIG_KSU_SUSFS_SUS_SU
+	susfs_is_sus_su_ready = true;
+	pr_info("susfs: sus_su is ready\n");
 #endif
 }
 
