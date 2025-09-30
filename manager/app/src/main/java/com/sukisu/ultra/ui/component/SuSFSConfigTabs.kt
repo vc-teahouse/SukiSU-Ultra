@@ -392,16 +392,72 @@ fun SusMountsContent(
 @Composable
 fun TryUmountContent(
     tryUmounts: Set<String>,
+    umountForZygoteIsoService: Boolean,
     isLoading: Boolean,
     onAddUmount: () -> Unit,
     onRemoveUmount: (String) -> Unit,
     onEditUmount: ((String) -> Unit)? = null,
+    onToggleUmountForZygoteIsoService: (Boolean) -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (isSusVersion158()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.umount_zygote_iso_service),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(R.string.umount_zygote_iso_service_description),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 14.sp
+                                )
+                            }
+                            Switch(
+                                checked = umountForZygoteIsoService,
+                                onCheckedChange = onToggleUmountForZygoteIsoService,
+                                enabled = !isLoading
+                            )
+                        }
+                    }
+                }
+            }
+
             if (tryUmounts.isEmpty()) {
                 item {
                     EmptyStateCard(
