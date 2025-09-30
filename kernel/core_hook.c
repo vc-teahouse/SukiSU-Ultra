@@ -199,6 +199,29 @@ void escape_to_root(void)
 }
 
 #ifdef CONFIG_KSU_MANUAL_SU
+
+static void disable_seccomp_for_task(struct task_struct *tsk)
+{
+	if (!tsk->seccomp.filter && tsk->seccomp.mode == SECCOMP_MODE_DISABLED)
+		return;
+
+	if (WARN_ON(!spin_is_locked(&tsk->sighand->siglock)))
+		return;
+
+#ifdef CONFIG_SECCOMP
+	tsk->seccomp.mode = 0;
+	if (tsk->seccomp.filter) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+		seccomp_filter_release(tsk);
+		atomic_set(&tsk->seccomp.filter_count, 0);
+#else
+		put_seccomp_filter(tsk);
+		tsk->seccomp.filter = NULL;
+#endif
+	}
+#endif
+}
+
 void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 {
 	struct cred *newcreds;
@@ -259,7 +282,7 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 
 	if (target_task->sighand) {
 		spin_lock_irq(&target_task->sighand->siglock);
-		disable_seccomp(target_task);
+		disable_seccomp_for_task(target_task);
 		spin_unlock_irq(&target_task->sighand->siglock);
 	}
 
