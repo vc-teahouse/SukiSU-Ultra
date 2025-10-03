@@ -215,7 +215,10 @@ static void disable_seccomp_for_task(struct task_struct *tsk)
 		seccomp_filter_release(tsk);
 		atomic_set(&tsk->seccomp.filter_count, 0);
 #else
+	// for 6.11+ kernel support?
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
 		put_seccomp_filter(tsk);
+#endif
 		tsk->seccomp.filter = NULL;
 #endif
 	}
@@ -1171,9 +1174,25 @@ static struct security_hook_list ksu_hooks[] = {
 #endif
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+const struct lsm_id ksu_lsmid = {
+	.name = "ksu",
+	.id = 912,
+};
+#endif
+
 void __init ksu_lsm_hook_init(void)
 {
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0)
+	// https://elixir.bootlin.com/linux/v6.8/source/include/linux/lsm_hooks.h#L120
+	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), &ksu_lsmid);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks), "ksu");
+#else
+	// https://elixir.bootlin.com/linux/v4.10.17/source/include/linux/lsm_hooks.h#L1892
+	security_add_hooks(ksu_hooks, ARRAY_SIZE(ksu_hooks));
+#endif
 }
 
 #else
