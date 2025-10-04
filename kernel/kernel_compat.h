@@ -15,6 +15,14 @@
 #define DONT_GET_SMART() barrier()
 #endif
 
+/*
+ * Linux 6.8+ does not have LKM support, due to numerous changes on LSM.
+ * Let's fails if MODULE were defined.
+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 8, 0) && defined(MODULE) 
+#error "LKM mode is not supported on Linux 6.8+, aborting build."
+#endif
+
 /**
  * list_count_nodes - count the number of nodes in a list
  * @head: the head of the list
