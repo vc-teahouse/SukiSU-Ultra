@@ -6,6 +6,15 @@
 #include "ss/policydb.h"
 #include "linux/key.h"
 
+
+#if defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+// arch/arm64/include/asm/barrier.h, adding dsb probably unneeded
+#define DONT_GET_SMART() do { barrier(); isb(); } while (0)
+#else
+// well, compiler atleast, and not our targets
+#define DONT_GET_SMART() barrier()
+#endif
+
 /**
  * list_count_nodes - count the number of nodes in a list
  * @head: the head of the list

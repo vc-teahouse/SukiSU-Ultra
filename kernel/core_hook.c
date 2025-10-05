@@ -407,76 +407,47 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
 
-#ifdef CONFIG_KSU_MANUAL_SU
-	bool is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
-	                         arg2 == CMD_ADD_PENDING_ROOT);
-	if (is_manual_su_cmd) {
-		if (!is_system_uid())
-			return 0;
-	}
-#endif
 
 	// if success, we modify the arg5 as result!
+	bool is_manual_su_cmd = false;
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
-
-	if (KERNEL_SU_OPTION != option) {
-		return 0;
-	}
-
-	// TODO: find it in throne tracker!
 	uid_t current_uid_val = current_uid().val;
+
+#ifdef CONFIG_KSU_MANUAL_SU
+	is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
+	                    arg2 == CMD_ADD_PENDING_ROOT);
+#endif
+
+	// skip this private space support if uid below 100k
+	if (current_uid_val < 100000)
+		goto skip_check;
+
 	uid_t manager_uid = ksu_get_manager_uid();
 	if (current_uid_val != manager_uid &&
 	    current_uid_val % 100000 == manager_uid) {
 		ksu_set_manager_uid(current_uid_val);
 	}
 
-	bool from_root = 0 == current_uid().val;
+skip_check:
+	// yes this causes delay, but this keeps the delay consistent, which is what we want
+	// with a barrier for safety as the compiler might try to do something smart.
+	DONT_GET_SMART();
+	if (!is_allow_su() && !is_system_uid())
+		return 0;
+
+	// we move it after uid check here so they cannot
+	// compare 0xdeadbeef call to a non-0xdeadbeef call
+	if (KERNEL_SU_OPTION != option)
+		return 0;
+
+	// just continue old logic
+	bool from_root = !current_uid().val;
 	bool from_manager = is_manager();
 
-#ifdef CONFIG_KSU_MANUAL_SU
-	if (arg2 == CMD_SU_ESCALATION_REQUEST) {
-		uid_t target_uid = (uid_t)arg3;
-		struct su_request_arg __user *user_req = (struct su_request_arg __user *)arg4;
-
-		pid_t target_pid;
-		const char __user *user_password;
-
-		if (copy_from_user(&target_pid, &user_req->target_pid, sizeof(target_pid)))
-			return -EFAULT;
-		if (copy_from_user(&user_password, &user_req->user_password, sizeof(user_password)))
-			return -EFAULT;
-
-		int ret = ksu_manual_su_escalate(target_uid, target_pid, user_password);
-
-		if (ret == 0) {
-			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
-				pr_err("cmd_su_escalation: prctl reply error\n");
-			}
-		}
-		return 0;
-	}
-
-	if (arg2 == CMD_ADD_PENDING_ROOT) {
-		uid_t uid = (uid_t)arg3;
-
-		if (!is_current_verified()) {
-			pr_warn("CMD_ADD_PENDING_ROOT: denied, password not verified\n");
-			return -EPERM;
-		}
-
-		add_pending_root(uid);
-		current_verified = false;
-		pr_info("prctl: pending root added for UID %d\n", uid);
-
-		if (copy_to_user(result, &reply_ok, sizeof(reply_ok)))
-			pr_err("prctl: CMD_ADD_PENDING_ROOT reply error\n");
-		return 0;
-	}
-#endif
 	if (!from_root && !from_manager 
-		&& !(is_allow_su() && is_system_bin_su())) {
+		&& !(is_manual_su_cmd ? is_system_uid(): 
+		(is_allow_su() && is_system_bin_su()))) {
 		// only root or manager can access this interface
 		return 0;
 	}
@@ -755,6 +726,45 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
 			pr_err("hook_type: prctl reply error\n");
 		}
+		return 0;
+	}
+
+	if (arg2 == CMD_SU_ESCALATION_REQUEST) {
+		uid_t target_uid = (uid_t)arg3;
+		struct su_request_arg __user *user_req = (struct su_request_arg __user *)arg4;
+
+		pid_t target_pid;
+		const char __user *user_password;
+
+		if (copy_from_user(&target_pid, &user_req->target_pid, sizeof(target_pid)))
+			return -EFAULT;
+		if (copy_from_user(&user_password, &user_req->user_password, sizeof(user_password)))
+			return -EFAULT;
+
+		int ret = ksu_manual_su_escalate(target_uid, target_pid, user_password);
+
+		if (ret == 0) {
+			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
+				pr_err("cmd_su_escalation: prctl reply error\n");
+			}
+		}
+		return 0;
+	}
+
+	if (arg2 == CMD_ADD_PENDING_ROOT) {
+		uid_t uid = (uid_t)arg3;
+
+		if (!is_current_verified()) {
+			pr_warn("CMD_ADD_PENDING_ROOT: denied, password not verified\n");
+			return -EPERM;
+		}
+
+		add_pending_root(uid);
+		current_verified = false;
+		pr_info("prctl: pending root added for UID %d\n", uid);
+
+		if (copy_to_user(result, &reply_ok, sizeof(reply_ok)))
+			pr_err("prctl: CMD_ADD_PENDING_ROOT reply error\n");
 		return 0;
 	}
 
