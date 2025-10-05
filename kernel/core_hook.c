@@ -371,8 +371,22 @@ static inline void nuke_ext4_sysfs() { }
 
 static bool is_system_bin_su()
 {
+	if (!current->mm || current->in_execve) {
+		return 0;
+	}
+
 	// quick af check
 	return (current->mm->exe_file && !strcmp(current->mm->exe_file->f_path.dentry->d_name.name, "su"));
+}
+
+static bool is_system_uid(void)
+{
+	if (!current->mm || current->in_execve) {
+		return 0;
+	}
+	
+	uid_t caller_uid = current_uid().val;
+	return caller_uid <= 2000;
 }
 
 static void init_uid_scanner(void)
@@ -392,6 +406,16 @@ static void init_uid_scanner(void)
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
+
+#ifdef CONFIG_KSU_MANUAL_SU
+	bool is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
+	                         arg2 == CMD_ADD_PENDING_ROOT);
+	if (is_manual_su_cmd) {
+		if (!is_system_uid())
+			return 0;
+	}
+#endif
+
 	// if success, we modify the arg5 as result!
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
@@ -411,9 +435,6 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	bool from_root = 0 == current_uid().val;
 	bool from_manager = is_manager();
 
-	if (!current->mm || current->in_execve) {
-		return 0;
-	}
 #ifdef CONFIG_KSU_MANUAL_SU
 	if (arg2 == CMD_SU_ESCALATION_REQUEST) {
 		uid_t target_uid = (uid_t)arg3;
