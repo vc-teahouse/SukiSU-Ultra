@@ -34,7 +34,6 @@ import com.sukisu.ultra.ui.util.install
 import com.sukisu.ultra.ui.viewmodel.HomeViewModel
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.sukisu.ultra.ui.webui.initPlatform
-import io.sukisu.ultra.UltraToolInstall
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import zako.zako.zako.zakoui.activity.component.BottomBar
@@ -197,7 +196,6 @@ class MainActivity : ComponentActivity() {
         val isManager = Natives.becomeManager(packageName)
         if (isManager) {
             install()
-            UltraToolInstall.tryToInstall()
         }
     }
 
