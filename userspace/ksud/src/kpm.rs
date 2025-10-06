@@ -1,7 +1,7 @@
 use anyhow::{anyhow, bail, Result};
-use libc::{c_char, c_int, c_void, prctl};
+use libc::{c_int, c_ulong, prctl};
 use notify::{RecursiveMode, Watcher};
-use std::ffi::{CStr, CString, OsStr};
+use std::ffi::{CString, OsStr};
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -9,130 +9,158 @@ use std::ptr;
 
 pub const KPM_DIR: &str = "/data/adb/kpm";
 
-const KSU_OPTIONS: u32 = 0xdeadbeef;
-const SUKISU_KPM_LOAD:   i32 = 28;
-const SUKISU_KPM_UNLOAD: i32 = 29;
-const SUKISU_KPM_NUM:    i32 = 30;
-const SUKISU_KPM_LIST:   i32 = 31;
-const SUKISU_KPM_INFO:   i32 = 32;
-const SUKISU_KPM_CONTROL:i32 = 33;
-const SUKISU_KPM_VERSION:i32 = 34;
+const KSU_OPTIONS: c_int = 0xdeadbeef_u32 as c_int;
+const SUKISU_KPM_LOAD:   c_int = 28;
+const SUKISU_KPM_UNLOAD: c_int = 29;
+const SUKISU_KPM_NUM:    c_int = 30;
+const SUKISU_KPM_LIST:   c_int = 31;
+const SUKISU_KPM_INFO:   c_int = 32;
+const SUKISU_KPM_CONTROL:c_int = 33;
+const SUKISU_KPM_VERSION:c_int = 34;
 
 #[inline(always)]
-unsafe fn kpm_prctl(
-    cmd: i32,
-    arg1: *const c_void,
-    arg2: *const c_void,
-) -> Result<i32> {
-    let mut out: c_int = -1;
-    let ret = unsafe {
-        prctl(
-            KSU_OPTIONS as c_int,
-            cmd as c_int,
-            arg1,
-            arg2,
-            &mut out as *mut c_int as *mut c_void,
-        )
-    };
-    if ret != 0 || out < 0 {
-        bail!("KPM prctl error: {}", std::io::Error::from_raw_os_error(-out));
+fn check_out(out: c_int) -> Result<c_int> {
+    if out < 0 {
+        bail!("KPM error: {}", std::io::Error::from_raw_os_error(-out));
     }
     Ok(out)
 }
 
-fn str_to_cstr<R, F: FnOnce(*const c_char) -> R>(s: &str, f: F) -> Result<R> {
-    let cs = CString::new(s)?;
-    Ok(f(cs.as_ptr()))
-}
-
-fn cbuf_to_string(buf: &[u8]) -> String {
-    unsafe { CStr::from_ptr(buf.as_ptr() as *const c_char) }
-        .to_string_lossy()
-        .into_owned()
-}
-
 pub fn kpm_load(path: &str, args: Option<&str>) -> Result<()> {
-    str_to_cstr(path, |p_path| {
-        let _args_cstring;
-        let p_args = match args {
-            Some(a) => {
-                _args_cstring = CString::new(a)?;
-                _args_cstring.as_ptr()
-            }
-            None => ptr::null(),
-        };
-        unsafe { kpm_prctl(SUKISU_KPM_LOAD, p_path as _, p_args as _) }?;
-        println!("Success");
-        Ok(())
-    })?
+    let path_c = CString::new(path)?;
+    let args_c = args.map(CString::new).transpose()?;
+
+    let mut out: c_int = -1;
+    unsafe {
+        prctl(
+            KSU_OPTIONS,
+            SUKISU_KPM_LOAD,
+            path_c.as_ptr() as c_ulong,
+            args_c.as_ref()
+                  .map_or(ptr::null(), |s| s.as_ptr()) as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
+    }
+    check_out(out)?;
+    println!("Success");
+    Ok(())
 }
 
 pub fn kpm_unload(name: &str) -> Result<()> {
-    let _ = str_to_cstr(name, |p| unsafe {
-        kpm_prctl(SUKISU_KPM_UNLOAD, p as _, ptr::null())
-    })?;
+    let name_c = CString::new(name)?;
+    let mut out: c_int = -1;
+    unsafe {
+        prctl(
+            KSU_OPTIONS,
+            SUKISU_KPM_UNLOAD,
+            name_c.as_ptr() as c_ulong,
+            0,
+            &mut out as *mut c_int as c_ulong,
+        );
+    }
+    check_out(out)?;
     Ok(())
 }
 
 pub fn kpm_num() -> Result<i32> {
-    let n = unsafe { kpm_prctl(SUKISU_KPM_NUM, ptr::null(), ptr::null())? };
+    let mut out: c_int = -1;
+    unsafe {
+        prctl(
+            KSU_OPTIONS,
+            SUKISU_KPM_NUM,
+            0,
+            0,
+            &mut out as *mut c_int as c_ulong,
+        );
+    }
+    let n = check_out(out)?;
     println!("{}", n);
     Ok(n)
 }
 
 pub fn kpm_list() -> Result<()> {
     let mut buf = vec![0u8; 1024];
+    let mut out: c_int = -1;
     unsafe {
-        kpm_prctl(
+        prctl(
+            KSU_OPTIONS,
             SUKISU_KPM_LIST,
-            buf.as_mut_ptr() as _,
-            buf.len() as *const c_void,
-        )?;
+            buf.as_mut_ptr() as c_ulong,
+            buf.len() as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
     }
-    print!("{}", cbuf_to_string(&buf));
+    check_out(out)?;
+    print!("{}", buf2string(&buf));
     Ok(())
 }
 
 pub fn kpm_info(name: &str) -> Result<()> {
+    let name_c = CString::new(name)?;
     let mut buf = vec![0u8; 256];
-    let _ = str_to_cstr(name, |p| unsafe {
-        kpm_prctl(SUKISU_KPM_INFO, p as _, buf.as_mut_ptr() as _)
-    })?;
-    println!("{}", cbuf_to_string(&buf));
+    let mut out: c_int = -1;
+    unsafe {
+        prctl(
+            KSU_OPTIONS,
+            SUKISU_KPM_INFO,
+            name_c.as_ptr() as c_ulong,
+            buf.as_mut_ptr() as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
+    }
+    check_out(out)?;
+    println!("{}", buf2string(&buf));
     Ok(())
 }
 
 pub fn kpm_control(name: &str, args: &str) -> Result<i32> {
-    str_to_cstr(name, |p_name| {
-        str_to_cstr(args, |p_args| unsafe {
-            kpm_prctl(SUKISU_KPM_CONTROL, p_name as _, p_args as _)
-        })?
-    })?
+    let name_c = CString::new(name)?;
+    let args_c = CString::new(args)?;
+    let mut out: c_int = -1;
+    unsafe {
+        prctl(
+            KSU_OPTIONS,
+            SUKISU_KPM_CONTROL,
+            name_c.as_ptr() as c_ulong,
+            args_c.as_ptr() as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
+    }
+    check_out(out)?;
+    Ok(out)
 }
 
 pub fn kpm_version_loader() -> Result<()> {
     let mut buf = vec![0u8; 1024];
+    let mut out: c_int = -1;
     unsafe {
-        kpm_prctl(
+        prctl(
+            KSU_OPTIONS,
             SUKISU_KPM_VERSION,
-            buf.as_mut_ptr() as _,
-            buf.len() as *const c_void,
-        )?;
+            buf.as_mut_ptr() as c_ulong,
+            buf.len() as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
     }
-    print!("{}", cbuf_to_string(&buf));
+    check_out(out)?;
+    print!("{}", buf2string(&buf));
     Ok(())
 }
 
 pub fn check_kpm_version() -> Result<String> {
     let mut buf = vec![0u8; 1024];
+    let mut out: c_int = -1;
     unsafe {
-        kpm_prctl(
+        prctl(
+            KSU_OPTIONS,
             SUKISU_KPM_VERSION,
-            buf.as_mut_ptr() as _,
-            buf.len() as *const c_void,
-        )?;
+            buf.as_mut_ptr() as c_ulong,
+            buf.len() as c_ulong,
+            &mut out as *mut c_int as c_ulong,
+        );
     }
-    let ver = cbuf_to_string(&buf);
+    check_out(out)?;
+    let ver = buf2string(&buf);
     if ver.is_empty() || ver.starts_with("Error") {
         bail!("KPM: Invalid version response: {}", ver);
     }
@@ -153,7 +181,7 @@ pub fn ensure_kpm_dir() -> Result<()> {
 }
 
 pub fn start_kpm_watcher() -> Result<()> {
-    check_kpm_version()?;
+    check_kpm_version()?; // 版本不对直接返回
     ensure_kpm_dir()?;
     if crate::utils::is_safe_mode() {
         log::warn!("KPM: Safe mode – removing all KPM modules");
@@ -260,4 +288,12 @@ pub fn load_kpm_modules() -> Result<()> {
     }
     log::info!("KPM: Load done – ok: {}, failed: {}", ok, ng);
     Ok(())
+}
+
+fn buf2string(buf: &[u8]) -> String {
+    unsafe {
+        std::ffi::CStr::from_ptr(buf.as_ptr() as *const _)
+            .to_string_lossy()
+            .into_owned()
+    }
 }
