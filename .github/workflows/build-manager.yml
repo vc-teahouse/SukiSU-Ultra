@@ -9,7 +9,6 @@ on:
       - 'kernel/**'
       - 'userspace/ksud/**'
       - 'userspace/susfs/**'
-      - 'userspace/kpmmgr/**'
       - 'userspace/user_scanner/**'
   pull_request:
     branches: [ "main" ]
@@ -94,19 +93,6 @@ jobs:
           - target: aarch64-linux-android
             os: ubuntu-latest
     uses: ./.github/workflows/susfs.yml
-    with:
-      target: ${{ matrix.target }}
-      os: ${{ matrix.os }}
-      
-  build-kpmmgr:
-    if: ${{ always() }}
-    needs: [ check-build-lkm, build-lkm ]
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-linux-android
-            os: ubuntu-latest
-    uses: ./.github/workflows/kpmmgr.yml
     with:
       target: ${{ matrix.target }}
       os: ${{ matrix.os }}
@@ -210,12 +196,6 @@ jobs:
           name: susfs-aarch64-linux-android
           path: .
 
-      - name: Download arm64 kpmmgr
-        uses: actions/download-artifact@v4
-        with:
-          name: kpmmgr-aarch64-linux-android
-          path: .
-
       - name: Download arm64 ksud
         uses: actions/download-artifact@v4
         with:
@@ -242,11 +222,6 @@ jobs:
           cp -f ../aarch64-linux-android/release/zakozako ../manager/app/src/main/jniLibs/arm64-v8a/libzakozako.so
           cp -f ../x86_64-linux-android/release/zakozako ../manager/app/src/main/jniLibs/x86_64/libzakozako.so
           cp -f ../armv7-linux-androideabi/release/zakozako ../manager/app/src/main/jniLibs/armeabi-v7a/libzakozako.so
-
-      - name: Copy kpmmgr to app jniLibs
-        run: |
-          mkdir -p app/src/main/jniLibs/arm64-v8a
-          cp -f ../arm64-v8a/kpmmgr ../manager/app/src/main/jniLibs/arm64-v8a/libkpmmgr.so
       
       - name: Copy susfs to app jniLibs
         run: |

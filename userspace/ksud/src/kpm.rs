@@ -1,242 +1,236 @@
-use anyhow::{anyhow, Result};
-use libc::{prctl, c_char, c_void, c_int};
+use anyhow::{anyhow, bail, Result};
+use libc::{c_char, c_int, c_void, prctl};
 use notify::{RecursiveMode, Watcher};
 use std::ffi::{CStr, CString, OsStr};
 use std::fs;
-use std::path::Path;
-use std::ptr;
 use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
+use std::ptr;
 
 pub const KPM_DIR: &str = "/data/adb/kpm";
 
 const KSU_OPTIONS: u32 = 0xdeadbeef;
-const SUKISU_KPM_LOAD: i32 = 28;
+const SUKISU_KPM_LOAD:   i32 = 28;
 const SUKISU_KPM_UNLOAD: i32 = 29;
-const SUKISU_KPM_VERSION: i32 = 34;
+const SUKISU_KPM_NUM:    i32 = 30;
+const SUKISU_KPM_LIST:   i32 = 31;
+const SUKISU_KPM_INFO:   i32 = 32;
+const SUKISU_KPM_CONTROL:i32 = 33;
+const SUKISU_KPM_VERSION:i32 = 34;
 
-pub fn check_kpm_version() -> Result<String> {
-    let mut buffer: [u8; 1024] = [0; 1024];
+#[inline(always)]
+unsafe fn kpm_prctl(
+    cmd: i32,
+    arg1: *const c_void,
+    arg2: *const c_void,
+) -> Result<i32> {
     let mut out: c_int = -1;
-    
-    let _ret = unsafe {
+    let ret = unsafe {
         prctl(
             KSU_OPTIONS as c_int,
-            SUKISU_KPM_VERSION,
-            buffer.as_mut_ptr() as *mut c_void,
-            buffer.len() as *mut c_void,
+            cmd as c_int,
+            arg1,
+            arg2,
             &mut out as *mut c_int as *mut c_void,
         )
     };
-
-    if out < 0 {
-        return Err(anyhow!("KPM: prctl returned error: {}", out));
+    if ret != 0 || out < 0 {
+        bail!("KPM prctl error: {}", std::io::Error::from_raw_os_error(-out));
     }
-
-    let version_str = unsafe {
-        CStr::from_ptr(buffer.as_ptr() as *const c_char)
-    }.to_string_lossy().to_string();
-
-    log::info!("KPM: Version check result: {}", version_str);
-    
-    // 检查版本是否有效（不为空且不以Error开头）
-    if version_str.is_empty() || version_str.starts_with("Error") {
-        return Err(anyhow!("KPM: Invalid version response: {}", version_str));
-    }
-
-    Ok(version_str)
+    Ok(out)
 }
 
-// 确保 KPM 目录存在,并设置777权限
+fn str_to_cstr<R, F: FnOnce(*const c_char) -> R>(s: &str, f: F) -> Result<R> {
+    let cs = CString::new(s)?;
+    Ok(f(cs.as_ptr()))
+}
+
+fn cbuf_to_string(buf: &[u8]) -> String {
+    unsafe { CStr::from_ptr(buf.as_ptr() as *const c_char) }
+        .to_string_lossy()
+        .into_owned()
+}
+
+pub fn kpm_load(path: &str, args: Option<&str>) -> Result<()> {
+    str_to_cstr(path, |p_path| {
+        let _args_cstring;
+        let p_args = match args {
+            Some(a) => {
+                _args_cstring = CString::new(a)?;
+                _args_cstring.as_ptr()
+            }
+            None => ptr::null(),
+        };
+        unsafe { kpm_prctl(SUKISU_KPM_LOAD, p_path as _, p_args as _) }?;
+        println!("Success");
+        Ok(())
+    })?
+}
+
+pub fn kpm_unload(name: &str) -> Result<()> {
+    let _ = str_to_cstr(name, |p| unsafe {
+        kpm_prctl(SUKISU_KPM_UNLOAD, p as _, ptr::null())
+    })?;
+    Ok(())
+}
+
+pub fn kpm_num() -> Result<i32> {
+    let n = unsafe { kpm_prctl(SUKISU_KPM_NUM, ptr::null(), ptr::null())? };
+    println!("{}", n);
+    Ok(n)
+}
+
+pub fn kpm_list() -> Result<()> {
+    let mut buf = vec![0u8; 1024];
+    unsafe {
+        kpm_prctl(
+            SUKISU_KPM_LIST,
+            buf.as_mut_ptr() as _,
+            buf.len() as *const c_void,
+        )?;
+    }
+    print!("{}", cbuf_to_string(&buf));
+    Ok(())
+}
+
+pub fn kpm_info(name: &str) -> Result<()> {
+    let mut buf = vec![0u8; 256];
+    let _ = str_to_cstr(name, |p| unsafe {
+        kpm_prctl(SUKISU_KPM_INFO, p as _, buf.as_mut_ptr() as _)
+    })?;
+    println!("{}", cbuf_to_string(&buf));
+    Ok(())
+}
+
+pub fn kpm_control(name: &str, args: &str) -> Result<i32> {
+    str_to_cstr(name, |p_name| {
+        str_to_cstr(args, |p_args| unsafe {
+            kpm_prctl(SUKISU_KPM_CONTROL, p_name as _, p_args as _)
+        })?
+    })?
+}
+
+pub fn kpm_version_loader() -> Result<()> {
+    let mut buf = vec![0u8; 1024];
+    unsafe {
+        kpm_prctl(
+            SUKISU_KPM_VERSION,
+            buf.as_mut_ptr() as _,
+            buf.len() as *const c_void,
+        )?;
+    }
+    print!("{}", cbuf_to_string(&buf));
+    Ok(())
+}
+
+pub fn check_kpm_version() -> Result<String> {
+    let mut buf = vec![0u8; 1024];
+    unsafe {
+        kpm_prctl(
+            SUKISU_KPM_VERSION,
+            buf.as_mut_ptr() as _,
+            buf.len() as *const c_void,
+        )?;
+    }
+    let ver = cbuf_to_string(&buf);
+    if ver.is_empty() || ver.starts_with("Error") {
+        bail!("KPM: Invalid version response: {}", ver);
+    }
+    log::info!("KPM: Version check result: {}", ver);
+    Ok(ver)
+}
+
 pub fn ensure_kpm_dir() -> Result<()> {
     let path = Path::new(KPM_DIR);
-    
-    if path.exists() {
-        let meta = fs::metadata(path)?;
-        let current = meta.permissions().mode() & 0o777;
-        if current != 0o777 {
-            log::info!("KPM: Fixing permissions to 777 for {}", KPM_DIR);
-            fs::set_permissions(path, fs::Permissions::from_mode(0o777))?;
-        }
+    if !path.exists() {
+        fs::create_dir_all(path)?;
+    }
+    let meta = fs::metadata(path)?;
+    if meta.permissions().mode() & 0o777 != 0o777 {
+        fs::set_permissions(path, fs::Permissions::from_mode(0o777))?;
     }
     Ok(())
 }
 
 pub fn start_kpm_watcher() -> Result<()> {
-    match check_kpm_version() {
-        Ok(version) => {
-            log::info!("KPM: Version check passed, version: {}", version);
-        }
-        Err(e) => {
-            log::warn!("KPM: Version check failed, skipping KPM functionality: {}", e);
-            return Ok(())
-        }
-    }
-
+    check_kpm_version()?;
     ensure_kpm_dir()?;
-
-    // 检查是否处于安全模式
     if crate::utils::is_safe_mode() {
-        log::warn!("KPM: System is in safe mode, removing all KPM modules");
-        if let Err(e) = remove_all_kpms() {
-            log::error!("KPM: Error removing all KPM modules: {}", e);
-        }
+        log::warn!("KPM: Safe mode – removing all KPM modules");
+        remove_all_kpms()?;
         return Ok(());
     }
 
     let mut watcher = notify::recommended_watcher(|res| match res {
         Ok(event) => handle_kpm_event(event),
-        Err(e) => log::error!("KPM: File monitoring error: {:?}", e),
+        Err(e) => log::error!("KPM: File monitor error: {:?}", e),
     })?;
-
     watcher.watch(Path::new(KPM_DIR), RecursiveMode::NonRecursive)?;
-    log::info!("KPM: Started file watcher for directory: {}", KPM_DIR);
+    log::info!("KPM: File watcher started on {}", KPM_DIR);
     Ok(())
 }
 
-// 处理 KPM 事件
-pub fn handle_kpm_event(event: notify::Event) {
+fn handle_kpm_event(event: notify::Event) {
     match event.kind {
-        notify::EventKind::Create(_) => handle_create_event(event.paths),
-        notify::EventKind::Remove(_) => handle_remove_event(event.paths),
-        notify::EventKind::Modify(_) => handle_modify_event(event.paths),
+        notify::EventKind::Create(_) => {
+            for p in event.paths {
+                if p.extension() == Some(OsStr::new("kpm")) {
+                    if let Err(e) = load_kpm(&p) {
+                        log::warn!("KPM: Failed to load {}: {}", p.display(), e);
+                    }
+                }
+            }
+        }
+        notify::EventKind::Modify(_) => {
+            for p in event.paths {
+                log::info!("KPM: Modified file: {}", p.display());
+            }
+        }
         _ => {}
     }
 }
 
-fn handle_create_event(paths: Vec<std::path::PathBuf>) {
-    for path in paths {
-        if path.extension() == Some(OsStr::new("kpm")) {
-            log::info!("KPM: Detected new KPM file: {}", path.display());
-            if let Err(e) = load_kpm(&path) {
-                log::warn!("KPM: Failed to load {}: {}", path.display(), e);
-            }
-        }
-    }
-}
-
-fn handle_remove_event(paths: Vec<std::path::PathBuf>) {
-    for path in paths {
-        if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-            log::info!("KPM: Detected KPM file removal: {}", name);
-            if let Err(e) = unload_kpm(name) {
-                log::warn!("KPM: Failed to unload {}: {}", name, e);
-            }
-        }
-    }
-}
-
-fn handle_modify_event(paths: Vec<std::path::PathBuf>) {
-    for path in paths {
-        log::info!("KPM: Modified file detected: {}", path.display());
-    }
-}
-
-// 加载 KPM 模块
 pub fn load_kpm(path: &Path) -> Result<()> {
-    let path_str = path
-        .to_str()
-        .ok_or_else(|| anyhow!("KPM: Invalid path: {}", path.display()))?;
-    
-    let path_cstring = CString::new(path_str)
-        .map_err(|e| anyhow!("KPM: Failed to convert path to CString: {}", e))?;
-    
-    let mut out: c_int = -1;
-
-    let _ret = unsafe {
-        prctl(
-            KSU_OPTIONS as c_int,
-            SUKISU_KPM_LOAD,
-            path_cstring.as_ptr() as *mut c_void,
-            ptr::null_mut::<c_void>(),
-            &mut out as *mut c_int as *mut c_void,
-        )
-    };
-
-    if out < 0 {
-        return Err(anyhow!("KPM: prctl returned error: {}", out));
-    }
-
-    if out > 0 {
-        log::info!("KPM: Successfully loaded module: {}", path.display());
-    }
-
-    Ok(())
+    let path_str = path.to_str().ok_or_else(|| anyhow!("Invalid path"))?;
+    kpm_load(path_str, None)
 }
 
-// 卸载 KPM 模块
 pub fn unload_kpm(name: &str) -> Result<()> {
-    let name_cstring = CString::new(name)
-        .map_err(|e| anyhow!("KPM: Failed to convert name to CString: {}", e))?;
-
-    let mut out: c_int = -1;
-
-    let _ret = unsafe {
-        prctl(
-            KSU_OPTIONS as c_int,
-            SUKISU_KPM_UNLOAD,
-            name_cstring.as_ptr() as *mut c_void,
-            ptr::null_mut::<c_void>(),
-            &mut out as *mut c_int as *mut c_void,
-        )
-    };
-
-    if out < 0 {
-        log::warn!("KPM: prctl returned error for unload: {}", out);
-        return Err(anyhow!("KPM: prctl returned error: {}", out));
+    kpm_unload(name)?;
+    if let Some(p) = find_kpm_file(name)? {
+        fs::remove_file(&p).ok();
+        log::info!("KPM: Deleted file {}", p.display());
     }
-
-    // 尝试删除对应的KPM文件
-    if let Ok(Some(path)) = find_kpm_file(name) {
-        if let Err(e) = fs::remove_file(&path) {
-            log::warn!("KPM: Failed to delete KPM file {}: {}", path.display(), e);
-        } else {
-            log::info!("KPM: Deleted KPM file: {}", path.display());
-        }
-    }
-
-    log::info!("KPM: Successfully unloaded module: {}", name);
     Ok(())
 }
 
-// 通过名称查找 KPM 文件
-fn find_kpm_file(name: &str) -> Result<Option<std::path::PathBuf>> {
-    let kpm_dir = Path::new(KPM_DIR);
-    if !kpm_dir.exists() {
+fn find_kpm_file(name: &str) -> Result<Option<PathBuf>> {
+    let dir = Path::new(KPM_DIR);
+    if !dir.exists() {
         return Ok(None);
     }
-
-    for entry in fs::read_dir(kpm_dir)? {
-        let path = entry?.path();
-        if let Some(file_name) = path.file_stem() {
-            if let Some(file_name_str) = file_name.to_str() {
-                if file_name_str == name && path.extension() == Some(OsStr::new("kpm")) {
-                    return Ok(Some(path));
-                }
-            }
+    for entry in fs::read_dir(dir)? {
+        let p = entry?.path();
+        if p.extension() == Some(OsStr::new("kpm"))
+            && p.file_stem().map_or(false, |s| s == name)
+        {
+            return Ok(Some(p));
         }
     }
     Ok(None)
 }
 
-// 安全模式下删除所有 KPM 模块
 pub fn remove_all_kpms() -> Result<()> {
-    let kpm_dir = Path::new(KPM_DIR);
-    if !kpm_dir.exists() {
-        log::info!("KPM: KPM directory does not exist, nothing to remove");
+    let dir = Path::new(KPM_DIR);
+    if !dir.exists() {
         return Ok(());
     }
-
-    for entry in fs::read_dir(KPM_DIR)? {
-        let path = entry?.path();
-        if path.extension().is_some_and(|ext| ext == "kpm") {
-            if let Some(name) = path.file_stem() {
-                let name_str = name.to_string_lossy();
-                log::info!("KPM: Removing module in safe mode: {}", name_str);
-                if let Err(e) = unload_kpm(&name_str) {
-                    log::error!("KPM: Failed to remove module {}: {}", name_str, e);
-                }
-                if let Err(e) = fs::remove_file(&path) {
-                    log::error!("KPM: Failed to delete file {}: {}", path.display(), e);
+    for entry in fs::read_dir(dir)? {
+        let p = entry?.path();
+        if p.extension() == Some(OsStr::new("kpm")) {
+            if let Some(name) = p.file_stem().and_then(|s| s.to_str()) {
+                if let Err(e) = unload_kpm(name) {
+                    log::error!("KPM: Failed to unload {}: {}", name, e);
                 }
             }
         }
@@ -244,53 +238,26 @@ pub fn remove_all_kpms() -> Result<()> {
     Ok(())
 }
 
-// 加载所有 KPM 模块
 pub fn load_kpm_modules() -> Result<()> {
-    match check_kpm_version() {
-        Ok(version) => {
-            log::info!("KPM: Version check passed before loading modules, version: {}", version);
-        }
-        Err(e) => {
-            log::warn!("KPM: Version check failed, skipping module loading: {}", e);
-            return Ok(());
-        }
-    }
-
+    check_kpm_version()?;
     ensure_kpm_dir()?;
-
-    let kpm_dir = Path::new(KPM_DIR);
-    if !kpm_dir.exists() {
-        log::info!("KPM: KPM directory does not exist, no modules to load");
+    let dir = Path::new(KPM_DIR);
+    if !dir.exists() {
         return Ok(());
     }
-
-    let mut loaded_count = 0;
-    let mut failed_count = 0;
-
-    for entry in std::fs::read_dir(KPM_DIR)? {
-        let path = entry?.path();
-        if let Some(file_name) = path.file_stem() {
-            if let Some(file_name_str) = file_name.to_str() {
-                if file_name_str.is_empty() {
-                    log::warn!("KPM: Invalid KPM file name: {}", path.display());
-                    continue;
-                }
-            }
-        }
-        if path.extension().is_some_and(|ext| ext == "kpm") {
-            match load_kpm(&path) {
-                Ok(()) => {
-                    log::info!("KPM: Successfully loaded module: {}", path.display());
-                    loaded_count += 1;
-                }
+    let (mut ok, mut ng) = (0, 0);
+    for entry in fs::read_dir(dir)? {
+        let p = entry?.path();
+        if p.extension() == Some(OsStr::new("kpm")) {
+            match load_kpm(&p) {
+                Ok(_) => ok += 1,
                 Err(e) => {
-                    log::warn!("KPM: Failed to load module {}: {}", path.display(), e);
-                    failed_count += 1;
+                    log::warn!("KPM: Failed to load {}: {}", p.display(), e);
+                    ng += 1;
                 }
             }
         }
     }
-
-    log::info!("KPM: Module loading completed - loaded: {}, failed: {}", loaded_count, failed_count);
+    log::info!("KPM: Load done – ok: {}, failed: {}", ok, ng);
     Ok(())
 }

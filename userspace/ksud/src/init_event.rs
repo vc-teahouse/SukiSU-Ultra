@@ -1,10 +1,12 @@
 use crate::defs::{KSU_MOUNT_SOURCE, NO_MOUNT_PATH, NO_TMPFS_PATH};
 use crate::module::{handle_updated_modules, prune_modules};
-use crate::{assets, defs, ksucalls, restorecon, utils, kpm, uid_scanner};
+use crate::{assets, defs, ksucalls, restorecon, utils, uid_scanner};
 use anyhow::{Context, Result};
 use log::{info, warn};
 use rustix::fs::{MountFlags, mount};
 use std::path::Path;
+#[cfg(target_arch = "aarch64")]
+use crate::kpm;
 
 pub fn on_post_data_fs() -> Result<()> {
     ksucalls::report_post_fs_data();
@@ -70,10 +72,12 @@ pub fn on_post_data_fs() -> Result<()> {
         warn!("apply root profile sepolicy failed: {e}");
     }
 
+    #[cfg(target_arch = "aarch64")]
     if let Err(e) = kpm::start_kpm_watcher() {
         warn!("KPM: Failed to start KPM watcher: {}", e);
     }
 
+    #[cfg(target_arch = "aarch64")]
     if let Err(e) = kpm::load_kpm_modules() {
         warn!("KPM: Failed to load KPM modules: {}", e);
     }
