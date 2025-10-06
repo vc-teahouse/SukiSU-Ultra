@@ -20,6 +20,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class HomeViewModel : ViewModel() {
 
@@ -90,7 +92,13 @@ class HomeViewModel : ViewModel() {
     var isRefreshing by mutableStateOf(false)
         private set
 
+    // 数据刷新状态流，用于监听变化
+    private val _dataRefreshTrigger = MutableStateFlow(0L)
+    val dataRefreshTrigger: StateFlow<Long> = _dataRefreshTrigger
+
     private var loadingJobs = mutableListOf<Job>()
+    private var lastRefreshTime = 0L
+    private val refreshCooldown = 2000L
 
     fun loadUserSettings(context: Context) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -262,37 +270,109 @@ class HomeViewModel : ViewModel() {
         loadingJobs.add(job)
     }
 
-    fun refreshData(context: Context) {
+    fun refreshData(context: Context, forceRefresh: Boolean = false) {
+        val currentTime = System.currentTimeMillis()
+
+        // 如果不是强制刷新，检查冷却时间
+        if (!forceRefresh && currentTime - lastRefreshTime < refreshCooldown) {
+            return
+        }
+
+        lastRefreshTime = currentTime
+
         viewModelScope.launch {
             isRefreshing = true
 
-            // 取消正在进行的加载任务
-            loadingJobs.forEach { it.cancel() }
-            loadingJobs.clear()
+            try {
+                // 取消正在进行的加载任务
+                loadingJobs.forEach { it.cancel() }
+                loadingJobs.clear()
 
-            // 重置状态
-            isCoreDataLoaded = false
-            isExtendedDataLoaded = false
+                // 重置状态
+                isCoreDataLoaded = false
+                isExtendedDataLoaded = false
 
-            // 重新加载
-            loadCoreData()
-            delay(100)
-            loadExtendedData(context)
+                // 触发数据刷新状态流
+                _dataRefreshTrigger.value = currentTime
 
-            // 检查更新
-            val settingsPrefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            val checkUpdate = settingsPrefs.getBoolean("check_update", true)
-            if (checkUpdate) {
-                try {
-                    val newVersionInfo = withContext(Dispatchers.IO) {
-                        checkNewVersion()
+                // 重新加载用户设置
+                loadUserSettings(context)
+
+                // 重新加载核心数据
+                loadCoreData()
+                delay(100)
+
+                // 重新加载扩展数据
+                loadExtendedData(context)
+
+                // 检查更新
+                val settingsPrefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                val checkUpdate = settingsPrefs.getBoolean("check_update", true)
+                if (checkUpdate) {
+                    try {
+                        val newVersionInfo = withContext(Dispatchers.IO) {
+                            checkNewVersion()
+                        }
+                        latestVersionInfo = newVersionInfo
+                    } catch (_: Exception) {
                     }
-                    latestVersionInfo = newVersionInfo
-                } catch (_: Exception) {
                 }
+            } catch (_: Exception) {
+                // 静默处理错误
+            } finally {
+                isRefreshing = false
             }
+        }
+    }
 
-            isRefreshing = false
+    // 手动触发刷新（下拉刷新使用）
+    fun onPullRefresh(context: Context) {
+        refreshData(context, forceRefresh = true)
+    }
+
+    // 自动刷新数据（当检测到变化时）
+    fun autoRefreshIfNeeded(context: Context) {
+        viewModelScope.launch {
+            // 检查是否需要刷新数据
+            val needsRefresh = checkIfDataNeedsRefresh()
+            if (needsRefresh) {
+                refreshData(context)
+            }
+        }
+    }
+
+    private suspend fun checkIfDataNeedsRefresh(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                // 检查KSU状态是否发生变化
+                val currentKsuVersion = try {
+                    if (Natives.becomeManager(ksuApp.packageName ?: "com.sukisu.ultra")) {
+                        Natives.version
+                    } else null
+                } catch (_: Exception) {
+                    null
+                }
+
+                // 如果KSU版本发生变化，需要刷新
+                if (currentKsuVersion != systemStatus.ksuVersion) {
+                    return@withContext true
+                }
+
+                // 检查模块数量是否发生变化
+                val currentModuleCount = try {
+                    getModuleCount()
+                } catch (_: Exception) {
+                    systemInfo.moduleCount
+                }
+
+                if (currentModuleCount != systemInfo.moduleCount) {
+                    return@withContext true
+                }
+
+                false
+            } catch (_: Exception) {
+                false
+            }
         }
     }
 

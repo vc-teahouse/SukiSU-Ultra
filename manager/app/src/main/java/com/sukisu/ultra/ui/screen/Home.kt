@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
@@ -74,12 +75,34 @@ fun HomeScreen(navigator: DestinationsNavigator) {
     val viewModel = viewModel<HomeViewModel>()
     val coroutineScope = rememberCoroutineScope()
 
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = viewModel.isRefreshing,
+        onRefresh = {
+            viewModel.onPullRefresh(context)
+        }
+    )
+
     LaunchedEffect(key1 = navigator) {
         viewModel.loadUserSettings(context)
         coroutineScope.launch {
             viewModel.loadCoreData()
             delay(100)
             viewModel.loadExtendedData(context)
+        }
+
+        // 启动数据变化监听
+        coroutineScope.launch {
+            while (true) {
+                delay(5000) // 每5秒检查一次
+                viewModel.autoRefreshIfNeeded(context)
+            }
+        }
+    }
+
+    // 监听数据刷新状态流
+    LaunchedEffect(viewModel.dataRefreshTrigger) {
+        viewModel.dataRefreshTrigger.collect { _ ->
+            // 数据刷新时的额外处理可以在这里添加
         }
     }
 
@@ -102,6 +125,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
+                .pullRefresh(pullRefreshState)
         ) {
             Column(
                 modifier = Modifier
