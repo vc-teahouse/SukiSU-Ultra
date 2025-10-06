@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18.1)
 
 project("kernelsu")
 
-add_library(zako
+add_library(kernelsu
         SHARED
         jni.c
         ksu.c
@@ -21,7 +21,7 @@ elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
 endif()
 
 if(ANDROID_ABI STREQUAL "arm64-v8a" OR ANDROID_ABI STREQUAL "armeabi-v7a")
-    target_link_libraries(zako ${log-lib} ${zakosign-lib})
+    target_link_libraries(kernelsu ${log-lib} ${zakosign-lib})
 else()
-    target_link_libraries(zako ${log-lib})
+    target_link_libraries(kernelsu ${log-lib})
 endif()

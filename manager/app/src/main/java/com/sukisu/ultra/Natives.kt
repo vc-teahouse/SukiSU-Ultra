@@ -63,7 +63,7 @@ object Natives {
 
     init {
         System.loadLibrary("zakosign")
-        System.loadLibrary("zako")
+        System.loadLibrary("kernelsu")
     }
 
     // become root manager, return true if success.

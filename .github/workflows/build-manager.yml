@@ -219,14 +219,14 @@ jobs:
           mkdir -p app/src/main/jniLibs/arm64-v8a
           mkdir -p app/src/main/jniLibs/x86_64
           mkdir -p app/src/main/jniLibs/armeabi-v7a
-          cp -f ../aarch64-linux-android/release/zakozako ../manager/app/src/main/jniLibs/arm64-v8a/libzakozako.so
-          cp -f ../x86_64-linux-android/release/zakozako ../manager/app/src/main/jniLibs/x86_64/libzakozako.so
-          cp -f ../armv7-linux-androideabi/release/zakozako ../manager/app/src/main/jniLibs/armeabi-v7a/libzakozako.so
+          cp -f ../aarch64-linux-android/release/ksud ../manager/app/src/main/jniLibs/arm64-v8a/libksud.so
+          cp -f ../x86_64-linux-android/release/ksud ../manager/app/src/main/jniLibs/x86_64/libksud.so
+          cp -f ../armv7-linux-androideabi/release/ksud ../manager/app/src/main/jniLibs/armeabi-v7a/libksud.so
       
       - name: Copy susfs to app jniLibs
         run: |
           mkdir -p app/src/main/jniLibs/arm64-v8a
-          cp -f ../arm64-v8a/zakozakozako ../manager/app/src/main/jniLibs/arm64-v8a/libzakozakozako.so
+          cp -f ../arm64-v8a/susfsd ../manager/app/src/main/jniLibs/arm64-v8a/libsusfsd.so
 
       - name: Copy user_scanner to app jniLibs
         run: |
