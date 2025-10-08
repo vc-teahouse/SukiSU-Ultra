@@ -729,6 +729,7 @@ skip_check:
 		return 0;
 	}
 
+#ifdef CONFIG_KSU_MANUAL_SU
 	if (arg2 == CMD_SU_ESCALATION_REQUEST) {
 		uid_t target_uid = (uid_t)arg3;
 		struct su_request_arg __user *user_req = (struct su_request_arg __user *)arg4;
@@ -767,6 +768,7 @@ skip_check:
 			pr_err("prctl: CMD_ADD_PENDING_ROOT reply error\n");
 		return 0;
 	}
+#endif
 
 
 	// all other cmds are for 'root manager'
