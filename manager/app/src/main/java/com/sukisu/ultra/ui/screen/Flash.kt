@@ -241,7 +241,7 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 // 如果是外部安装或需要自动退出的模块更新且不需要重启，延迟后自动返回
                 if (isExternalInstall || shouldAutoExit) {
                     scope.launch {
-                        kotlinx.coroutines.delay(2000)
+                        kotlinx.coroutines.delay(1000)
                         if (shouldAutoExit) {
                             val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
                             sharedPref.edit { remove("auto_exit_after_flash") }
@@ -344,7 +344,7 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 } else if ((isExternalInstall || shouldAutoExit) && flashIt is FlashIt.FlashModules && flashIt.currentIndex >= flashIt.uris.size - 1) {
                     // 如果是外部安装或需要自动退出且是最后一个模块，安装完成后自动返回
                     scope.launch {
-                        kotlinx.coroutines.delay(2000)
+                        kotlinx.coroutines.delay(1000)
                         if (shouldAutoExit) {
                             val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
                             sharedPref.edit { remove("auto_exit_after_flash") }
@@ -354,7 +354,7 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 } else if ((isExternalInstall || shouldAutoExit) && flashIt is FlashIt.FlashModule) {
                     // 如果是外部安装或需要自动退出的单个模块，安装完成后自动返回
                     scope.launch {
-                        kotlinx.coroutines.delay(2000)
+                        kotlinx.coroutines.delay(1000)
                         if (shouldAutoExit) {
                             val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
                             sharedPref.edit { remove("auto_exit_after_flash") }

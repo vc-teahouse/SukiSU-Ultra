@@ -115,10 +115,10 @@ fun KernelFlashScreen(
         showFloatAction = true
         KernelFlashStateHolder.isFlashing = false
 
-        // 如果需要自动退出，延迟3秒后退出
+        // 如果需要自动退出，延迟1.5秒后退出
         if (shouldAutoExit) {
             scope.launch {
-                delay(3000)
+                delay(1500)
                 val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
                 sharedPref.edit { remove("auto_exit_after_flash") }
                 (context as? ComponentActivity)?.finish()

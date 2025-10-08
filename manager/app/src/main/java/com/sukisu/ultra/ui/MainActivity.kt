@@ -1,6 +1,7 @@
 package com.sukisu.ultra.ui
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
@@ -95,14 +96,35 @@ class MainActivity : ComponentActivity() {
             }
 
             // Check if launched with a ZIP file
-            val zipUri: ArrayList<Uri>? = if (intent.data != null) {
-                arrayListOf(intent.data!!)
-            } else {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableArrayListExtra("uris", Uri::class.java)
-                } else {
-                    @Suppress("DEPRECATION")
-                    intent.getParcelableArrayListExtra("uris")
+            val zipUri: ArrayList<Uri>? = when (intent?.action) {
+                Intent.ACTION_SEND -> {
+                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                    }
+                    uri?.let { arrayListOf(it) }
+                }
+
+                Intent.ACTION_SEND_MULTIPLE -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+                    }
+                }
+
+                else -> when {
+                    intent?.data != null -> arrayListOf(intent.data!!)
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+                        intent.getParcelableArrayListExtra("uris", Uri::class.java)
+                    }
+                    else -> {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableArrayListExtra("uris")
+                    }
                 }
             }
 
