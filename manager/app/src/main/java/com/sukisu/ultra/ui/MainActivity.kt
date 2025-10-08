@@ -2,6 +2,7 @@ package com.sukisu.ultra.ui
 
 import android.content.Context
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -25,7 +26,9 @@ import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationStyle
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
 import com.ramcosta.composedestinations.spec.NavHostGraphSpec
+import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.screen.BottomBarDestination
 import com.sukisu.ultra.ui.theme.KernelSUTheme
@@ -34,6 +37,7 @@ import com.sukisu.ultra.ui.util.install
 import com.sukisu.ultra.ui.viewmodel.HomeViewModel
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.sukisu.ultra.ui.webui.initPlatform
+import com.sukisu.ultra.ui.screen.FlashIt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import zako.zako.zako.zakoui.activity.component.BottomBar
@@ -83,6 +87,18 @@ class MainActivity : ComponentActivity() {
                 isInitialized = true
             }
 
+            // Check if launched with a ZIP file
+            val zipUri: ArrayList<Uri>? = if (intent.data != null) {
+                arrayListOf(intent.data!!)
+            } else {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableArrayListExtra("uris", Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableArrayListExtra("uris")
+                }
+            }
+
             setContent {
                 KernelSUTheme {
                     val navController = rememberNavController()
@@ -91,6 +107,18 @@ class MainActivity : ComponentActivity() {
 
                     val bottomBarRoutes = remember {
                         BottomBarDestination.entries.map { it.direction.route }.toSet()
+                    }
+
+                    val navigator = navController.rememberDestinationsNavigator()
+
+                    LaunchedEffect(zipUri) {
+                        if (!zipUri.isNullOrEmpty()) {
+                            navigator.navigate(
+                                FlashScreenDestination(
+                                    FlashIt.FlashModules(zipUri)
+                                )
+                            )
+                        }
                     }
 
                     val showBottomBar = when (currentDestination?.route) {

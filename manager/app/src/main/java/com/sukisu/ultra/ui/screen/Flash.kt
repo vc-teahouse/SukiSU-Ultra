@@ -1,5 +1,6 @@
 package com.sukisu.ultra.ui.screen
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.os.Parcelable
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.activity.ComponentActivity
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
@@ -119,6 +121,24 @@ fun setModuleVerificationStatus(uri: Uri, isVerified: Boolean) {
 @Destination<RootGraph>
 fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
     val context = LocalContext.current
+
+    // 是否通过从外部启动的模块安装
+    val isExternalInstall = remember {
+        when (flashIt) {
+            is FlashIt.FlashModule -> {
+                (context as? ComponentActivity)?.intent?.let { intent ->
+                    intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND
+                } ?: false
+            }
+            is FlashIt.FlashModules -> {
+                (context as? ComponentActivity)?.intent?.let { intent ->
+                    intent.action == Intent.ACTION_VIEW || intent.action == Intent.ACTION_SEND
+                } ?: false
+            }
+            else -> false
+        }
+    }
+
     var text by rememberSaveable { mutableStateOf("") }
     var tempText: String
     val logContent = rememberSaveable { StringBuilder() }
@@ -203,8 +223,21 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 if (showReboot) {
                     text += "\n\n\n"
                     showFloatAction = true
+
+                    // 如果是内部安装，显示重启按钮后不自动返回
+                    if (isExternalInstall) {
+                        return@flashModuleUpdate
+                    }
                 }
                 hasUpdateCompleted = true
+
+                // 如果是外部安装的模块更新且不需要重启，延迟后自动返回
+                if (isExternalInstall) {
+                    scope.launch {
+                        kotlinx.coroutines.delay(2000)
+                        (context as? ComponentActivity)?.finish()
+                    }
+                }
             }, onStdout = {
                 tempText = "$it\n"
                 if (tempText.startsWith("[H[J")) { // clear command
@@ -297,6 +330,18 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                         kotlinx.coroutines.delay(500)
                         navigator.navigate(FlashScreenDestination(nextFlashIt))
                     }
+                } else if (isExternalInstall && flashIt is FlashIt.FlashModules && flashIt.currentIndex >= flashIt.uris.size - 1) {
+                    // 如果是外部安装且是最后一个模块，安装完成后自动返回
+                    scope.launch {
+                        kotlinx.coroutines.delay(2000)
+                        (context as? ComponentActivity)?.finish()
+                    }
+                } else if (isExternalInstall && flashIt is FlashIt.FlashModule) {
+                    // 如果是外部安装单个模块，安装完成后自动返回
+                    scope.launch {
+                        kotlinx.coroutines.delay(2000)
+                        (context as? ComponentActivity)?.finish()
+                    }
                 }
             }, onStdout = {
                 tempText = "$it\n"
@@ -319,14 +364,18 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
         }
 
         if (canGoBack) {
-            if (flashIt is FlashIt.FlashModules || flashIt is FlashIt.FlashModuleUpdate) {
-                viewModel.markNeedRefresh()
-                viewModel.fetchModuleList()
-                navigator.navigate(ModuleScreenDestination)
+            if (isExternalInstall) {
+                (context as? ComponentActivity)?.finish()
             } else {
-                viewModel.markNeedRefresh()
-                viewModel.fetchModuleList()
-                navigator.popBackStack()
+                if (flashIt is FlashIt.FlashModules || flashIt is FlashIt.FlashModuleUpdate) {
+                    viewModel.markNeedRefresh()
+                    viewModel.fetchModuleList()
+                    navigator.navigate(ModuleScreenDestination)
+                } else {
+                    viewModel.markNeedRefresh()
+                    viewModel.fetchModuleList()
+                    navigator.popBackStack()
+                }
             }
         }
     }
