@@ -1,5 +1,6 @@
 package com.sukisu.ultra.ui.screen
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -50,6 +51,7 @@ import kotlinx.parcelize.Parcelize
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.core.content.edit
 
 /**
  * @author ShirkNeko
@@ -121,6 +123,11 @@ fun setModuleVerificationStatus(uri: Uri, isVerified: Boolean) {
 @Destination<RootGraph>
 fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
     val context = LocalContext.current
+
+    val shouldAutoExit = remember {
+        val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+        sharedPref.getBoolean("auto_exit_after_flash", false)
+    }
 
     // 是否通过从外部启动的模块安装
     val isExternalInstall = remember {
@@ -231,10 +238,14 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                 }
                 hasUpdateCompleted = true
 
-                // 如果是外部安装的模块更新且不需要重启，延迟后自动返回
-                if (isExternalInstall) {
+                // 如果是外部安装或需要自动退出的模块更新且不需要重启，延迟后自动返回
+                if (isExternalInstall || shouldAutoExit) {
                     scope.launch {
                         kotlinx.coroutines.delay(2000)
+                        if (shouldAutoExit) {
+                            val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+                            sharedPref.edit { remove("auto_exit_after_flash") }
+                        }
                         (context as? ComponentActivity)?.finish()
                     }
                 }
@@ -330,16 +341,24 @@ fun FlashScreen(navigator: DestinationsNavigator, flashIt: FlashIt) {
                         kotlinx.coroutines.delay(500)
                         navigator.navigate(FlashScreenDestination(nextFlashIt))
                     }
-                } else if (isExternalInstall && flashIt is FlashIt.FlashModules && flashIt.currentIndex >= flashIt.uris.size - 1) {
-                    // 如果是外部安装且是最后一个模块，安装完成后自动返回
+                } else if ((isExternalInstall || shouldAutoExit) && flashIt is FlashIt.FlashModules && flashIt.currentIndex >= flashIt.uris.size - 1) {
+                    // 如果是外部安装或需要自动退出且是最后一个模块，安装完成后自动返回
                     scope.launch {
                         kotlinx.coroutines.delay(2000)
+                        if (shouldAutoExit) {
+                            val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+                            sharedPref.edit { remove("auto_exit_after_flash") }
+                        }
                         (context as? ComponentActivity)?.finish()
                     }
-                } else if (isExternalInstall && flashIt is FlashIt.FlashModule) {
-                    // 如果是外部安装单个模块，安装完成后自动返回
+                } else if ((isExternalInstall || shouldAutoExit) && flashIt is FlashIt.FlashModule) {
+                    // 如果是外部安装或需要自动退出的单个模块，安装完成后自动返回
                     scope.launch {
                         kotlinx.coroutines.delay(2000)
+                        if (shouldAutoExit) {
+                            val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+                            sharedPref.edit { remove("auto_exit_after_flash") }
+                        }
                         (context as? ComponentActivity)?.finish()
                     }
                 }
@@ -668,7 +687,7 @@ private fun TopBar(
     )
 }
 
-suspend fun getModuleNameFromUri(context: android.content.Context, uri: Uri): String {
+suspend fun getModuleNameFromUri(context: Context, uri: Uri): String {
     return withContext(Dispatchers.IO) {
         try {
             if (uri == Uri.EMPTY) {

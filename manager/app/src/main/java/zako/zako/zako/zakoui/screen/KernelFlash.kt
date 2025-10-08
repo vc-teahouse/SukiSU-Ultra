@@ -1,7 +1,9 @@
 package zako.zako.zako.zakoui.screen
 
+import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -27,6 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.edit
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -73,6 +76,12 @@ fun KernelFlashScreen(
     kpmUndoPatch: Boolean = false
 ) {
     val context = LocalContext.current
+
+    val shouldAutoExit = remember {
+        val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+        sharedPref.getBoolean("auto_exit_after_flash", false)
+    }
+
     val scrollState = rememberScrollState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = LocalSnackbarHost.current
@@ -105,6 +114,16 @@ fun KernelFlashScreen(
     val onFlashComplete = {
         showFloatAction = true
         KernelFlashStateHolder.isFlashing = false
+
+        // 如果需要自动退出，延迟3秒后退出
+        if (shouldAutoExit) {
+            scope.launch {
+                delay(3000)
+                val sharedPref = context.getSharedPreferences("kernel_flash_prefs", Context.MODE_PRIVATE)
+                sharedPref.edit { remove("auto_exit_after_flash") }
+                (context as? ComponentActivity)?.finish()
+            }
+        }
     }
 
     // 开始刷写
@@ -162,6 +181,17 @@ fun KernelFlashScreen(
                 KernelFlashStateHolder.isFlashing = false
             }
             navigator.popBackStack()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            KernelFlashStateHolder.currentState = null
+            KernelFlashStateHolder.currentUri = null
+            KernelFlashStateHolder.currentSlot = null
+            KernelFlashStateHolder.currentKpmPatchEnabled = false
+            KernelFlashStateHolder.currentKpmUndoPatch = false
+            KernelFlashStateHolder.isFlashing = false
         }
     }
 

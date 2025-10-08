@@ -27,6 +27,7 @@ import com.ramcosta.composedestinations.animations.NavHostAnimatedDestinationSty
 import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.FlashScreenDestination
+import com.ramcosta.composedestinations.generated.destinations.InstallScreenDestination
 import com.ramcosta.composedestinations.spec.NavHostGraphSpec
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import com.sukisu.ultra.Natives
@@ -40,8 +41,14 @@ import com.sukisu.ultra.ui.webui.initPlatform
 import com.sukisu.ultra.ui.screen.FlashIt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import zako.zako.zako.zakoui.activity.component.BottomBar
 import zako.zako.zako.zakoui.activity.util.*
+import java.util.zip.ZipInputStream
+import java.io.IOException
+import androidx.core.content.edit
+import com.sukisu.ultra.ui.util.rootAvailable
 
 class MainActivity : ComponentActivity() {
     private lateinit var superUserViewModel: SuperUserViewModel
@@ -113,11 +120,8 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(zipUri) {
                         if (!zipUri.isNullOrEmpty()) {
-                            navigator.navigate(
-                                FlashScreenDestination(
-                                    FlashIt.FlashModules(zipUri)
-                                )
-                            )
+                            // 检测 ZIP 文件类型并导航到相应界面
+                            detectZipTypeAndNavigate(zipUri, navigator)
                         }
                     }
 
@@ -194,6 +198,115 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private enum class ZipType {
+        MODULE,
+        KERNEL,
+        UNKNOWN
+    }
+
+    private fun detectZipType(uri: Uri): ZipType {
+        return try {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                ZipInputStream(inputStream).use { zipStream ->
+                    var hasModuleProp = false
+                    var hasToolsFolder = false
+                    var hasAnykernelSh = false
+
+                    var entry = zipStream.nextEntry
+                    while (entry != null) {
+                        val entryName = entry.name.lowercase()
+
+                        when {
+                            entryName == "module.prop" || entryName.endsWith("/module.prop") -> {
+                                hasModuleProp = true
+                            }
+                            entryName.startsWith("tools/") || entryName == "tools" -> {
+                                hasToolsFolder = true
+                            }
+                            entryName == "anykernel.sh" || entryName.endsWith("/anykernel.sh") -> {
+                                hasAnykernelSh = true
+                            }
+                        }
+
+                        zipStream.closeEntry()
+                        entry = zipStream.nextEntry
+                    }
+
+                    when {
+                        hasModuleProp -> ZipType.MODULE
+                        hasToolsFolder && hasAnykernelSh -> ZipType.KERNEL
+                        else -> ZipType.UNKNOWN
+                    }
+                }
+            } ?: ZipType.UNKNOWN
+        } catch (e: IOException) {
+            e.printStackTrace()
+            ZipType.UNKNOWN
+        }
+    }
+
+    private suspend fun detectZipTypeAndNavigate(
+        zipUris: ArrayList<Uri>,
+        navigator: com.ramcosta.composedestinations.navigation.DestinationsNavigator
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                val moduleUris = mutableListOf<Uri>()
+                val kernelUris = mutableListOf<Uri>()
+
+                for (uri in zipUris) {
+                    val zipType = detectZipType(uri)
+                    when (zipType) {
+                        ZipType.MODULE -> moduleUris.add(uri)
+                        ZipType.KERNEL -> kernelUris.add(uri)
+                        ZipType.UNKNOWN -> {
+                        }
+                    }
+                }
+
+                // 根据检测结果导航
+                withContext(Dispatchers.Main) {
+                    when {
+                        // 内核文件
+                        kernelUris.isNotEmpty() && moduleUris.isEmpty() -> {
+                            if (kernelUris.size == 1 && rootAvailable()) {
+                                navigator.navigate(
+                                    InstallScreenDestination(
+                                        preselectedKernelUri = kernelUris.first().toString()
+                                    )
+                                )
+                            }
+                            setAutoExitAfterFlash()
+                        }
+                        // 模块文件
+                        moduleUris.isNotEmpty() -> {
+                            navigator.navigate(
+                                FlashScreenDestination(
+                                    FlashIt.FlashModules(ArrayList(moduleUris))
+                                )
+                            )
+                            setAutoExitAfterFlash()
+                        }
+                        // 如果没有识别出任何类型的文件，则直接退出
+                        else -> {
+                            (this@MainActivity as? ComponentActivity)?.finish()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                (this@MainActivity as? ComponentActivity)?.finish()
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun setAutoExitAfterFlash() {
+        val sharedPref = getSharedPreferences("kernel_flash_prefs", MODE_PRIVATE)
+        sharedPref.edit {
+            putBoolean("auto_exit_after_flash", true)
         }
     }
 

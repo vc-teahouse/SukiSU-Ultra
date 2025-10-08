@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import com.maxkeppeker.sheets.core.models.base.Header
 import com.maxkeppeker.sheets.core.models.base.rememberUseCaseState
 import com.maxkeppeler.sheets.list.ListDialog
@@ -71,18 +72,44 @@ enum class KpmPatchOption {
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
 @Composable
-fun InstallScreen(navigator: DestinationsNavigator) {
+fun InstallScreen(
+    navigator: DestinationsNavigator,
+    preselectedKernelUri: String? = null
+) {
+    val context = LocalContext.current
     var installMethod by remember { mutableStateOf<InstallMethod?>(null) }
     var lkmSelection by remember { mutableStateOf<LkmSelection>(LkmSelection.KmiNone) }
     var kpmPatchOption by remember { mutableStateOf(KpmPatchOption.FOLLOW_KERNEL) }
-    val context = LocalContext.current
     var showRebootDialog by remember { mutableStateOf(false) }
     var showSlotSelectionDialog by remember { mutableStateOf(false) }
+    var showKpmPatchDialog by remember { mutableStateOf(false) }
     var tempKernelUri by remember { mutableStateOf<Uri?>(null) }
     val kernelVersion = getKernelVersion()
     val isGKI = kernelVersion.isGKI()
     val isAbDevice = isAbDevice()
     val summary = stringResource(R.string.horizon_kernel_summary)
+
+    // 处理预选的内核文件
+    LaunchedEffect(preselectedKernelUri) {
+        preselectedKernelUri?.let { uriString ->
+            try {
+                val preselectedUri = uriString.toUri()
+                val horizonMethod = InstallMethod.HorizonKernel(
+                    uri = preselectedUri,
+                    summary = summary
+                )
+                installMethod = horizonMethod
+                tempKernelUri = preselectedUri
+                if (isAbDevice) {
+                    showSlotSelectionDialog = true
+                } else {
+                    showKpmPatchDialog = true
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     if (showRebootDialog) {
         RebootDialog(
@@ -143,6 +170,19 @@ fun InstallScreen(navigator: DestinationsNavigator) {
                 summary = summary
             )
             installMethod = horizonMethod
+            if (preselectedKernelUri != null) {
+                showKpmPatchDialog = true
+            }
+        }
+    )
+
+    KpmPatchSelectionDialog(
+        show = showKpmPatchDialog,
+        currentOption = kpmPatchOption,
+        onDismiss = { showKpmPatchDialog = false },
+        onOptionSelected = { option ->
+            kpmPatchOption = option
+            showKpmPatchDialog = false
         }
     )
 
@@ -194,6 +234,7 @@ fun InstallScreen(navigator: DestinationsNavigator) {
                             showSlotSelectionDialog = true
                         } else {
                             installMethod = method
+                            showKpmPatchDialog = true
                         }
                     } else {
                         installMethod = method
@@ -317,6 +358,47 @@ fun InstallScreen(navigator: DestinationsNavigator) {
 }
 
 @Composable
+private fun KpmPatchSelectionDialog(
+    show: Boolean,
+    currentOption: KpmPatchOption,
+    onDismiss: () -> Unit,
+    onOptionSelected: (KpmPatchOption) -> Unit
+) {
+    if (show) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.kpm_patch_options)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.kpm_patch_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    KpmPatchOptionGroup(
+                        selectedOption = currentOption,
+                        onOptionChanged = onOptionSelected
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { onOptionSelected(currentOption) }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
 private fun RebootDialog(
     show: Boolean,
     onDismiss: () -> Unit,
@@ -403,6 +485,10 @@ private fun SelectInstallMethod(
 
     var selectedOption by remember { mutableStateOf<InstallMethod?>(null) }
     var currentSelectingMethod by remember { mutableStateOf<InstallMethod?>(null) }
+
+    LaunchedEffect(selectedMethod) {
+        selectedOption = selectedMethod
+    }
 
     val selectImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()

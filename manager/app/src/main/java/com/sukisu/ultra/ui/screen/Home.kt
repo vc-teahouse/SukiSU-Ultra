@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
@@ -139,7 +138,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     StatusCard(
                         systemStatus = viewModel.systemStatus,
                         onClickInstall = {
-                            navigator.navigate(InstallScreenDestination)
+                            navigator.navigate(InstallScreenDestination(preselectedKernelUri = null))
                         }
                     )
 
