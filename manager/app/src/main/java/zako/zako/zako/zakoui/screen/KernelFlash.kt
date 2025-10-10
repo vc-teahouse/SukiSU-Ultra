@@ -184,14 +184,16 @@ fun KernelFlashScreen(
         }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(shouldAutoExit) {
         onDispose {
-            KernelFlashStateHolder.currentState = null
-            KernelFlashStateHolder.currentUri = null
-            KernelFlashStateHolder.currentSlot = null
-            KernelFlashStateHolder.currentKpmPatchEnabled = false
-            KernelFlashStateHolder.currentKpmUndoPatch = false
-            KernelFlashStateHolder.isFlashing = false
+            if (shouldAutoExit) {
+                KernelFlashStateHolder.currentState = null
+                KernelFlashStateHolder.currentUri = null
+                KernelFlashStateHolder.currentSlot = null
+                KernelFlashStateHolder.currentKpmPatchEnabled = false
+                KernelFlashStateHolder.currentKpmUndoPatch = false
+                KernelFlashStateHolder.isFlashing = false
+            }
         }
     }
 
