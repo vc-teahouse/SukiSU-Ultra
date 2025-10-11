@@ -11,13 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavBackStackEntry
@@ -40,14 +37,13 @@ import com.sukisu.ultra.ui.viewmodel.HomeViewModel
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import com.sukisu.ultra.ui.webui.initPlatform
 import com.sukisu.ultra.ui.screen.FlashIt
+import com.sukisu.ultra.ui.component.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import zako.zako.zako.zakoui.activity.component.BottomBar
 import zako.zako.zako.zakoui.activity.util.*
-import java.util.zip.ZipInputStream
-import java.io.IOException
 import androidx.core.content.edit
 import com.sukisu.ultra.ui.util.rootAvailable
 
@@ -60,6 +56,9 @@ class MainActivity : ComponentActivity() {
         val isHideOtherInfo: Boolean = false,
         val showKpmInfo: Boolean = false
     )
+
+    private var showConfirmationDialog = mutableStateOf(false)
+    private var pendingZipFiles = mutableStateOf<List<ZipFileInfo>>(emptyList())
 
     private lateinit var themeChangeObserver: ThemeChangeContentObserver
 
@@ -102,7 +101,7 @@ class MainActivity : ComponentActivity() {
                         intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
                     } else {
                         @Suppress("DEPRECATION")
-                        intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM)
                     }
                     uri?.let { arrayListOf(it) }
                 }
@@ -140,10 +139,24 @@ class MainActivity : ComponentActivity() {
 
                     val navigator = navController.rememberDestinationsNavigator()
 
+                    InstallConfirmationDialog(
+                        show = showConfirmationDialog.value,
+                        zipFiles = pendingZipFiles.value,
+                        onConfirm = { confirmedFiles ->
+                            showConfirmationDialog.value = false
+                            navigateToFlashScreen(confirmedFiles, navigator)
+                        },
+                        onDismiss = {
+                            showConfirmationDialog.value = false
+                            pendingZipFiles.value = emptyList()
+                            finish()
+                        }
+                    )
+
                     LaunchedEffect(zipUri) {
                         if (!zipUri.isNullOrEmpty()) {
-                            // 检测 ZIP 文件类型并导航到相应界面
-                            detectZipTypeAndNavigate(zipUri, navigator)
+                            // 检测 ZIP 文件类型并显示确认对话框
+                            detectZipTypeAndShowConfirmation(zipUri)
                         }
                     }
 
@@ -223,104 +236,55 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private enum class ZipType {
-        MODULE,
-        KERNEL,
-        UNKNOWN
-    }
+    private suspend fun detectZipTypeAndShowConfirmation(zipUris: ArrayList<Uri>) {
+        try {
+            val zipFileInfos = ZipFileDetector.detectAndParseZipFiles(this, zipUris)
 
-    private fun detectZipType(uri: Uri): ZipType {
-        return try {
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                ZipInputStream(inputStream).use { zipStream ->
-                    var hasModuleProp = false
-                    var hasToolsFolder = false
-                    var hasAnykernelSh = false
-
-                    var entry = zipStream.nextEntry
-                    while (entry != null) {
-                        val entryName = entry.name.lowercase()
-
-                        when {
-                            entryName == "module.prop" || entryName.endsWith("/module.prop") -> {
-                                hasModuleProp = true
-                            }
-                            entryName.startsWith("tools/") || entryName == "tools" -> {
-                                hasToolsFolder = true
-                            }
-                            entryName == "anykernel.sh" || entryName.endsWith("/anykernel.sh") -> {
-                                hasAnykernelSh = true
-                            }
-                        }
-
-                        zipStream.closeEntry()
-                        entry = zipStream.nextEntry
-                    }
-
-                    when {
-                        hasModuleProp -> ZipType.MODULE
-                        hasToolsFolder && hasAnykernelSh -> ZipType.KERNEL
-                        else -> ZipType.UNKNOWN
-                    }
+            withContext(Dispatchers.Main) {
+                if (zipFileInfos.isNotEmpty()) {
+                    pendingZipFiles.value = zipFileInfos
+                    showConfirmationDialog.value = true
+                } else {
+                    finish()
                 }
-            } ?: ZipType.UNKNOWN
-        } catch (e: IOException) {
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                finish()
+            }
             e.printStackTrace()
-            ZipType.UNKNOWN
         }
     }
 
-    private suspend fun detectZipTypeAndNavigate(
-        zipUris: ArrayList<Uri>,
+    private fun navigateToFlashScreen(
+        zipFiles: List<ZipFileInfo>,
         navigator: com.ramcosta.composedestinations.navigation.DestinationsNavigator
     ) {
-        withContext(Dispatchers.IO) {
-            try {
-                val moduleUris = mutableListOf<Uri>()
-                val kernelUris = mutableListOf<Uri>()
+        lifecycleScope.launch {
+            val moduleUris = zipFiles.filter { it.type == ZipType.MODULE }.map { it.uri }
+            val kernelUris = zipFiles.filter { it.type == ZipType.KERNEL }.map { it.uri }
 
-                for (uri in zipUris) {
-                    val zipType = detectZipType(uri)
-                    when (zipType) {
-                        ZipType.MODULE -> moduleUris.add(uri)
-                        ZipType.KERNEL -> kernelUris.add(uri)
-                        ZipType.UNKNOWN -> {
-                        }
-                    }
-                }
-
-                // 根据检测结果导航
-                withContext(Dispatchers.Main) {
-                    when {
-                        // 内核文件
-                        kernelUris.isNotEmpty() && moduleUris.isEmpty() -> {
-                            if (kernelUris.size == 1 && rootAvailable()) {
-                                navigator.navigate(
-                                    InstallScreenDestination(
-                                        preselectedKernelUri = kernelUris.first().toString()
-                                    )
-                                )
-                            }
-                            setAutoExitAfterFlash()
-                        }
-                        // 模块文件
-                        moduleUris.isNotEmpty() -> {
-                            navigator.navigate(
-                                FlashScreenDestination(
-                                    FlashIt.FlashModules(ArrayList(moduleUris))
-                                )
+            when {
+                // 内核文件
+                kernelUris.isNotEmpty() && moduleUris.isEmpty() -> {
+                    if (kernelUris.size == 1 && rootAvailable()) {
+                        navigator.navigate(
+                            InstallScreenDestination(
+                                preselectedKernelUri = kernelUris.first().toString()
                             )
-                            setAutoExitAfterFlash()
-                        }
-                        // 如果没有识别出任何类型的文件，则直接退出
-                        else -> {
-                            (this@MainActivity as? ComponentActivity)?.finish()
-                        }
+                        )
                     }
+                    setAutoExitAfterFlash()
                 }
-            } catch (e: Exception) {
-                (this@MainActivity as? ComponentActivity)?.finish()
-                e.printStackTrace()
+                // 模块文件
+                moduleUris.isNotEmpty() -> {
+                    navigator.navigate(
+                        FlashScreenDestination(
+                            FlashIt.FlashModules(ArrayList(moduleUris))
+                        )
+                    )
+                    setAutoExitAfterFlash()
+                }
             }
         }
     }

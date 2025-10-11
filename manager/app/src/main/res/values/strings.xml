@@ -665,4 +665,17 @@ Important Note:\n
     <string name="clean_runtime_environment_confirm">Are you sure you want to clean the runtime environment? This will stop the scanner service and remove related files.</string>
     <string name="clean_runtime_environment_success">Runtime environment cleaned successfully</string>
     <string name="clean_runtime_environment_failed">Failed to clean runtime environment</string>
+    <!-- 确认安装相关字符串 -->
+    <string name="confirm_installation">Confirm Installation</string>
+    <string name="confirm_multiple_installation">Confirm Installation (%d files)</string>
+    <string name="install_confirm">Install</string>
+    <string name="module_package">Module</string>
+    <string name="kernel_package">Kernel</string>
+    <string name="unknown_package">Unknown</string>
+    <string name="unknown_kernel">Unknown Kernel</string>
+    <string name="unknown_file">Unknown File</string>
+    <string name="version">Version</string>
+    <string name="author">Author</string>
+    <string name="description">Description</string>
+    <string name="supported_devices">Supported Devices</string>
 </resources>
