@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.component
+package com.sukisu.ultra.ui.theme.component
 
 import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
@@ -32,9 +32,10 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.util.BackgroundTransformation
-import com.sukisu.ultra.ui.util.saveTransformedBackground
+import com.sukisu.ultra.ui.theme.util.BackgroundTransformation
+import com.sukisu.ultra.ui.theme.util.saveTransformedBackground
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.max
 
 @Composable
@@ -67,9 +68,9 @@ fun ImageEditorDialog(
     )
     val updateTransformation = remember {
         { newScale: Float, newOffsetX: Float, newOffsetY: Float ->
-            val scaleDiff = kotlin.math.abs(newScale - lastScale)
-            val offsetXDiff = kotlin.math.abs(newOffsetX - lastOffsetX)
-            val offsetYDiff = kotlin.math.abs(newOffsetY - lastOffsetY)
+            val scaleDiff = abs(newScale - lastScale)
+            val offsetXDiff = abs(newOffsetX - lastOffsetX)
+            val offsetYDiff = abs(newOffsetY - lastOffsetY)
             if (scaleDiff > 0.01f || offsetXDiff > 1f || offsetYDiff > 1f) {
                 scale = newScale
                 offsetX = newOffsetX

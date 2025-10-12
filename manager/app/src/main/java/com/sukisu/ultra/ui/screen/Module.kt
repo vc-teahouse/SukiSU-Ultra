@@ -75,6 +75,10 @@ import com.sukisu.ultra.ui.component.*
 import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
 import com.sukisu.ultra.ui.util.*
+import com.sukisu.ultra.ui.util.module.ModuleModify
+import com.sukisu.ultra.ui.util.module.ModuleOperationUtils
+import com.sukisu.ultra.ui.util.module.ModuleUtils
+import com.sukisu.ultra.ui.util.module.verifyModuleSignature
 import com.sukisu.ultra.ui.viewmodel.ModuleViewModel
 import com.sukisu.ultra.ui.webui.WebUIActivity
 import com.sukisu.ultra.ui.webui.WebUIXActivity

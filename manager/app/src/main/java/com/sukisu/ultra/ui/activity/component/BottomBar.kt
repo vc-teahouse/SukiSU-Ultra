@@ -1,4 +1,4 @@
-package zako.zako.zako.zakoui.activity.component
+package com.sukisu.ultra.ui.activity.component
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
@@ -17,12 +17,11 @@ import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ksuApp
 import com.sukisu.ultra.ui.MainActivity
+import com.sukisu.ultra.ui.activity.util.*
+import com.sukisu.ultra.ui.activity.util.AppData.getKpmVersionUse
 import com.sukisu.ultra.ui.screen.BottomBarDestination
 import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
 import com.sukisu.ultra.ui.theme.CardConfig.cardElevation
-import zako.zako.zako.zakoui.activity.util.AppData
-import zako.zako.zako.zakoui.activity.util.AppData.DataRefreshManager
-import zako.zako.zako.zakoui.activity.util.AppData.getKpmVersionUse
 
 @SuppressLint("ContextCastToActivity")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,9 +39,9 @@ fun BottomBar(navController: NavHostController) {
     val showKpmInfo = settings.showKpmInfo
 
     // 收集计数数据
-    val superuserCount by DataRefreshManager.superuserCount.collectAsState()
-    val moduleCount by DataRefreshManager.moduleCount.collectAsState()
-    val kpmModuleCount by DataRefreshManager.kpmModuleCount.collectAsState()
+    val superuserCount by AppData.DataRefreshManager.superuserCount.collectAsState()
+    val moduleCount by AppData.DataRefreshManager.moduleCount.collectAsState()
+    val kpmModuleCount by AppData.DataRefreshManager.kpmModuleCount.collectAsState()
 
 
     NavigationBar(

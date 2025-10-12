@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import com.sukisu.ultra.ui.util.HanziToPinyin
 import com.sukisu.ultra.ui.util.listModules
 import com.sukisu.ultra.ui.util.getRootShell
-import com.sukisu.ultra.ui.util.ModuleVerificationManager
+import com.sukisu.ultra.ui.util.module.ModuleVerificationManager
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject

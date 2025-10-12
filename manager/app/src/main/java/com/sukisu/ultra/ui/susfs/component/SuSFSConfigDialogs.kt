@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.component
+package com.sukisu.ultra.ui.susfs.component
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageInfo
@@ -29,7 +29,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.util.SuSFSManager
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import kotlinx.coroutines.launch
 

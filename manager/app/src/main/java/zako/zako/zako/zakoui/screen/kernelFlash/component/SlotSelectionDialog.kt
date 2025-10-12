@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.component
+package zako.zako.zako.zakoui.screen.kernelFlash.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

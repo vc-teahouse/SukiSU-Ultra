@@ -34,8 +34,8 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
-import com.sukisu.ultra.ui.util.BackgroundTransformation
-import com.sukisu.ultra.ui.util.saveTransformedBackground
+import com.sukisu.ultra.ui.theme.util.BackgroundTransformation
+import com.sukisu.ultra.ui.theme.util.saveTransformedBackground
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream

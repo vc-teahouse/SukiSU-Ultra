@@ -50,7 +50,7 @@ import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
 import com.sukisu.ultra.ui.theme.CardConfig.cardElevation
 import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
-import com.sukisu.ultra.ui.util.SuSFSManager
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.util.checkNewVersion
 import com.sukisu.ultra.ui.util.getSuSFS
 import com.sukisu.ultra.ui.util.module.LatestVersionInfo

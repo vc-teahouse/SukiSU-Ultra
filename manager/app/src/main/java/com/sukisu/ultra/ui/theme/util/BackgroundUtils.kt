@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.util
+package com.sukisu.ultra.ui.theme.util
 
 import android.content.ContentResolver
 import android.content.Context

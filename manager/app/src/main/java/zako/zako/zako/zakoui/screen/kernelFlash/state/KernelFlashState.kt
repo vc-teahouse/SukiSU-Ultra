@@ -1,4 +1,4 @@
-package zako.zako.zako.zakoui.flash
+package zako.zako.zako.zakoui.screen.kernelFlash.state
 
 import android.annotation.SuppressLint
 import android.app.Activity

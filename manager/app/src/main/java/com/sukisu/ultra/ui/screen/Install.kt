@@ -48,7 +48,7 @@ import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
 import com.sukisu.ultra.R
 import com.sukisu.ultra.getKernelVersion
 import com.sukisu.ultra.ui.component.DialogHandle
-import com.sukisu.ultra.ui.component.SlotSelectionDialog
+import zako.zako.zako.zakoui.screen.kernelFlash.component.SlotSelectionDialog
 import com.sukisu.ultra.ui.component.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.rememberCustomDialog
 import com.sukisu.ultra.ui.theme.CardConfig

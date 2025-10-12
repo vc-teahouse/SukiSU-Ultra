@@ -1,10 +1,11 @@
-package com.sukisu.ultra.ui.util
+package com.sukisu.ultra.ui.susfs.util
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import com.dergoogler.mmrl.platform.Platform.Companion.context
@@ -19,9 +20,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import androidx.core.content.edit
+import com.sukisu.ultra.ui.util.getRootShell
+import com.sukisu.ultra.ui.util.getSuSFSVersion
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
@@ -112,7 +117,7 @@ object SuSFSManager {
                     configurationsJson.keys().forEach { key ->
                         val value = configurationsJson.get(key)
                         configurations[key] = when (value) {
-                            is org.json.JSONArray -> {
+                            is JSONArray -> {
                                 val set = mutableSetOf<String>()
                                 for (i in 0 until value.length()) {
                                     set.add(value.getString(i))
@@ -304,7 +309,7 @@ object SuSFSManager {
     fun saveExecuteInPostFsData(context: Context, executeInPostFsData: Boolean) {
         getPrefs(context).edit { putBoolean(KEY_EXECUTE_IN_POST_FS_DATA, executeInPostFsData) }
         if (isAutoStartEnabled(context)) {
-            kotlinx.coroutines.CoroutineScope(Dispatchers.Default).launch {
+            CoroutineScope(Dispatchers.Default).launch {
                 updateMagiskModule(context)
             }
         }
@@ -552,7 +557,7 @@ object SuSFSManager {
     //  获取设备信息
     private fun getDeviceInfo(): String {
         return try {
-            "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL} (${android.os.Build.VERSION.RELEASE})"
+            "${Build.MANUFACTURER} ${Build.MODEL} (${Build.VERSION.RELEASE})"
         } catch (_: Exception) {
             "Unknown Device"
         }
@@ -1359,7 +1364,7 @@ object SuSFSManager {
         if (success) {
             saveAndroidDataPath(context, path)
             if (isAutoStartEnabled(context)) {
-                kotlinx.coroutines.CoroutineScope(Dispatchers.Default).launch {
+                CoroutineScope(Dispatchers.Default).launch {
                     updateMagiskModule(context)
                 }
             }
@@ -1373,7 +1378,7 @@ object SuSFSManager {
         if (success) {
             saveSdcardPath(context, path)
             if (isAutoStartEnabled(context)) {
-                kotlinx.coroutines.CoroutineScope(Dispatchers.Default).launch {
+                CoroutineScope(Dispatchers.Default).launch {
                     updateMagiskModule(context)
                 }
             }

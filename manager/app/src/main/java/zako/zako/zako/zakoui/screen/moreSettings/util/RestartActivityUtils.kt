@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.util
+package zako.zako.zako.zakoui.screen.moreSettings.util
 
 import android.app.Activity
 import android.content.ComponentName

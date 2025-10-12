@@ -53,7 +53,7 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.FabMenuPresets
 import com.sukisu.ultra.ui.component.SearchAppBar
 import com.sukisu.ultra.ui.component.VerticalExpandableFab
-import com.sukisu.ultra.ui.util.ModuleModify
+import com.sukisu.ultra.ui.util.module.ModuleModify
 import com.sukisu.ultra.ui.viewmodel.AppCategory
 import com.sukisu.ultra.ui.viewmodel.SortType
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel

@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.component
+package com.sukisu.ultra.ui.susfs.component
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
@@ -18,8 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.util.SuSFSManager
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion158
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion158
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 
 /**

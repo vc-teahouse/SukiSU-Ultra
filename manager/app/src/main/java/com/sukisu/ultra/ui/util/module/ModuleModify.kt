@@ -1,16 +1,20 @@
-package com.sukisu.ultra.ui.util
+package com.sukisu.ultra.ui.util.module
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.util.reboot
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -159,7 +163,8 @@ object ModuleModify {
                 val moduleDir = "/data/adb/modules"
 
                 // 直接从用户选择的文件读取并解压
-                val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "$busyboxPath tar -xz -C $moduleDir"))
+                val process = Runtime.getRuntime()
+                    .exec(arrayOf("su", "-c", "$busyboxPath tar -xz -C $moduleDir"))
 
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     input.copyTo(process.outputStream)
@@ -277,7 +282,11 @@ object ModuleModify {
                 }
 
             } catch (e: Exception) {
-                Log.e("AllowlistRestore", context.getString(R.string.allowlist_restore_failed, ""), e)
+                Log.e(
+                    "AllowlistRestore",
+                    context.getString(R.string.allowlist_restore_failed, ""),
+                    e
+                )
                 withContext(Dispatchers.Main) {
                     snackBarHost.showSnackbar(
                         context.getString(R.string.allowlist_restore_failed, e.message),
@@ -292,11 +301,11 @@ object ModuleModify {
     fun rememberModuleBackupLauncher(
         context: Context,
         snackBarHost: SnackbarHostState,
-        scope: kotlinx.coroutines.CoroutineScope = rememberCoroutineScope()
+        scope: CoroutineScope = rememberCoroutineScope()
     ) = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
+        if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 scope.launch {
                     backupModules(context, snackBarHost, uri)
@@ -309,8 +318,8 @@ object ModuleModify {
     fun rememberModuleRestoreLauncher(
         context: Context,
         snackBarHost: SnackbarHostState,
-        scope: kotlinx.coroutines.CoroutineScope = rememberCoroutineScope()
-    ): androidx.activity.result.ActivityResultLauncher<Intent> {
+        scope: CoroutineScope = rememberCoroutineScope()
+    ): ActivityResultLauncher<Intent> {
         var showRestoreDialog by remember { mutableStateOf(false) }
         var restoreConfirmResult by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
 
@@ -330,7 +339,7 @@ object ModuleModify {
         return rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            if (result.resultCode == android.app.Activity.RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
                     scope.launch {
                         val confirmResult = CompletableDeferred<Boolean>()
@@ -353,11 +362,11 @@ object ModuleModify {
     fun rememberAllowlistBackupLauncher(
         context: Context,
         snackBarHost: SnackbarHostState,
-        scope: kotlinx.coroutines.CoroutineScope = rememberCoroutineScope()
+        scope: CoroutineScope = rememberCoroutineScope()
     ) = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
+        if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 scope.launch {
                     backupAllowlist(context, snackBarHost, uri)
@@ -370,10 +379,14 @@ object ModuleModify {
     fun rememberAllowlistRestoreLauncher(
         context: Context,
         snackBarHost: SnackbarHostState,
-        scope: kotlinx.coroutines.CoroutineScope = rememberCoroutineScope()
-    ): androidx.activity.result.ActivityResultLauncher<Intent> {
+        scope: CoroutineScope = rememberCoroutineScope()
+    ): ActivityResultLauncher<Intent> {
         var showAllowlistRestoreDialog by remember { mutableStateOf(false) }
-        var allowlistRestoreConfirmResult by remember { mutableStateOf<CompletableDeferred<Boolean>?>(null) }
+        var allowlistRestoreConfirmResult by remember {
+            mutableStateOf<CompletableDeferred<Boolean>?>(
+                null
+            )
+        }
 
         // 显示允许列表恢复确认对话框
         AllowlistRestoreConfirmationDialog(
@@ -391,7 +404,7 @@ object ModuleModify {
         return rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            if (result.resultCode == android.app.Activity.RESULT_OK) {
+            if (result.resultCode == Activity.RESULT_OK) {
                 result.data?.data?.let { uri ->
                     scope.launch {
                         val confirmResult = CompletableDeferred<Boolean>()

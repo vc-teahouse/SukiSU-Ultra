@@ -1,9 +1,10 @@
-package com.sukisu.ultra.ui.util
+package com.sukisu.ultra.ui.util.module
 
 import android.content.Context
 import android.net.Uri
 import android.util.Log
 import com.sukisu.ultra.Natives
+import com.sukisu.ultra.ui.util.getRootShell
 import java.io.File
 import java.io.FileOutputStream
 

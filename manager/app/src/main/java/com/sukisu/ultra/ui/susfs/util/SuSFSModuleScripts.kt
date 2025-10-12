@@ -1,4 +1,4 @@
-package com.sukisu.ultra.ui.util
+package com.sukisu.ultra.ui.susfs.util
 
 import android.annotation.SuppressLint
 

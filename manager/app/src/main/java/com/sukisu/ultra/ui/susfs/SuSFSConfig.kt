@@ -1,6 +1,7 @@
-package com.sukisu.ultra.ui.screen
+package com.sukisu.ultra.ui.susfs
 
 import android.annotation.SuppressLint
+import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -25,11 +26,22 @@ import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ui.component.*
+import com.sukisu.ultra.ui.susfs.component.AddAppPathDialog
+import com.sukisu.ultra.ui.susfs.component.AddKstatStaticallyDialog
+import com.sukisu.ultra.ui.susfs.component.AddPathDialog
+import com.sukisu.ultra.ui.susfs.component.AddTryUmountDialog
+import com.sukisu.ultra.ui.susfs.component.ConfirmDialog
+import com.sukisu.ultra.ui.susfs.component.EnabledFeaturesContent
+import com.sukisu.ultra.ui.susfs.component.KstatConfigContent
+import com.sukisu.ultra.ui.susfs.component.PathSettingsContent
+import com.sukisu.ultra.ui.susfs.component.SusLoopPathsContent
+import com.sukisu.ultra.ui.susfs.component.SusMountsContent
+import com.sukisu.ultra.ui.susfs.component.SusPathsContent
+import com.sukisu.ultra.ui.susfs.component.TryUmountContent
 import com.sukisu.ultra.ui.theme.CardConfig
-import com.sukisu.ultra.ui.util.SuSFSManager
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion158
-import com.sukisu.ultra.ui.util.SuSFSManager.isSusVersion159
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion158
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion159
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
 import java.io.File
@@ -628,8 +640,21 @@ fun SuSFSConfigScreen(
                 isLoading = true
                 val success = if (editingKstatConfig != null) {
                     SuSFSManager.editKstatConfig(
-                        context, editingKstatConfig!!, path, ino, dev, nlink, size, atime, atimeNsec,
-                        mtime, mtimeNsec, ctime, ctimeNsec, blocks, blksize
+                        context,
+                        editingKstatConfig!!,
+                        path,
+                        ino,
+                        dev,
+                        nlink,
+                        size,
+                        atime,
+                        atimeNsec,
+                        mtime,
+                        mtimeNsec,
+                        ctime,
+                        ctimeNsec,
+                        blocks,
+                        blksize
                     )
                 } else {
                     SuSFSManager.addKstatStatically(
@@ -1251,7 +1276,11 @@ fun SuSFSConfigScreen(
                             onToggleHideSusMountsForAllProcs = { hideForAll ->
                                 coroutineScope.launch {
                                     isLoading = true
-                                    if (SuSFSManager.setHideSusMountsForAllProcs(context, hideForAll)) {
+                                    if (SuSFSManager.setHideSusMountsForAllProcs(
+                                            context,
+                                            hideForAll
+                                        )
+                                    ) {
                                         hideSusMountsForAllProcs = hideForAll
                                     }
                                     isLoading = false
@@ -1282,7 +1311,8 @@ fun SuSFSConfigScreen(
                             onToggleUmountForZygoteIsoService = { enabled ->
                                 coroutineScope.launch {
                                     isLoading = true
-                                    val success = SuSFSManager.setUmountForZygoteIsoService(context, enabled)
+                                    val success =
+                                        SuSFSManager.setUmountForZygoteIsoService(context, enabled)
                                     if (success) {
                                         umountForZygoteIsoService = enabled
                                     }
@@ -1393,7 +1423,7 @@ private fun BasicSettingsContent(
     isLoading: Boolean,
     onAutoStartToggle: (Boolean) -> Unit,
     onShowSlotInfo: () -> Unit,
-    context: android.content.Context,
+    context: Context,
     onShowBackupDialog: () -> Unit,
     onShowRestoreDialog: () -> Unit,
     enableHideBl: Boolean,

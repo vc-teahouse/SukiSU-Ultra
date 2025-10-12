@@ -1,4 +1,4 @@
-package zako.zako.zako.zakoui.screen
+package zako.zako.zako.zakoui.screen.kernelFlash
 
 import android.content.Context
 import android.net.Uri
@@ -42,9 +42,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import zako.zako.zako.zakoui.flash.FlashState
-import zako.zako.zako.zakoui.flash.HorizonKernelState
-import zako.zako.zako.zakoui.flash.HorizonKernelWorker
+import zako.zako.zako.zakoui.screen.kernelFlash.state.FlashState
+import zako.zako.zako.zakoui.screen.kernelFlash.state.HorizonKernelState
+import zako.zako.zako.zakoui.screen.kernelFlash.state.HorizonKernelWorker
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
