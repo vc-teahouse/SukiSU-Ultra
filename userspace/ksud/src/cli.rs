@@ -7,8 +7,9 @@ use android_logger::Config;
 #[cfg(target_os = "android")]
 use log::LevelFilter;
 
-use crate::defs::KSUD_VERBOSE_LOG_FILE;
-use crate::{apk_sign, assets, debug, defs, init_event, ksucalls, module, utils};
+use crate::{
+    apk_sign, assets, debug, defs, defs::KSUD_VERBOSE_LOG_FILE, init_event, ksucalls, module, utils,
+};
 
 /// KernelSU userspace cli
 #[derive(Parser, Debug)]
@@ -288,10 +289,7 @@ mod kpm_cmd {
     #[derive(Subcommand, Debug)]
     pub enum Kpm {
         /// Load a KPM module: load <path> [args]
-        Load {
-            path: PathBuf,
-            args: Option<String>,
-        },
+        Load { path: PathBuf, args: Option<String> },
         /// Unload a KPM module: unload <name>
         Unload { name: String },
         /// Get number of loaded modules
@@ -420,7 +418,9 @@ pub fn run() -> Result<()> {
         Commands::Kpm { command } => {
             use crate::cli::kpm_cmd::Kpm;
             match command {
-                Kpm::Load { path, args } => crate::kpm::kpm_load(path.to_str().unwrap(), args.as_deref()),
+                Kpm::Load { path, args } => {
+                    crate::kpm::kpm_load(path.to_str().unwrap(), args.as_deref())
+                }
                 Kpm::Unload { name } => crate::kpm::kpm_unload(&name),
                 Kpm::Num => crate::kpm::kpm_num().map(|_| ()),
                 Kpm::List => crate::kpm::kpm_list(),
