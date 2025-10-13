@@ -9,7 +9,6 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import com.dergoogler.mmrl.platform.Platform.Companion.context
-import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +21,7 @@ import java.io.IOException
 import androidx.core.content.edit
 import com.sukisu.ultra.ui.util.getRootShell
 import com.sukisu.ultra.ui.util.getSuSFSVersion
+import com.sukisu.ultra.ui.util.getSuSFSFeatures
 import com.sukisu.ultra.ui.viewmodel.SuperUserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -65,6 +65,7 @@ object SuSFSManager {
     private const val MODULE_PATH = "/data/adb/modules/$MODULE_ID"
     private const val MIN_VERSION_FOR_HIDE_MOUNT = "1.5.8"
     private const val MIN_VERSION_FOR_LOOP_PATH = "1.5.9"
+    const val MAX_SUSFS_VERSION = "1.5.12"
     private const val BACKUP_FILE_EXTENSION = ".susfs_backup"
     private const val MEDIA_DATA_PATH = "/data/media/0/Android/data"
     private const val CGROUP_UID_PATH_PREFIX = "/sys/fs/cgroup/uid_"
@@ -185,11 +186,23 @@ object SuSFSManager {
     private fun getPrefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    private fun getSuSFSVersionUse(): String = try {
-        getSuSFSVersion()
-    } catch (_: Exception) { MIN_VERSION_FOR_HIDE_MOUNT }
+    private fun getSuSFSVersionUse(context: Context): String = try {
+        val version = getSuSFSVersion()
+        val binaryName = "${SUSFS_BINARY_TARGET_NAME}_${version.removePrefix("v")}"
+        if (isBinaryAvailable(context, binaryName)) {
+            version
+        } else {
+            MAX_SUSFS_VERSION
+        }
+    } catch (_: Exception) {
+        MAX_SUSFS_VERSION
+    }
 
-    private fun getSuSFSBinaryName(): String = "${SUSFS_BINARY_TARGET_NAME}_${getSuSFSVersionUse().removePrefix("v")}"
+    fun isBinaryAvailable(context: Context, binaryName: String): Boolean = try {
+        context.assets.open(binaryName).use { true }
+    } catch (_: IOException) { false }
+
+    private fun getSuSFSBinaryName(context: Context): String = "${SUSFS_BINARY_TARGET_NAME}_${getSuSFSVersionUse(context).removePrefix("v")}"
 
     private fun getSuSFSTargetPath(): String = "/data/adb/ksu/bin/$SUSFS_BINARY_TARGET_NAME"
 
@@ -715,7 +728,7 @@ object SuSFSManager {
     // 二进制文件管理
     private suspend fun copyBinaryFromAssets(context: Context): String? = withContext(Dispatchers.IO) {
         try {
-            val binaryName = getSuSFSBinaryName()
+            val binaryName = getSuSFSBinaryName(context)
             val targetPath = getSuSFSTargetPath()
             val tempFile = File(context.cacheDir, binaryName)
 
@@ -736,7 +749,7 @@ object SuSFSManager {
     }
 
     fun isBinaryAvailable(context: Context): Boolean = try {
-        context.assets.open(getSuSFSBinaryName()).use { true }
+        context.assets.open(getSuSFSBinaryName(context)).use { true }
     } catch (_: IOException) { false }
 
     // 命令执行
@@ -823,9 +836,10 @@ object SuSFSManager {
     // 功能状态获取
     suspend fun getEnabledFeatures(context: Context): List<EnabledFeature> = withContext(Dispatchers.IO) {
         try {
-            val status = Natives.getSusfsFeatureStatus()
-            if (status != null) {
-                parseEnabledFeaturesFromStatus(context, status)
+            val featuresOutput = getSuSFSFeatures()
+
+            if (featuresOutput.isNotBlank() && featuresOutput != "Invalid") {
+                parseEnabledFeaturesFromOutput(context, featuresOutput)
             } else {
                 getDefaultDisabledFeatures(context)
             }
@@ -835,10 +849,47 @@ object SuSFSManager {
         }
     }
 
+    private fun parseEnabledFeaturesFromOutput(context: Context, featuresOutput: String): List<EnabledFeature> {
+        val enabledConfigs = featuresOutput.lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+
+        val featureMap = mapOf(
+            "CONFIG_KSU_SUSFS_SUS_PATH" to context.getString(R.string.sus_path_feature_label),
+            "CONFIG_KSU_SUSFS_SUS_MOUNT" to context.getString(R.string.sus_mount_feature_label),
+            "CONFIG_KSU_SUSFS_TRY_UMOUNT" to context.getString(R.string.try_umount_feature_label),
+            "CONFIG_KSU_SUSFS_SPOOF_UNAME" to context.getString(R.string.spoof_uname_feature_label),
+            "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG" to context.getString(R.string.spoof_cmdline_feature_label),
+            "CONFIG_KSU_SUSFS_OPEN_REDIRECT" to context.getString(R.string.open_redirect_feature_label),
+            "CONFIG_KSU_SUSFS_ENABLE_LOG" to context.getString(R.string.enable_log_feature_label),
+            "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT" to context.getString(R.string.auto_default_mount_feature_label),
+            "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT" to context.getString(R.string.auto_bind_mount_feature_label),
+            "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT" to context.getString(R.string.auto_try_umount_bind_feature_label),
+            "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS" to context.getString(R.string.hide_symbols_feature_label),
+            "CONFIG_KSU_SUSFS_SUS_KSTAT" to context.getString(R.string.sus_kstat_feature_label),
+            "CONFIG_KSU_SUSFS_SUS_SU" to context.getString(R.string.sus_su_feature_label)
+        )
+
+
+        return featureMap.map { (configKey, displayName) ->
+            val isEnabled = enabledConfigs.contains(configKey)
+
+            val statusText = if (isEnabled) {
+                context.getString(R.string.susfs_feature_enabled)
+            } else {
+                context.getString(R.string.susfs_feature_disabled)
+            }
+
+            val canConfigure = displayName == context.getString(R.string.enable_log_feature_label)
+
+            EnabledFeature(displayName, isEnabled, statusText, canConfigure)
+        }.sortedBy { it.name }
+    }
+
     private fun getDefaultDisabledFeatures(context: Context): List<EnabledFeature> {
         val defaultFeatures = listOf(
             "sus_path_feature_label" to context.getString(R.string.sus_path_feature_label),
-            "sus_loop_path_feature_label" to context.getString(R.string.sus_loop_path_feature_label),
             "sus_mount_feature_label" to context.getString(R.string.sus_mount_feature_label),
             "try_umount_feature_label" to context.getString(R.string.try_umount_feature_label),
             "spoof_uname_feature_label" to context.getString(R.string.spoof_uname_feature_label),
@@ -850,7 +901,6 @@ object SuSFSManager {
             "auto_try_umount_bind_feature_label" to context.getString(R.string.auto_try_umount_bind_feature_label),
             "hide_symbols_feature_label" to context.getString(R.string.hide_symbols_feature_label),
             "sus_kstat_feature_label" to context.getString(R.string.sus_kstat_feature_label),
-            "magic_mount_feature_label" to context.getString(R.string.magic_mount_feature_label),
             "sus_su_feature_label" to context.getString(R.string.sus_su_feature_label)
         )
 
@@ -861,31 +911,6 @@ object SuSFSManager {
                 statusText = context.getString(R.string.susfs_feature_disabled),
                 canConfigure = displayName == context.getString(R.string.enable_log_feature_label)
             )
-        }.sortedBy { it.name }
-    }
-
-    private fun parseEnabledFeaturesFromStatus(context: Context, status: Natives.SusfsFeatureStatus): List<EnabledFeature> {
-        val featureList = listOf(
-            Triple("status_sus_path", context.getString(R.string.sus_path_feature_label), status.statusSusPath),
-            Triple("status_sus_mount", context.getString(R.string.sus_mount_feature_label), status.statusSusMount),
-            Triple("status_try_umount", context.getString(R.string.try_umount_feature_label), status.statusTryUmount),
-            Triple("status_spoof_uname", context.getString(R.string.spoof_uname_feature_label), status.statusSpoofUname),
-            Triple("status_spoof_cmdline", context.getString(R.string.spoof_cmdline_feature_label), status.statusSpoofCmdline),
-            Triple("status_open_redirect", context.getString(R.string.open_redirect_feature_label), status.statusOpenRedirect),
-            Triple("status_enable_log", context.getString(R.string.enable_log_feature_label), status.statusEnableLog),
-            Triple("status_auto_default_mount", context.getString(R.string.auto_default_mount_feature_label), status.statusAutoDefaultMount),
-            Triple("status_auto_bind_mount", context.getString(R.string.auto_bind_mount_feature_label), status.statusAutoBindMount),
-            Triple("status_auto_try_umount_bind", context.getString(R.string.auto_try_umount_bind_feature_label), status.statusAutoTryUmountBind),
-            Triple("status_hide_symbols", context.getString(R.string.hide_symbols_feature_label), status.statusHideSymbols),
-            Triple("status_sus_kstat", context.getString(R.string.sus_kstat_feature_label), status.statusSusKstat),
-            Triple("status_magic_mount", context.getString(R.string.magic_mount_feature_label), status.statusMagicMount),
-            Triple("status_sus_su", context.getString(R.string.sus_su_feature_label), status.statusSusSu)
-        )
-
-        return featureList.map { (id, displayName, isEnabled) ->
-            val statusText = if (isEnabled) context.getString(R.string.susfs_feature_enabled) else context.getString(R.string.susfs_feature_disabled)
-            val canConfigure = id == "status_enable_log"
-            EnabledFeature(displayName, isEnabled, statusText, canConfigure)
         }.sortedBy { it.name }
     }
 

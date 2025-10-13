@@ -443,7 +443,6 @@
     <string name="auto_bind_mount_feature_label">Pemasangan Bind Otomatis</string>
     <string name="auto_try_umount_bind_feature_label">Coba Umount Bind Mount Otomatis</string>
     <string name="hide_symbols_feature_label">Sembunyikan Simbol KSU SUSFS</string>
-    <string name="magic_mount_feature_label">Dukungan Pemasangan Ajaib</string>
     <string name="sus_kstat_feature_label">Dukungan SUS Kstat</string>
     <string name="sus_su_feature_label">Fungsi pengalihan mode SUS SU</string>
     <!-- 可切换状态 -->

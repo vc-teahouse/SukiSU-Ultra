@@ -443,7 +443,6 @@
     <string name="auto_bind_mount_feature_label">自動でバインドマウント</string>
     <string name="auto_try_umount_bind_feature_label">自動でバインドマウントのアンマウントを試す</string>
     <string name="hide_symbols_feature_label">KSU SUSFS シンボルを非表示</string>
-    <string name="magic_mount_feature_label">Magic Mount の対応</string>
     <string name="sus_kstat_feature_label">SUS Kstat の対応</string>
     <string name="sus_su_feature_label">SUS SU モード切り替え機能</string>
     <!-- 可切换状态 -->

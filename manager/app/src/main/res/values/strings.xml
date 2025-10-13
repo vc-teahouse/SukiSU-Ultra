@@ -443,7 +443,6 @@
     <string name="auto_bind_mount_feature_label">Auto Bind Mount</string>
     <string name="auto_try_umount_bind_feature_label">Auto Try Umount Bind Mount</string>
     <string name="hide_symbols_feature_label">Hide KSU SUSFS Symbols</string>
-    <string name="magic_mount_feature_label">Magic Mount Support</string>
     <string name="sus_kstat_feature_label">SUS Kstat Support</string>
     <string name="sus_su_feature_label">SUS SU mode switching function</string>
     <!-- 可切换状态 -->
@@ -561,6 +560,8 @@
     <string name="add_custom_path">Other</string>
     <string name="add_app_path">App</string>
     <string name="susfs_add_app_path">Add App Path</string>
+    <string name="susfs_version_mismatch">SuSFS library version mismatch, kernel: %1$s vs manager: %2$s, It is recommended to update the kernel or manager</string>
+    <string name="warning">Warning</string>
     <string name="search_apps">Search Apps</string>
     <string name="selected_apps_count">%1$d apps selected</string>
     <string name="already_added_apps_count">%1$d apps already added</string>

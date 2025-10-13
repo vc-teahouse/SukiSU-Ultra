@@ -441,7 +441,6 @@
     <string name="auto_bind_mount_feature_label">自動綁定掛載</string>
     <string name="auto_try_umount_bind_feature_label">自動嘗試卸載綁定掛載</string>
     <string name="hide_symbols_feature_label">隱藏 KSU SuSFS 符號</string>
-    <string name="magic_mount_feature_label">魔法掛載支援</string>
     <string name="sus_kstat_feature_label">SuS 內核統計支援</string>
     <string name="sus_su_feature_label">SuS SU 模式切換功能</string>
     <!-- 可切换状态 -->

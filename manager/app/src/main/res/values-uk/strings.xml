@@ -441,7 +441,6 @@
     <string name="auto_bind_mount_feature_label">Автоматичне прив\'язане монтування</string>
     <string name="auto_try_umount_bind_feature_label">Автоматична спроба відмонтування прив\'язаного монтування</string>
     <string name="hide_symbols_feature_label">Приховати символи KSU SUSFS</string>
-    <string name="magic_mount_feature_label">Підтримка Magic Mount</string>
     <string name="sus_kstat_feature_label">Підтримка SUS Kstat</string>
     <string name="sus_su_feature_label">Функція перемикання режиму SUS SU</string>
     <!-- 可切换状态 -->

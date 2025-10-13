@@ -441,7 +441,6 @@
     <string name="auto_bind_mount_feature_label">Tự động Bind Mount</string>
     <string name="auto_try_umount_bind_feature_label">Tự động Try Umount Bind Mount</string>
     <string name="hide_symbols_feature_label">Ẩn biểu tượng KSU SuSFS</string>
-    <string name="magic_mount_feature_label">Hỗ trợ Magic Mount</string>
     <string name="sus_kstat_feature_label">Hỗ trợ SuS Kstat</string>
     <string name="sus_su_feature_label">Chức năng chuyển đổi chế độ SuS SU</string>
     <!-- 可切换状态 -->

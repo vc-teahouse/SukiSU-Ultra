@@ -42,6 +42,7 @@ import com.sukisu.ultra.ui.theme.CardConfig
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion158
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion159
+import com.sukisu.ultra.ui.util.getSuSFSVersion
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
 import java.io.File
@@ -168,6 +169,38 @@ fun SuSFSConfigScreen(
         }
     }
 
+    var showVersionMismatchDialog by remember { mutableStateOf(false) }
+
+    if (showVersionMismatchDialog) {
+        AlertDialog(
+            onDismissRequest = { showVersionMismatchDialog = false },
+            title = {
+                Text(
+                    text = stringResource(R.string.warning),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.susfs_version_mismatch,
+                        try { getSuSFSVersion() } catch (_: Exception) { "unknown" },
+                        SuSFSManager.MAX_SUSFS_VERSION
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showVersionMismatchDialog = false },
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            }
+        )
+    }
+
     // 文件选择器
     val backupFileLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
@@ -253,25 +286,41 @@ fun SuSFSConfigScreen(
 
     // 加载当前配置
     LaunchedEffect(Unit) {
-        unameValue = SuSFSManager.getUnameValue(context)
-        buildTimeValue = SuSFSManager.getBuildTimeValue(context)
-        autoStartEnabled = SuSFSManager.isAutoStartEnabled(context)
-        executeInPostFsData = SuSFSManager.getExecuteInPostFsData(context)
-        susPaths = SuSFSManager.getSusPaths(context)
-        susLoopPaths = SuSFSManager.getSusLoopPaths(context)
-        susMounts = SuSFSManager.getSusMounts(context)
-        tryUmounts = SuSFSManager.getTryUmounts(context)
-        androidDataPath = SuSFSManager.getAndroidDataPath(context)
-        sdcardPath = SuSFSManager.getSdcardPath(context)
-        kstatConfigs = SuSFSManager.getKstatConfigs(context)
-        addKstatPaths = SuSFSManager.getAddKstatPaths(context)
-        hideSusMountsForAllProcs = SuSFSManager.getHideSusMountsForAllProcs(context)
-        enableHideBl = SuSFSManager.getEnableHideBl(context)
-        enableCleanupResidue = SuSFSManager.getEnableCleanupResidue(context)
-        umountForZygoteIsoService = SuSFSManager.getUmountForZygoteIsoService(context)
-        enableAvcLogSpoofing = SuSFSManager.getEnableAvcLogSpoofing(context)
+        coroutineScope.launch {
+            try {
+                val version = getSuSFSVersion()
+                val binaryName = "ksu_susfs_${version.removePrefix("v")}"
 
-        loadSlotInfo()
+                val isBinaryAvailable = try {
+                    context.assets.open(binaryName).use { true }
+                } catch (_: Exception) { false }
+
+                if (!isBinaryAvailable) {
+                    showVersionMismatchDialog = true
+                }
+            } catch (_: Exception) {
+            }
+
+            unameValue = SuSFSManager.getUnameValue(context)
+            buildTimeValue = SuSFSManager.getBuildTimeValue(context)
+            autoStartEnabled = SuSFSManager.isAutoStartEnabled(context)
+            executeInPostFsData = SuSFSManager.getExecuteInPostFsData(context)
+            susPaths = SuSFSManager.getSusPaths(context)
+            susLoopPaths = SuSFSManager.getSusLoopPaths(context)
+            susMounts = SuSFSManager.getSusMounts(context)
+            tryUmounts = SuSFSManager.getTryUmounts(context)
+            androidDataPath = SuSFSManager.getAndroidDataPath(context)
+            sdcardPath = SuSFSManager.getSdcardPath(context)
+            kstatConfigs = SuSFSManager.getKstatConfigs(context)
+            addKstatPaths = SuSFSManager.getAddKstatPaths(context)
+            hideSusMountsForAllProcs = SuSFSManager.getHideSusMountsForAllProcs(context)
+            enableHideBl = SuSFSManager.getEnableHideBl(context)
+            enableCleanupResidue = SuSFSManager.getEnableCleanupResidue(context)
+            umountForZygoteIsoService = SuSFSManager.getUmountForZygoteIsoService(context)
+            enableAvcLogSpoofing = SuSFSManager.getEnableAvcLogSpoofing(context)
+
+            loadSlotInfo()
+        }
     }
 
     // 当切换到启用功能状态标签页时加载数据

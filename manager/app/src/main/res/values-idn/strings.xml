@@ -446,7 +446,6 @@ Tanamkan: Secara permanen memasang ke sistem</string>
     <string name="auto_bind_mount_feature_label">Kaitan Bind Otomatis</string>
     <string name="auto_try_umount_bind_feature_label">Coba Lepas Kaitan Bind Otomatis</string>
     <string name="hide_symbols_feature_label">Sembunyikan Simbol KSU SUSFS</string>
-    <string name="magic_mount_feature_label">Dukungan Magic Mount</string>
     <string name="sus_kstat_feature_label">Dukungan SUS Kstat</string>
     <string name="sus_su_feature_label">Fitur Toggle Mode SUS SU</string>
     <!-- 可切换状态 -->
