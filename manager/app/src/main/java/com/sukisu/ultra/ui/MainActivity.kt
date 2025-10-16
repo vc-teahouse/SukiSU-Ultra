@@ -62,7 +62,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
-
             // 应用自定义 DPI
             DisplayUtils.applyCustomDpi(this)
 
@@ -74,6 +73,11 @@ class MainActivity : ComponentActivity() {
             }
 
             super.onCreate(savedInstanceState)
+
+            val isManager = Natives.becomeManager(packageName)
+            if (isManager) {
+                install()
+            }
 
             // 使用标记控制初始化流程
             if (!isInitialized) {
@@ -256,11 +260,6 @@ class MainActivity : ComponentActivity() {
 
         // 初始化主题相关设置
         ThemeUtils.initializeThemeSettings(this, settingsStateFlow)
-
-        val isManager = Natives.becomeManager(packageName)
-        if (isManager) {
-            install()
-        }
     }
 
     override fun onResume() {
