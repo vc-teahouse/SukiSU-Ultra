@@ -2,7 +2,6 @@ package com.sukisu.ultra.ui
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -26,6 +25,7 @@ import com.ramcosta.composedestinations.generated.NavGraphs
 import com.ramcosta.composedestinations.generated.destinations.ExecuteModuleActionScreenDestination
 import com.ramcosta.composedestinations.spec.NavHostGraphSpec
 import com.ramcosta.composedestinations.utils.rememberDestinationsNavigator
+import zako.zako.zako.zakoui.screen.moreSettings.util.LocaleHelper
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.ui.screen.BottomBarDestination
 import com.sukisu.ultra.ui.theme.KernelSUTheme
@@ -54,19 +54,14 @@ class MainActivity : ComponentActivity() {
     private var pendingZipFiles = mutableStateOf<List<ZipFileInfo>>(emptyList())
 
     private lateinit var themeChangeObserver: ThemeChangeContentObserver
-
-    // 标记避免重复初始化
     private var isInitialized = false
 
-    override fun attachBaseContext(newBase: Context) {
-        val context = LocaleUtils.applyLocale(newBase)
-        super.attachBaseContext(context)
+    override fun attachBaseContext(newBase: Context?) {
+        super.attachBaseContext(newBase?.let { LocaleHelper.applyLanguage(it) })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
-            // 确保应用正确的语言设置
-            LocaleUtils.applyLanguageSetting(this)
 
             // 应用自定义 DPI
             DisplayUtils.applyCustomDpi(this)
@@ -271,7 +266,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         try {
             super.onResume()
-            LocaleUtils.applyLanguageSetting(this)
             ThemeUtils.onActivityResume()
 
             // 仅在需要时刷新数据
@@ -307,15 +301,6 @@ class MainActivity : ComponentActivity() {
         try {
             ThemeUtils.unregisterThemeChangeObserver(this, themeChangeObserver)
             super.onDestroy()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        try {
-            super.onConfigurationChanged(newConfig)
-            LocaleUtils.applyLanguageSetting(this)
         } catch (e: Exception) {
             e.printStackTrace()
         }

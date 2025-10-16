@@ -317,9 +317,8 @@ Tanamkan: Secara permanen memasang ke sistem</string>
     <string name="dpi_confirm_summary">Aplikasi perlu dijalankan ulang agar pengaturan DPI baru diterapkan; ini tidak akan mempengaruhi bilah status sistem atau aplikasi lainnya</string>
     <string name="dpi_applied_success">DPI diatur ke %1$d, akan diterapkan setelah aplikasi dijalankan ulang</string>
     <!-- Language settings related strings -->
-    <string name="language_setting">Bahasa Aplikasi</string>
-    <string name="language_follow_system">Ikuti Sistem</string>
-    <string name="language_changed">Bahasa diubah, mulai ulang untuk menerapkan perubahan</string>
+    <string name="settings_language">Bahasa Aplikasi</string>
+    <string name="language_system_default">Ikuti Sistem</string>
     <string name="settings_card_dim">Pengaturan Pencahayaan Kartu</string>
     <!-- Flash related -->
     <string name="error_code">kode kesalahan</string>

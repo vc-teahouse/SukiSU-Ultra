@@ -312,9 +312,8 @@
     <string name="dpi_confirm_summary">应用需要重启以应用新的 DPI 设置，不会影响系统状态栏或其他应用</string>
     <string name="dpi_applied_success">DPI 已设置为 %1$d，重启应用后生效</string>
     <!-- Language settings related strings -->
-    <string name="language_setting">应用语言</string>
-    <string name="language_follow_system">跟随系统</string>
-    <string name="language_changed">语言已更改，重启应用以应用更改</string>
+    <string name="settings_language">应用语言</string>
+    <string name="language_system_default">跟随系统</string>
     <string name="settings_card_dim">卡片暗度调节</string>
     <!-- Flash related -->
     <string name="error_code">错误代码</string>

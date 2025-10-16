@@ -312,9 +312,8 @@
     <string name="dpi_confirm_summary">Додаток потрібно перезапустити, щоб застосувати нові налаштування DPI; це не вплине на системний рядок стану або інші додатки</string>
     <string name="dpi_applied_success">DPI встановлено на %1$d, набуде чинності після перезапуску додатку</string>
     <!-- Language settings related strings -->
-    <string name="language_setting">Мова додатку</string>
-    <string name="language_follow_system">Як у системі</string>
-    <string name="language_changed">Мову змінено, перезапуск для застосування змін</string>
+    <string name="settings_language">Мова додатку</string>
+    <string name="language_system_default">Як у системі</string>
     <string name="settings_card_dim">Налаштування затемнення карток</string>
     <!-- Flash related -->
     <string name="error_code">код помилки</string>

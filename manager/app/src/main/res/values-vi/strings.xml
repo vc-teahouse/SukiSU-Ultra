@@ -312,9 +312,8 @@
     <string name="dpi_confirm_summary">Ứng dụng cần được khởi động lại để áp dụng cài đặt DPI mới, không ảnh hưởng đến thanh trạng thái hệ thống hoặc các ứng dụng khác</string>
     <string name="dpi_applied_success">DPI đã được đặt thành %1$d, có hiệu lực sau khi khởi động lại ứng dụng</string>
     <!-- Language settings related strings -->
-    <string name="language_setting">Ngôn ngữ ứng dụng</string>
-    <string name="language_follow_system">Mặc định theo hệ thống</string>
-    <string name="language_changed">Ngôn ngữ đã thay đổi, khởi động lại để áp dụng thay đổi</string>
+    <string name="settings_language">Ngôn ngữ ứng dụng</string>
+    <string name="language_system_default">Mặc định theo hệ thống</string>
     <string name="settings_card_dim">Độ trong suốt của thẻ</string>
     <!-- Flash related -->
     <string name="error_code">Error code</string>

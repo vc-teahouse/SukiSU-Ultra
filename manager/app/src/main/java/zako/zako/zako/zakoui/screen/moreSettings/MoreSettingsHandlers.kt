@@ -1,12 +1,10 @@
 package zako.zako.zako.zakoui.screen.moreSettings
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.net.Uri
-import android.os.Build
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -14,13 +12,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
-import com.sukisu.ultra.ksuApp
 import com.sukisu.ultra.ui.theme.*
 import com.sukisu.ultra.ui.util.*
 import com.topjohnwu.superuser.Shell
 import zako.zako.zako.zakoui.screen.moreSettings.state.MoreSettingsState
 import zako.zako.zako.zakoui.screen.moreSettings.util.toggleLauncherIcon
-import java.util.*
 
 /**
  * 更多设置处理器
@@ -133,40 +129,6 @@ class MoreSettingsHandlers(
                 CardConfig.setThemeDefaults(isNightModeActive)
                 CardConfig.save(context)
             }
-        }
-    }
-
-    /**
-     * 处理语言设置变更
-     */
-    @SuppressLint("ObsoleteSdkInt")
-    fun handleLanguageChange(code: String) {
-        if (state.currentLanguage != code) {
-            prefs.edit {
-                putString("app_language", code)
-                commit()
-            }
-
-            state.currentLanguage = code
-
-            Toast.makeText(
-                context,
-                context.getString(R.string.language_changed),
-                Toast.LENGTH_SHORT
-            ).show()
-
-            val locale = if (code.isEmpty()) Locale.getDefault() else Locale.forLanguageTag(code)
-            Locale.setDefault(locale)
-            val config = Configuration(context.resources.configuration)
-            config.setLocale(locale)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                context.createConfigurationContext(config)
-            } else {
-                @Suppress("DEPRECATION")
-                context.resources.updateConfiguration(config, context.resources.displayMetrics)
-            }
-            ksuApp.refreshCurrentActivity()
         }
     }
 
