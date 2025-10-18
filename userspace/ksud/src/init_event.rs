@@ -1,12 +1,12 @@
 #[cfg(target_arch = "aarch64")]
 use crate::kpm;
-use crate::utils::find_tmp_path;
 use crate::{
     assets, defs,
     defs::{KSU_MOUNT_SOURCE, NO_MOUNT_PATH, NO_TMPFS_PATH},
     ksucalls,
     module::{handle_updated_modules, prune_modules},
     restorecon, uid_scanner, utils,
+    utils::find_tmp_path,
 };
 use anyhow::{Context, Result};
 use log::{info, warn};
