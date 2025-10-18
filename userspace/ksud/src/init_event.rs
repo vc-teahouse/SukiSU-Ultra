@@ -1,5 +1,6 @@
 #[cfg(target_arch = "aarch64")]
 use crate::kpm;
+use crate::utils::find_tmp_path;
 use crate::{
     assets, defs,
     defs::{KSU_MOUNT_SOURCE, NO_MOUNT_PATH, NO_TMPFS_PATH},
@@ -86,11 +87,15 @@ pub fn on_post_data_fs() -> Result<()> {
         warn!("KPM: Failed to load KPM modules: {}", e);
     }
 
+    let tmpfs_path = find_tmp_path();
+    // for compatibility
+    let no_mount = Path::new(NO_TMPFS_PATH).exists() || Path::new(NO_MOUNT_PATH).exists();
+
     // mount temp dir
-    if !Path::new(NO_TMPFS_PATH).exists() {
+    if !no_mount {
         if let Err(e) = mount(
             KSU_MOUNT_SOURCE,
-            utils::get_tmp_path(),
+            &tmpfs_path,
             "tmpfs",
             MountFlags::empty(),
             "",
@@ -113,8 +118,9 @@ pub fn on_post_data_fs() -> Result<()> {
     }
 
     // mount module systemlessly by magic mount
-    if !Path::new(NO_MOUNT_PATH).exists() {
-        if let Err(e) = mount_modules_systemlessly() {
+    #[cfg(target_os = "android")]
+    if !no_mount {
+        if let Err(e) = crate::magic_mount::magic_mount(&tmpfs_path) {
             warn!("do systemless mount failed: {}", e);
         }
     } else {
@@ -148,7 +154,7 @@ pub fn on_post_data_fs() -> Result<()> {
 
 #[cfg(target_os = "android")]
 pub fn mount_modules_systemlessly() -> Result<()> {
-    crate::magic_mount::magic_mount()
+    crate::magic_mount::magic_mount(&find_tmp_path())
 }
 
 #[cfg(not(target_os = "android"))]
