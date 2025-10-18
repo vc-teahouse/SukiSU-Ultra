@@ -245,38 +245,19 @@ object SuSFSManager {
         return 0
     }
 
-    /**
-     * 检查是否支持设置sdcard路径等功能（1.5.8+）
-     */
-    fun isSusVersion158(): Boolean {
-        return try {
-            val currentVersion = getSuSFSVersion()
-            compareVersions(currentVersion, MIN_VERSION_FOR_HIDE_MOUNT) >= 0
-        } catch (_: Exception) {
-            true
-        }
+    private fun isVersionAtLeast(minVersion: String): Boolean = try {
+        compareVersions(getSuSFSVersion(), minVersion) >= 0
+    } catch (_: Exception) {
+        true
     }
+    // 检查是否支持设置sdcard路径等功能（1.5.8+）
+    fun isSusVersion158(): Boolean = isVersionAtLeast(MIN_VERSION_FOR_HIDE_MOUNT)
 
-    /**
-     * 检查是否支持循环路径和AVC日志欺骗等功能（1.5.9+）
-     */
-    fun isSusVersion159(): Boolean {
-        return try {
-            val currentVersion = getSuSFSVersion()
-            compareVersions(currentVersion, MIN_VERSION_FOR_LOOP_PATH) >= 0
-        } catch (_: Exception) {
-            true
-        }
-    }
+    // 检查是否支持循环路径和AVC日志欺骗等功能（1.5.9+）
+    fun isSusVersion159(): Boolean = isVersionAtLeast(MIN_VERSION_FOR_LOOP_PATH)
 
-    fun isSusVersion1512(): Boolean {
-        return try {
-            val currentVersion = getSuSFSVersion()
-            compareVersions(currentVersion, MIN_VERSION_SUS_MAPS) >= 0
-        } catch (_: Exception) {
-            true
-        }
-    }
+    // 检查是否支持隐藏内存映射（1.5.12+）
+    fun isSusVersion1512(): Boolean = isVersionAtLeast(MIN_VERSION_SUS_MAPS)
 
     /**
      * 获取当前模块配置

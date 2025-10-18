@@ -29,9 +29,9 @@ import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.susfs.component.*
 import com.sukisu.ultra.ui.theme.CardConfig
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager
-import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion1512
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion158
 import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion159
+import com.sukisu.ultra.ui.susfs.util.SuSFSManager.isSusVersion1512
 import com.sukisu.ultra.ui.util.getSuSFSVersion
 import com.sukisu.ultra.ui.util.isAbDevice
 import kotlinx.coroutines.launch
@@ -57,9 +57,9 @@ enum class SuSFSTab(val displayNameRes: Int) {
         fun getAllTabs(isSusVersion158: Boolean, isSusVersion159: Boolean, isSusVersion1512: Boolean): List<SuSFSTab> {
             return when {
                 isSusVersion1512 -> entries.toList()
-                isSusVersion159 -> entries.filter { it != SUS_MOUNTS}
-                isSusVersion158 -> entries.filter { it != SUS_LOOP_PATHS }
-                else -> entries.filter { it != PATH_SETTINGS && it != SUS_LOOP_PATHS && it != SUS_MOUNTS }
+                isSusVersion159 -> entries.filter { it != SUS_MAPS}
+                isSusVersion158 -> entries.filter { it != SUS_LOOP_PATHS && it != SUS_MAPS }
+                else -> entries.filter { it != PATH_SETTINGS && it != SUS_LOOP_PATHS && it != SUS_MAPS }
             }
         }
     }
