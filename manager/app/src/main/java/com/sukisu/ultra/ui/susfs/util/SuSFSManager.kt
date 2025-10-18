@@ -42,6 +42,8 @@ object SuSFSManager {
     private const val KEY_AUTO_START_ENABLED = "auto_start_enabled"
     private const val KEY_SUS_PATHS = "sus_paths"
     private const val KEY_SUS_LOOP_PATHS = "sus_loop_paths"
+
+    private const val KEY_SUS_MAPS = "sus_maps"
     private const val KEY_SUS_MOUNTS = "sus_mounts"
     private const val KEY_TRY_UMOUNTS = "try_umounts"
     private const val KEY_ANDROID_DATA_PATH = "android_data_path"
@@ -65,6 +67,7 @@ object SuSFSManager {
     private const val MODULE_PATH = "/data/adb/modules/$MODULE_ID"
     private const val MIN_VERSION_FOR_HIDE_MOUNT = "1.5.8"
     private const val MIN_VERSION_FOR_LOOP_PATH = "1.5.9"
+    private const val MIN_VERSION_SUS_MAPS = "1.5.12"
     const val MAX_SUSFS_VERSION = "1.5.12"
     private const val BACKUP_FILE_EXTENSION = ".susfs_backup"
     private const val MEDIA_DATA_PATH = "/data/media/0/Android/data"
@@ -153,6 +156,7 @@ object SuSFSManager {
         val executeInPostFsData: Boolean,
         val susPaths: Set<String>,
         val susLoopPaths: Set<String>,
+        val susMaps: Set<String>,
         val susMounts: Set<String>,
         val tryUmounts: Set<String>,
         val androidDataPath: String,
@@ -175,6 +179,7 @@ object SuSFSManager {
                     buildTimeValue != DEFAULT_BUILD_TIME ||
                     susPaths.isNotEmpty() ||
                     susLoopPaths.isNotEmpty() ||
+                    susMaps.isNotEmpty() ||
                     susMounts.isNotEmpty() ||
                     tryUmounts.isNotEmpty() ||
                     kstatConfigs.isNotEmpty() ||
@@ -264,6 +269,15 @@ object SuSFSManager {
         }
     }
 
+    fun isSusVersion1512(): Boolean {
+        return try {
+            val currentVersion = getSuSFSVersion()
+            compareVersions(currentVersion, MIN_VERSION_SUS_MAPS) >= 0
+        } catch (_: Exception) {
+            true
+        }
+    }
+
     /**
      * 获取当前模块配置
      */
@@ -275,6 +289,7 @@ object SuSFSManager {
             executeInPostFsData = getExecuteInPostFsData(context),
             susPaths = getSusPaths(context),
             susLoopPaths = getSusLoopPaths(context),
+            susMaps = getSusMaps(context),
             susMounts = getSusMounts(context),
             tryUmounts = getTryUmounts(context),
             androidDataPath = getAndroidDataPath(context),
@@ -378,6 +393,12 @@ object SuSFSManager {
 
     fun getSusLoopPaths(context: Context): Set<String> =
         getPrefs(context).getStringSet(KEY_SUS_LOOP_PATHS, emptySet()) ?: emptySet()
+
+    fun saveSusMaps(context: Context, maps: Set<String>) =
+        getPrefs(context).edit { putStringSet(KEY_SUS_MAPS, maps) }
+
+    fun getSusMaps(context: Context): Set<String> =
+        getPrefs(context).getStringSet(KEY_SUS_MAPS, emptySet()) ?: emptySet()
 
     fun saveSusMounts(context: Context, mounts: Set<String>) =
         getPrefs(context).edit { putStringSet(KEY_SUS_MOUNTS, mounts) }
@@ -544,6 +565,7 @@ object SuSFSManager {
             KEY_AUTO_START_ENABLED to isAutoStartEnabled(context),
             KEY_SUS_PATHS to getSusPaths(context),
             KEY_SUS_LOOP_PATHS to getSusLoopPaths(context),
+            KEY_SUS_MAPS to getSusMaps(context),
             KEY_SUS_MOUNTS to getSusMounts(context),
             KEY_TRY_UMOUNTS to getTryUmounts(context),
             KEY_ANDROID_DATA_PATH to getAndroidDataPath(context),
@@ -1133,6 +1155,54 @@ object SuSFSManager {
         } catch (e: Exception) {
             e.printStackTrace()
             showToast(context, "Error updating SUS loop path: ${e.message}")
+            false
+        }
+    }
+
+    // 添加 SUS Maps
+    suspend fun addSusMap(context: Context, map: String): Boolean {
+        val success = executeSusfsCommand(context, "add_sus_map '$map'")
+        if (success) {
+            saveSusMaps(context, getSusMaps(context) + map)
+            if (isAutoStartEnabled(context)) updateMagiskModule(context)
+            showToast(context, context.getString(R.string.susfs_sus_map_added_success, map))
+        }
+        return success
+    }
+
+    suspend fun removeSusMap(context: Context, map: String): Boolean {
+        saveSusMaps(context, getSusMaps(context) - map)
+        if (isAutoStartEnabled(context)) updateMagiskModule(context)
+        showToast(context, context.getString(R.string.susfs_sus_map_removed, map))
+        return true
+    }
+
+    suspend fun editSusMap(context: Context, oldMap: String, newMap: String): Boolean {
+        return try {
+            val currentMaps = getSusMaps(context).toMutableSet()
+            if (!currentMaps.remove(oldMap)) {
+                showToast(context, "Original SUS map not found: $oldMap")
+                return false
+            }
+
+            saveSusMaps(context, currentMaps)
+
+            val success = addSusMap(context, newMap)
+
+            if (success) {
+                showToast(context, context.getString(R.string.susfs_sus_map_updated, oldMap, newMap))
+                return true
+            } else {
+                // 如果添加新映射失败，恢复旧映射
+                currentMaps.add(oldMap)
+                saveSusMaps(context, currentMaps)
+                if (isAutoStartEnabled(context)) updateMagiskModule(context)
+                showToast(context, "Failed to update SUS map, reverted to original")
+                return false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            showToast(context, "Error updating SUS map: ${e.message}")
             false
         }
     }
