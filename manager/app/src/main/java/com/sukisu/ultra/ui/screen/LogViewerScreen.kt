@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.*
 import java.time.format.DateTimeFormatter
+import android.os.Process.myUid
 
 private val SPACING_SMALL = 4.dp
 private val SPACING_MEDIUM = 8.dp
@@ -83,15 +84,40 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     var filterType by rememberSaveable { mutableStateOf<LogType?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    var excludeCurrentApp by rememberSaveable { mutableStateOf(false) }
+    var excludePrctl    by rememberSaveable { mutableStateOf(false) }
+    var excludeSetuid   by rememberSaveable { mutableStateOf(false) }
+    var excludePrctlUnknown by rememberSaveable { mutableStateOf(false) }
+    val currentUid = remember { myUid().toString() }
 
-    val filteredEntries = remember(logEntries, filterType, searchQuery) {
+    val filteredEntries = remember(
+        logEntries, filterType, searchQuery,
+        excludeCurrentApp, excludePrctl, excludeSetuid
+    ) {
         logEntries.filter { entry ->
             val matchesFilter = filterType == null || entry.type == filterType
             val matchesSearch = searchQuery.isEmpty() ||
                     entry.comm.contains(searchQuery, ignoreCase = true) ||
                     entry.details.contains(searchQuery, ignoreCase = true) ||
                     entry.uid.contains(searchQuery, ignoreCase = true)
-            matchesFilter && matchesSearch
+
+            // 排除本应用
+            val notExcludedCurrentApp = !excludeCurrentApp || entry.uid != currentUid
+
+            // 排除 SYSCALL=prctl_*
+            val notExcludedPrctl = !excludePrctl ||
+                    !(entry.type == LogType.SYSCALL && entry.details.startsWith("Syscall: prctl"))
+
+            // 排除 SYSCALL=prctl_unknown
+            val notExcludedPrctlUnknown = !excludePrctlUnknown ||
+                    !(entry.type == LogType.SYSCALL && entry.details.startsWith("Syscall: prctl_unknown"))
+
+            // 排除 SYSCALL=setuid
+            val notExcludedSetuid = !excludeSetuid ||
+                    !(entry.type == LogType.SYSCALL && entry.details.startsWith("Syscall: setuid"))
+
+            matchesFilter && matchesSearch &&
+                    notExcludedCurrentApp && notExcludedPrctl && notExcludedSetuid && notExcludedPrctlUnknown
         }
     }
 
@@ -161,7 +187,15 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                 filterType = filterType,
                 onFilterTypeSelected = { filterType = it },
                 logCount = filteredEntries.size,
-                totalCount = logEntries.size
+                totalCount = logEntries.size,
+                excludeCurrentApp = excludeCurrentApp,
+                onExcludeCurrentApp = { excludeCurrentApp = it },
+                excludePrctl = excludePrctl,
+                onExcludePrctl = { excludePrctl = it },
+                excludeSetuid = excludeSetuid,
+                onExcludeSetuid = { excludeSetuid = it },
+                excludePrctlUnknown = excludePrctlUnknown,
+                onExcludePrctlUnknown = { excludePrctlUnknown = it }
             )
 
             // 日志列表
@@ -200,7 +234,15 @@ private fun LogControlPanel(
     filterType: LogType?,
     onFilterTypeSelected: (LogType?) -> Unit,
     logCount: Int,
-    totalCount: Int
+    totalCount: Int,
+    excludeCurrentApp: Boolean,
+    onExcludeCurrentApp: (Boolean) -> Unit,
+    excludePrctl: Boolean,
+    onExcludePrctl: (Boolean) -> Unit,
+    excludeSetuid: Boolean,
+    onExcludeSetuid: (Boolean) -> Unit,
+    excludePrctlUnknown: Boolean,
+    onExcludePrctlUnknown: (Boolean) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -268,6 +310,35 @@ private fun LogControlPanel(
                             )
                         }
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = stringResource(id = R.string.exclude_text), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(end = 8.dp))
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = excludeCurrentApp, onCheckedChange = onExcludeCurrentApp)
+                    Text(stringResource(R.string.log_viewer_exclude_current_app),
+                        style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = excludePrctl, onCheckedChange = onExcludePrctl)
+                    Text("prctl_*", style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = excludePrctlUnknown, onCheckedChange = onExcludePrctlUnknown)
+                    Text("prctl_unknown", style = MaterialTheme.typography.bodySmall)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = excludeSetuid, onCheckedChange = onExcludeSetuid)
+                    Text("setuid", style = MaterialTheme.typography.bodySmall)
                 }
             }
 
