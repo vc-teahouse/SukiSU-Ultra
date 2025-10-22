@@ -16,6 +16,7 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksud.h"
 #include "kernel_compat.h"
+#include "sulog.h"
 
 #define SU_PATH "/system/bin/su"
 #define SH_PATH "/system/bin/sh"
@@ -133,6 +134,8 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 int *__never_use_flags)
 {
 	struct filename *filename;
+	uid_t current_uid_val = current_uid().val;
+	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 	const char sh[] = KSUD_PATH;
 	const char su[] = SU_PATH;
 
@@ -152,8 +155,11 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	if (likely(memcmp(filename->name, su, sizeof(su))))
 		return 0;
 
-	if (!ksu_is_allow_uid(current_uid().val))
+	ksu_sulog_report_su_attempt(current_uid_val, NULL, filename->name, is_allowed);
+
+	if (!is_allowed) {
 		return 0;
+	}
 
 	pr_info("do_execveat_common su found\n");
 	memcpy((void *)filename->name, sh, sizeof(sh));
@@ -167,6 +173,8 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 			       void *__never_use_argv, void *__never_use_envp,
 			       int *__never_use_flags)
 {
+	uid_t current_uid_val = current_uid().val;
+	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 	const char su[] = SU_PATH;
 	char path[sizeof(su) + 1];
 
@@ -183,8 +191,10 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 
 	if (likely(memcmp(path, su, sizeof(su))))
 		return 0;
+	
+	ksu_sulog_report_su_attempt(current_uid_val, NULL, path, is_allowed);
 
-	if (!ksu_is_allow_uid(current_uid().val))
+	if (!is_allowed)
 		return 0;
 
 	pr_info("sys_execve su found\n");

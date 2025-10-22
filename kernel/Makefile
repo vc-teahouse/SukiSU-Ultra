@@ -9,6 +9,7 @@ kernelsu-objs += ksud.o
 kernelsu-objs += embed_ksud.o
 kernelsu-objs += kernel_compat.o
 kernelsu-objs += throne_comm.o
+kernelsu-objs += sulog.o
 ifeq ($(CONFIG_KSU_MANUAL_SU), y)
 kernelsu-objs += manual_su.o
 endif

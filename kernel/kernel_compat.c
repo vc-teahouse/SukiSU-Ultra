@@ -92,3 +92,40 @@ long ksu_strncpy_from_user_nofault(char *dst, const void __user *unsafe_addr,
 {
 	return strncpy_from_user_nofault(dst, unsafe_addr, count);
 }
+
+int ksu_vfs_unlink(struct inode *dir, struct dentry *dentry)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+    struct inode *delegated_inode = NULL;
+    return vfs_unlink(&nop_mnt_idmap, dir, dentry, &delegated_inode);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+    struct inode *delegated_inode = NULL;
+    return vfs_unlink(&init_user_ns, dir, dentry, &delegated_inode);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+    struct inode *delegated_inode = NULL;
+    return vfs_unlink(dir, dentry, &delegated_inode);
+#else
+    return vfs_unlink(dir, dentry);
+#endif
+}
+
+int ksu_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
+                   struct inode *new_dir, struct dentry *new_dentry)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 0)
+    struct renamedata rd = {
+        .old_dir = old_dir,
+        .old_dentry = old_dentry,
+        .new_dir = new_dir,
+        .new_dentry = new_dentry,
+        .delegated_inode = NULL,
+        .flags = 0,
+    };
+    return vfs_rename(&rd);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+    struct inode *delegated_inode = NULL;
+    return vfs_rename(old_dir, old_dentry, new_dir, new_dentry, &delegated_inode, 0);
+#else
+    return vfs_rename(old_dir, old_dentry, new_dir, new_dentry);
+#endif
+}
