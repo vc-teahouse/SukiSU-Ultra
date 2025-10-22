@@ -718,4 +718,8 @@ Important Note:\n
     <string name="log_viewer_view_logs_summary">View KernelSU superuser access logs</string>
     <string name="log_viewer_exclude_subtypes">Exclude sub-types</string>
     <string name="log_viewer_exclude_current_app">Current App</string>
+    <string name="log_viewer_page_info">Page: %1$d/%2$d | Total logs: %3$d</string>
+    <string name="log_viewer_too_many_logs">Too many logs, showing only the latest %1$d entries</string>
+    <string name="log_viewer_load_more">Load More Logs</string>
+    <string name="log_viewer_all_logs_loaded">All logs displayed</string>
 </resources>

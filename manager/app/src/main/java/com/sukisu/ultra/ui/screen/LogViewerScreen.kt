@@ -49,6 +49,9 @@ private val SPACING_SMALL = 4.dp
 private val SPACING_MEDIUM = 8.dp
 private val SPACING_LARGE = 16.dp
 
+private const val PAGE_SIZE = 10000
+private const val MAX_TOTAL_LOGS = 100000
+
 data class LogEntry(
     val timestamp: String,
     val type: LogType,
@@ -57,6 +60,13 @@ data class LogEntry(
     val details: String,
     val pid: String,
     val rawLine: String
+)
+
+data class LogPageInfo(
+    val currentPage: Int = 0,
+    val totalPages: Int = 0,
+    val totalLogs: Int = 0,
+    val hasMore: Boolean = false
 )
 
 enum class LogType(val displayName: String, val color: Color) {
@@ -107,6 +117,8 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     var filterType by rememberSaveable { mutableStateOf<LogType?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    var pageInfo by remember { mutableStateOf(LogPageInfo()) }
+    var lastLogFileHash by remember { mutableStateOf("") }
     val currentUid = remember { myUid().toString() }
 
     val initialExcluded = remember {
@@ -148,23 +160,58 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     val loadingDialog = rememberLoadingDialog()
     val confirmDialog = rememberConfirmDialog()
 
-    val onManualRefresh: () -> Unit = {
+    val loadPage: (Int, Boolean) -> Unit = { page, forceRefresh ->
         scope.launch {
-            loadLogs(selectedLogFile) { logEntries = it }
+            if (isLoading) return@launch
+
+            isLoading = true
+            try {
+                loadLogsWithPagination(
+                    selectedLogFile,
+                    page,
+                    forceRefresh,
+                    lastLogFileHash
+                ) { entries, newPageInfo, newHash ->
+                    logEntries = if (page == 0 || forceRefresh) {
+                        entries
+                    } else {
+                        logEntries + entries
+                    }
+                    pageInfo = newPageInfo
+                    lastLogFileHash = newHash
+                }
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    val onManualRefresh: () -> Unit = {
+        loadPage(0, true)
+    }
+
+    val loadNextPage: () -> Unit = {
+        if (pageInfo.hasMore && !isLoading) {
+            loadPage(pageInfo.currentPage + 1, false)
         }
     }
 
     LaunchedEffect(selectedLogFile) {
         while (true) {
-            delay(3_000)
-            onManualRefresh()
+            delay(5_000)
+            if (!isLoading) {
+                scope.launch {
+                    val hasNewLogs = checkForNewLogs(selectedLogFile, lastLogFileHash)
+                    if (hasNewLogs) {
+                        loadPage(0, true)
+                    }
+                }
+            }
         }
     }
 
     LaunchedEffect(selectedLogFile) {
-        loadLogs(selectedLogFile) { entries ->
-            logEntries = entries
-        }
+        loadPage(0, true)
     }
 
     Scaffold(
@@ -186,9 +233,7 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                         if (result == ConfirmResult.Confirmed) {
                             loadingDialog.withLoading {
                                 clearLogs(selectedLogFile)
-                                loadLogs(selectedLogFile) { entries ->
-                                    logEntries = entries
-                                }
+                                loadPage(0, true)
                             }
                             snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
                         }
@@ -207,11 +252,16 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
             // 控制面板
             LogControlPanel(
                 selectedLogFile = selectedLogFile,
-                onLogFileSelected = { selectedLogFile = it },
+                onLogFileSelected = {
+                    selectedLogFile = it
+                    pageInfo = LogPageInfo()
+                    logEntries = emptyList()
+                },
                 filterType = filterType,
                 onFilterTypeSelected = { filterType = it },
                 logCount = filteredEntries.size,
                 totalCount = logEntries.size,
+                pageInfo = pageInfo,
                 excludedSubTypes = excludedSubTypes,
                 onExcludeToggle = { excl ->
                     excludedSubTypes = if (excl in excludedSubTypes)
@@ -222,7 +272,7 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
             )
 
             // 日志列表
-            if (isLoading) {
+            if (isLoading && logEntries.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -232,17 +282,14 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
             } else if (filteredEntries.isEmpty()) {
                 EmptyLogState(
                     hasLogs = logEntries.isNotEmpty(),
-                    onRefresh = {
-                        scope.launch {
-                            loadLogs(selectedLogFile) { entries ->
-                                logEntries = entries
-                            }
-                        }
-                    }
+                    onRefresh = onManualRefresh
                 )
             } else {
                 LogList(
                     entries = filteredEntries,
+                    pageInfo = pageInfo,
+                    isLoading = isLoading,
+                    onLoadMore = loadNextPage,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -258,6 +305,7 @@ private fun LogControlPanel(
     onFilterTypeSelected: (LogType?) -> Unit,
     logCount: Int,
     totalCount: Int,
+    pageInfo: LogPageInfo,
     excludedSubTypes: Set<LogExclType>,
     onExcludeToggle: (LogExclType) -> Unit
 ) {
@@ -361,12 +409,37 @@ private fun LogControlPanel(
             }
             Spacer(modifier = Modifier.height(SPACING_MEDIUM))
 
-            // 统计信息
-            Text(
-                text = stringResource(R.string.log_viewer_showing_entries, logCount, totalCount),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // 统计信息和分页信息
+            Column(
+                verticalArrangement = Arrangement.spacedBy(SPACING_SMALL)
+            ) {
+                Text(
+                    text = stringResource(R.string.log_viewer_showing_entries, logCount, totalCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (pageInfo.totalPages > 0) {
+                    Text(
+                        text = stringResource(
+                            R.string.log_viewer_page_info,
+                            pageInfo.currentPage + 1,
+                            pageInfo.totalPages,
+                            pageInfo.totalLogs
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (pageInfo.totalLogs >= MAX_TOTAL_LOGS) {
+                    Text(
+                        text = stringResource(R.string.log_viewer_too_many_logs, MAX_TOTAL_LOGS),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
     }
 }
@@ -374,6 +447,9 @@ private fun LogControlPanel(
 @Composable
 private fun LogList(
     entries: List<LogEntry>,
+    pageInfo: LogPageInfo,
+    isLoading: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -386,6 +462,52 @@ private fun LogList(
     ) {
         items(entries) { entry ->
             LogEntryCard(entry = entry)
+        }
+
+        // 加载更多按钮或加载指示器
+        if (pageInfo.hasMore) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(SPACING_LARGE),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Button(
+                            onClick = onLoadMore,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.ExpandMore,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(SPACING_MEDIUM))
+                            Text(stringResource(R.string.log_viewer_load_more))
+                        }
+                    }
+                }
+            }
+        } else if (entries.isNotEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(SPACING_LARGE),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.log_viewer_all_logs_loaded),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
@@ -632,9 +754,35 @@ private fun LogViewerTopBar(
     }
 }
 
-private suspend fun loadLogs(
+private suspend fun checkForNewLogs(
     logFile: String,
-    onLoaded: (List<LogEntry>) -> Unit
+    lastHash: String
+): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            val shell = getRootShell()
+            val logPath = if (logFile == "current") {
+                "/data/adb/ksu/log/sulog.log"
+            } else {
+                "/data/adb/ksu/log/sulog.log.old"
+            }
+
+            val result = runCmd(shell, "stat -c '%Y %s' $logPath 2>/dev/null || echo '0 0'")
+            val currentHash = result.trim()
+
+            currentHash != lastHash && currentHash != "0 0"
+        } catch (_: Exception) {
+            false
+        }
+    }
+}
+
+private suspend fun loadLogsWithPagination(
+    logFile: String,
+    page: Int,
+    forceRefresh: Boolean,
+    lastHash: String,
+    onLoaded: (List<LogEntry>, LogPageInfo, String) -> Unit
 ) {
     withContext(Dispatchers.IO) {
         try {
@@ -645,15 +793,62 @@ private suspend fun loadLogs(
                 "/data/adb/ksu/log/sulog.log.old"
             }
 
-            val result = runCmd(shell, "cat $logPath 2>/dev/null || echo ''")
+            // 获取文件信息
+            val statResult = runCmd(shell, "stat -c '%Y %s' $logPath 2>/dev/null || echo '0 0'")
+            val currentHash = statResult.trim()
+
+            // 如果不是强制刷新且文件没有变化，则不加载
+            if (!forceRefresh && currentHash == lastHash && currentHash != "0 0") {
+                withContext(Dispatchers.Main) {
+                    onLoaded(emptyList(), LogPageInfo(), currentHash)
+                }
+                return@withContext
+            }
+
+            // 获取总行数
+            val totalLinesResult = runCmd(shell, "wc -l < $logPath 2>/dev/null || echo '0'")
+            val totalLines = totalLinesResult.trim().toIntOrNull() ?: 0
+
+            if (totalLines == 0) {
+                withContext(Dispatchers.Main) {
+                    onLoaded(emptyList(), LogPageInfo(), currentHash)
+                }
+                return@withContext
+            }
+
+            // 限制最大日志数量
+            val effectiveTotal = minOf(totalLines, MAX_TOTAL_LOGS)
+            val totalPages = (effectiveTotal + PAGE_SIZE - 1) / PAGE_SIZE
+
+            // 计算要读取的行数范围
+            val startLine = if (page == 0) {
+                maxOf(1, totalLines - effectiveTotal + 1)
+            } else {
+                val skipLines = page * PAGE_SIZE
+                maxOf(1, totalLines - effectiveTotal + 1 + skipLines)
+            }
+
+            val endLine = minOf(startLine + PAGE_SIZE - 1, totalLines)
+
+            if (startLine > totalLines) {
+                withContext(Dispatchers.Main) {
+                    onLoaded(emptyList(), LogPageInfo(page, totalPages, effectiveTotal, false), currentHash)
+                }
+                return@withContext
+            }
+
+            val result = runCmd(shell, "sed -n '${startLine},${endLine}p' $logPath 2>/dev/null || echo ''")
             val entries = parseLogEntries(result)
 
+            val hasMore = endLine < totalLines
+            val pageInfo = LogPageInfo(page, totalPages, effectiveTotal, hasMore)
+
             withContext(Dispatchers.Main) {
-                onLoaded(entries)
+                onLoaded(entries, pageInfo, currentHash)
             }
         } catch (_: Exception) {
             withContext(Dispatchers.Main) {
-                onLoaded(emptyList())
+                onLoaded(emptyList(), LogPageInfo(), lastHash)
             }
         }
     }
@@ -679,7 +874,7 @@ private suspend fun clearLogs(logFile: String) {
 private fun parseLogEntries(logContent: String): List<LogEntry> {
     if (logContent.isBlank()) return emptyList()
 
-    return logContent.lines()
+    val entries = logContent.lines()
         .filter { it.isNotBlank() && it.startsWith("[") }
         .mapNotNull { line ->
             try {
@@ -688,7 +883,8 @@ private fun parseLogEntries(logContent: String): List<LogEntry> {
                 null
             }
         }
-        .reversed() // 最新的日志在前面
+
+    return entries.reversed()
 }
 private fun utcToLocal(utc: String): String {
     return try {

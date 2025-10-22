@@ -709,4 +709,8 @@
     <string name="log_viewer_view_logs_summary">查看 KernelSU 超级用户访问日志</string>
     <string name="log_viewer_exclude_subtypes">排除子类型</string>
     <string name="log_viewer_exclude_current_app">当前应用</string>
+    <string name="log_viewer_page_info">页面: %1$d/%2$d | 总日志: %3$d</string>
+    <string name="log_viewer_too_many_logs">日志过多，仅显示最新 %1$d 条</string>
+    <string name="log_viewer_load_more">加载更多日志</string>
+    <string name="log_viewer_all_logs_loaded">已显示所有日志</string>
 </resources>
