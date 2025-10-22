@@ -36,8 +36,11 @@ import com.sukisu.ultra.ui.theme.getCardColors
 import com.sukisu.ultra.ui.theme.getCardElevation
 import com.sukisu.ultra.ui.util.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.*
+import java.time.format.DateTimeFormatter
 
 private val SPACING_SMALL = 4.dp
 private val SPACING_MEDIUM = 8.dp
@@ -60,6 +63,9 @@ enum class LogType(val displayName: String, val color: Color) {
     MANAGER_OP("MANAGER_OP", Color(0xFF9C27B0)),
     UNKNOWN("UNKNOWN", Color(0xFF757575))
 }
+
+private val utcFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+private val localFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
@@ -91,6 +97,19 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     val loadingDialog = rememberLoadingDialog()
     val confirmDialog = rememberConfirmDialog()
 
+    val onManualRefresh: () -> Unit = {
+        scope.launch {
+            loadLogs(selectedLogFile) { logEntries = it }
+        }
+    }
+
+    LaunchedEffect(selectedLogFile) {
+        while (true) {
+            delay(3_000)
+            onManualRefresh()
+        }
+    }
+
     LaunchedEffect(selectedLogFile) {
         loadLogs(selectedLogFile) { entries ->
             logEntries = entries
@@ -106,6 +125,7 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                 searchQuery = searchQuery,
                 onSearchQueryChange = { searchQuery = it },
                 onSearchToggle = { showSearchBar = !showSearchBar },
+                onRefresh = onManualRefresh,
                 onClearLogs = {
                     scope.launch {
                         val result = confirmDialog.awaitConfirm(
@@ -435,6 +455,7 @@ private fun LogViewerTopBar(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onSearchToggle: () -> Unit,
+    onRefresh: () -> Unit,
     onClearLogs: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -465,6 +486,12 @@ private fun LogViewerTopBar(
                     Icon(
                         imageVector = if (showSearchBar) Icons.Filled.SearchOff else Icons.Filled.Search,
                         contentDescription = stringResource(R.string.log_viewer_search)
+                    )
+                }
+                IconButton(onClick = onRefresh) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = stringResource(R.string.log_viewer_refresh)
                     )
                 }
                 IconButton(onClick = onClearLogs) {
@@ -574,12 +601,21 @@ private fun parseLogEntries(logContent: String): List<LogEntry> {
         }
         .reversed() // 最新的日志在前面
 }
+private fun utcToLocal(utc: String): String {
+    return try {
+        val instant = LocalDateTime.parse(utc, utcFormatter).atOffset(ZoneOffset.UTC).toInstant()
+        val local = instant.atZone(ZoneId.systemDefault())
+        local.format(localFormatter)
+    } catch (_: Exception) {
+        utc
+    }
+}
 
 private fun parseLogLine(line: String): LogEntry? {
     // 解析格式: [timestamp] TYPE: UID=xxx COMM=xxx ...
     val timestampRegex = """\[(.*?)]""".toRegex()
     val timestampMatch = timestampRegex.find(line) ?: return null
-    val timestamp = timestampMatch.groupValues[1]
+    val timestamp = utcToLocal(timestampMatch.groupValues[1])
 
     val afterTimestamp = line.substring(timestampMatch.range.last + 1).trim()
     val parts = afterTimestamp.split(":")

@@ -33,25 +33,21 @@ static struct workqueue_struct *sulog_workqueue;
 static struct work_struct sulog_work;
 static bool sulog_enabled = true;
 
+extern struct timezone sys_tz;
+
 static void get_timestamp(char *buf, size_t len)
 {
-	struct timespec64 ts, boottime;
+	struct timespec64 ts;
 	struct tm tm;
-	s64 real_time;
-	
-	ktime_get_boottime_ts64(&boottime);
-	ktime_get_ts64(&ts);
-	
-	real_time = boottime.tv_sec;
-	if (real_time < 946684800) {
-		real_time = ts.tv_sec;
-	}
-	
-	time64_to_tm(real_time, 0, &tm);
-	
-	snprintf(buf, len, "%04ld-%02d-%02d %02d:%02d:%02d",
-		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
-		tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+	ktime_get_real_ts64(&ts);
+
+	time64_to_tm(ts.tv_sec - sys_tz.tz_minuteswest * 60, 0, &tm);
+
+	snprintf(buf, len,
+		 "%04ld-%02d-%02d %02d:%02d:%02d",
+		 tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		 tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 static void get_full_comm(char *comm_buf, size_t buf_len)
