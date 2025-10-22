@@ -1,0 +1,640 @@
+package com.sukisu.ultra.ui.screen
+
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.sukisu.ultra.R
+import com.sukisu.ultra.ui.component.*
+import com.sukisu.ultra.ui.theme.CardConfig
+import com.sukisu.ultra.ui.theme.CardConfig.cardAlpha
+import com.sukisu.ultra.ui.theme.getCardColors
+import com.sukisu.ultra.ui.theme.getCardElevation
+import com.sukisu.ultra.ui.util.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+private val SPACING_SMALL = 4.dp
+private val SPACING_MEDIUM = 8.dp
+private val SPACING_LARGE = 16.dp
+
+data class LogEntry(
+    val timestamp: String,
+    val type: LogType,
+    val uid: String,
+    val comm: String,
+    val details: String,
+    val pid: String,
+    val rawLine: String
+)
+
+enum class LogType(val displayName: String, val color: Color) {
+    SU_GRANT("SU_GRANT", Color(0xFF4CAF50)),
+    SU_EXEC("SU_EXEC", Color(0xFF2196F3)),
+    PERM_CHECK("PERM_CHECK", Color(0xFFFF9800)),
+    MANAGER_OP("MANAGER_OP", Color(0xFF9C27B0)),
+    UNKNOWN("UNKNOWN", Color(0xFF757575))
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Destination<RootGraph>
+@Composable
+fun LogViewerScreen(navigator: DestinationsNavigator) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+    val snackBarHost = LocalSnackbarHost.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var logEntries by remember { mutableStateOf<List<LogEntry>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var selectedLogFile by rememberSaveable { mutableStateOf("current") }
+    var filterType by rememberSaveable { mutableStateOf<LogType?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var showSearchBar by rememberSaveable { mutableStateOf(false) }
+
+    val filteredEntries = remember(logEntries, filterType, searchQuery) {
+        logEntries.filter { entry ->
+            val matchesFilter = filterType == null || entry.type == filterType
+            val matchesSearch = searchQuery.isEmpty() ||
+                    entry.comm.contains(searchQuery, ignoreCase = true) ||
+                    entry.details.contains(searchQuery, ignoreCase = true) ||
+                    entry.uid.contains(searchQuery, ignoreCase = true)
+            matchesFilter && matchesSearch
+        }
+    }
+
+    val loadingDialog = rememberLoadingDialog()
+    val confirmDialog = rememberConfirmDialog()
+
+    LaunchedEffect(selectedLogFile) {
+        loadLogs(selectedLogFile) { entries ->
+            logEntries = entries
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            LogViewerTopBar(
+                scrollBehavior = scrollBehavior,
+                onBackClick = { navigator.navigateUp() },
+                showSearchBar = showSearchBar,
+                searchQuery = searchQuery,
+                onSearchQueryChange = { searchQuery = it },
+                onSearchToggle = { showSearchBar = !showSearchBar },
+                onClearLogs = {
+                    scope.launch {
+                        val result = confirmDialog.awaitConfirm(
+                            title = context.getString(R.string.log_viewer_clear_logs),
+                            content = context.getString(R.string.log_viewer_clear_logs_confirm)
+                        )
+                        if (result == ConfirmResult.Confirmed) {
+                            loadingDialog.withLoading {
+                                clearLogs(selectedLogFile)
+                                loadLogs(selectedLogFile) { entries ->
+                                    logEntries = entries
+                                }
+                            }
+                            snackBarHost.showSnackbar(context.getString(R.string.log_viewer_logs_cleared))
+                        }
+                    }
+                }
+            )
+        },
+        snackbarHost = { SnackbarHost(snackBarHost) },
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+        ) {
+            // 控制面板
+            LogControlPanel(
+                selectedLogFile = selectedLogFile,
+                onLogFileSelected = { selectedLogFile = it },
+                filterType = filterType,
+                onFilterTypeSelected = { filterType = it },
+                logCount = filteredEntries.size,
+                totalCount = logEntries.size
+            )
+
+            // 日志列表
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (filteredEntries.isEmpty()) {
+                EmptyLogState(
+                    hasLogs = logEntries.isNotEmpty(),
+                    onRefresh = {
+                        scope.launch {
+                            loadLogs(selectedLogFile) { entries ->
+                                logEntries = entries
+                            }
+                        }
+                    }
+                )
+            } else {
+                LogList(
+                    entries = filteredEntries,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogControlPanel(
+    selectedLogFile: String,
+    onLogFileSelected: (String) -> Unit,
+    filterType: LogType?,
+    onFilterTypeSelected: (LogType?) -> Unit,
+    logCount: Int,
+    totalCount: Int
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = getCardElevation()
+    ) {
+        Column(
+            modifier = Modifier.padding(SPACING_LARGE)
+        ) {
+            // 文件选择
+            Text(
+                text = stringResource(R.string.log_viewer_select_file),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
+            ) {
+                FilterChip(
+                    onClick = { onLogFileSelected("current") },
+                    label = { Text(stringResource(R.string.log_viewer_current_log)) },
+                    selected = selectedLogFile == "current"
+                )
+                FilterChip(
+                    onClick = { onLogFileSelected("old") },
+                    label = { Text(stringResource(R.string.log_viewer_old_log)) },
+                    selected = selectedLogFile == "old"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(SPACING_LARGE))
+
+            // 类型过滤
+            Text(
+                text = stringResource(R.string.log_viewer_filter_type),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
+            ) {
+                item {
+                    FilterChip(
+                        onClick = { onFilterTypeSelected(null) },
+                        label = { Text(stringResource(R.string.log_viewer_all_types)) },
+                        selected = filterType == null
+                    )
+                }
+                items(LogType.entries.toTypedArray()) { type ->
+                    FilterChip(
+                        onClick = { onFilterTypeSelected(if (filterType == type) null else type) },
+                        label = { Text(type.displayName) },
+                        selected = filterType == type,
+                        leadingIcon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(type.color, RoundedCornerShape(4.dp))
+                            )
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            // 统计信息
+            Text(
+                text = stringResource(R.string.log_viewer_showing_entries, logCount, totalCount),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun LogList(
+    entries: List<LogEntry>,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+
+    LazyColumn(
+        state = listState,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
+        verticalArrangement = Arrangement.spacedBy(SPACING_SMALL)
+    ) {
+        items(entries) { entry ->
+            LogEntryCard(entry = entry)
+        }
+    }
+}
+
+@Composable
+private fun LogEntryCard(entry: LogEntry) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        colors = getCardColors(MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(SPACING_MEDIUM)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(entry.type.color, RoundedCornerShape(6.dp))
+                    )
+                    Text(
+                        text = entry.type.displayName,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = entry.timestamp,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(SPACING_SMALL))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "UID: ${entry.uid}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "PID: ${entry.pid}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = entry.comm,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = if (expanded) Int.MAX_VALUE else 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            if (entry.details.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(SPACING_SMALL))
+                Text(
+                    text = entry.details,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = if (expanded) Int.MAX_VALUE else 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+                    Text(
+                        text = stringResource(R.string.log_viewer_raw_log),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(SPACING_SMALL))
+                    Text(
+                        text = entry.rawLine,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyLogState(
+    hasLogs: Boolean,
+    onRefresh: () -> Unit
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(SPACING_LARGE)
+        ) {
+            Icon(
+                imageVector = if (hasLogs) Icons.Filled.FilterList else Icons.Filled.Description,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(
+                    if (hasLogs) R.string.log_viewer_no_matching_logs
+                    else R.string.log_viewer_no_logs
+                ),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Filled.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(SPACING_MEDIUM))
+                Text(stringResource(R.string.log_viewer_refresh))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LogViewerTopBar(
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    onBackClick: () -> Unit,
+    showSearchBar: Boolean,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchToggle: () -> Unit,
+    onClearLogs: () -> Unit
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val cardColor = if (CardConfig.isCustomBackgroundEnabled) {
+        colorScheme.surfaceContainerLow
+    } else {
+        colorScheme.background
+    }
+
+    Column {
+        TopAppBar(
+            title = {
+                Text(
+                    text = stringResource(R.string.log_viewer_title),
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.log_viewer_back)
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = onSearchToggle) {
+                    Icon(
+                        imageVector = if (showSearchBar) Icons.Filled.SearchOff else Icons.Filled.Search,
+                        contentDescription = stringResource(R.string.log_viewer_search)
+                    )
+                }
+                IconButton(onClick = onClearLogs) {
+                    Icon(
+                        imageVector = Icons.Filled.DeleteSweep,
+                        contentDescription = stringResource(R.string.log_viewer_clear_logs)
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = cardColor.copy(alpha = cardAlpha),
+                scrolledContainerColor = cardColor.copy(alpha = cardAlpha)
+            ),
+            windowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
+            scrollBehavior = scrollBehavior
+        )
+
+        AnimatedVisibility(
+            visible = showSearchBar,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SPACING_LARGE, vertical = SPACING_MEDIUM),
+                placeholder = { Text(stringResource(R.string.log_viewer_search_placeholder)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = null
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
+                            Icon(
+                                imageVector = Icons.Filled.Clear,
+                                contentDescription = stringResource(R.string.log_viewer_clear_search)
+                            )
+                        }
+                    }
+                },
+                singleLine = true
+            )
+        }
+    }
+}
+
+private suspend fun loadLogs(
+    logFile: String,
+    onLoaded: (List<LogEntry>) -> Unit
+) {
+    withContext(Dispatchers.IO) {
+        try {
+            val shell = getRootShell()
+            val logPath = if (logFile == "current") {
+                "/data/adb/ksu/log/sulog.log"
+            } else {
+                "/data/adb/ksu/log/sulog.log.old"
+            }
+
+            val result = runCmd(shell, "cat $logPath 2>/dev/null || echo ''")
+            val entries = parseLogEntries(result)
+
+            withContext(Dispatchers.Main) {
+                onLoaded(entries)
+            }
+        } catch (_: Exception) {
+            withContext(Dispatchers.Main) {
+                onLoaded(emptyList())
+            }
+        }
+    }
+}
+
+private suspend fun clearLogs(logFile: String) {
+    withContext(Dispatchers.IO) {
+        try {
+            val shell = getRootShell()
+            val logPath = if (logFile == "current") {
+                "/data/adb/ksu/log/sulog.log"
+            } else {
+                "/data/adb/ksu/log/sulog.log.old"
+            }
+
+            runCmd(shell, "echo '' > $logPath")
+        } catch (_: Exception) {
+            // 忽略错误
+        }
+    }
+}
+
+private fun parseLogEntries(logContent: String): List<LogEntry> {
+    if (logContent.isBlank()) return emptyList()
+
+    return logContent.lines()
+        .filter { it.isNotBlank() && it.startsWith("[") }
+        .mapNotNull { line ->
+            try {
+                parseLogLine(line)
+            } catch (_: Exception) {
+                null
+            }
+        }
+        .reversed() // 最新的日志在前面
+}
+
+private fun parseLogLine(line: String): LogEntry? {
+    // 解析格式: [timestamp] TYPE: UID=xxx COMM=xxx ...
+    val timestampRegex = """\[(.*?)]""".toRegex()
+    val timestampMatch = timestampRegex.find(line) ?: return null
+    val timestamp = timestampMatch.groupValues[1]
+
+    val afterTimestamp = line.substring(timestampMatch.range.last + 1).trim()
+    val parts = afterTimestamp.split(":")
+    if (parts.size < 2) return null
+
+    val typeStr = parts[0].trim()
+    val type = when (typeStr) {
+        "SU_GRANT" -> LogType.SU_GRANT
+        "SU_EXEC" -> LogType.SU_EXEC
+        "PERM_CHECK" -> LogType.PERM_CHECK
+        "MANAGER_OP" -> LogType.MANAGER_OP
+        else -> LogType.UNKNOWN
+    }
+
+    val details = parts[1].trim()
+    val uid: String = extractValue(details, "UID") ?: ""
+    val comm: String = extractValue(details, "COMM") ?: ""
+    val pid: String = extractValue(details, "PID") ?: ""
+
+    // 构建详细信息字符串
+    val detailsStr = when (type) {
+        LogType.SU_GRANT -> {
+            val method: String = extractValue(details, "METHOD") ?: ""
+            "Method: $method"
+        }
+        LogType.SU_EXEC -> {
+            val target: String = extractValue(details, "TARGET") ?: ""
+            val result: String = extractValue(details, "RESULT") ?: ""
+            "Target: $target, Result: $result"
+        }
+        LogType.PERM_CHECK -> {
+            val result: String = extractValue(details, "RESULT") ?: ""
+            "Result: $result"
+        }
+        LogType.MANAGER_OP -> {
+            val op: String = extractValue(details, "OP") ?: ""
+            val managerUid: String = extractValue(details, "MANAGER_UID") ?: ""
+            val targetUid: String = extractValue(details, "TARGET_UID") ?: ""
+            "Operation: $op, Manager UID: $managerUid, Target UID: $targetUid"
+        }
+        else -> details
+    }
+
+    return LogEntry(
+        timestamp = timestamp,
+        type = type,
+        uid = uid,
+        comm = comm,
+        details = detailsStr,
+        pid = pid,
+        rawLine = line
+    )
+}
+
+private fun extractValue(text: String, key: String): String? {
+    val regex = """$key=(\S+)""".toRegex()
+    return regex.find(text)?.groupValues?.get(1)
+}
