@@ -2,8 +2,7 @@
 use crate::kpm;
 use crate::{
     assets, defs,
-    defs::{NO_MOUNT_PATH},
-    utils::find_tmp_path,
+    defs::{KSU_MOUNT_SOURCE, NO_MOUNT_PATH, NO_TMPFS_PATH},
     ksucalls,
     module::{handle_updated_modules, prune_modules},
     restorecon, uid_scanner, utils,
@@ -11,17 +10,8 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use log::{info, warn};
+use rustix::fs::{MountFlags, mount};
 use std::path::Path;
-
-#[cfg(target_os = "android")]
-pub fn mount_modules_systemlessly() -> Result<()> {
-    crate::magic_mount::magic_mount(&find_tmp_path())
-}
-
-#[cfg(not(target_os = "android"))]
-pub fn mount_modules_systemlessly() -> Result<()> {
-    Ok(())
-}
 
 pub fn on_post_data_fs() -> Result<()> {
     ksucalls::report_post_fs_data();
