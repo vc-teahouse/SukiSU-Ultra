@@ -485,15 +485,11 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
 {
-
-
 	// if success, we modify the arg5 as result!
 	bool is_manual_su_cmd = false;
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
 	uid_t current_uid_val = current_uid().val;
-
-	sulog_prctl_cmd(current_uid().val, arg2);
 
 #ifdef CONFIG_KSU_MANUAL_SU
 	is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
@@ -525,6 +521,8 @@ skip_check:
 	// just continue old logic
 	bool from_root = !current_uid().val;
 	bool from_manager = is_manager();
+
+	sulog_prctl_cmd(current_uid().val, arg2);
 
 	if (!from_root && !from_manager 
 		&& !(is_manual_su_cmd ? is_system_uid(): 

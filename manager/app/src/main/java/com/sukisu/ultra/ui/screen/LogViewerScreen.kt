@@ -309,6 +309,8 @@ private fun LogControlPanel(
     excludedSubTypes: Set<LogExclType>,
     onExcludeToggle: (LogExclType) -> Unit
 ) {
+    var isExpanded by rememberSaveable { mutableStateOf(true) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -316,128 +318,150 @@ private fun LogControlPanel(
         colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = getCardElevation()
     ) {
-        Column(
-            modifier = Modifier.padding(SPACING_LARGE)
-        ) {
-            // 文件选择
-            Text(
-                text = stringResource(R.string.log_viewer_select_file),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-
+        Column {
+            // 标题栏（点击展开/收起）
             Row(
-                horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
-            ) {
-                FilterChip(
-                    onClick = { onLogFileSelected("current") },
-                    label = { Text(stringResource(R.string.log_viewer_current_log)) },
-                    selected = selectedLogFile == "current"
-                )
-                FilterChip(
-                    onClick = { onLogFileSelected("old") },
-                    label = { Text(stringResource(R.string.log_viewer_old_log)) },
-                    selected = selectedLogFile == "old"
-                )
-            }
-
-            Spacer(modifier = Modifier.height(SPACING_LARGE))
-
-            // 类型过滤
-            Text(
-                text = stringResource(R.string.log_viewer_filter_type),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)
-            ) {
-                item {
-                    FilterChip(
-                        onClick = { onFilterTypeSelected(null) },
-                        label = { Text(stringResource(R.string.log_viewer_all_types)) },
-                        selected = filterType == null
-                    )
-                }
-                items(LogType.entries.toTypedArray()) { type ->
-                    FilterChip(
-                        onClick = { onFilterTypeSelected(if (filterType == type) null else type) },
-                        label = { Text(type.displayName) },
-                        selected = filterType == type,
-                        leadingIcon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(type.color, RoundedCornerShape(4.dp))
-                            )
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-
-            Text(
-                text = stringResource(R.string.log_viewer_exclude_subtypes),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)) {
-                items(LogExclType.entries.toTypedArray()) { excl ->
-                    val label = if (excl == LogExclType.CURRENT_APP)
-                        stringResource(R.string.log_viewer_exclude_current_app)
-                    else excl.displayName
-
-                    FilterChip(
-                        onClick = { onExcludeToggle(excl) },
-                        label = { Text(label) },
-                        selected = excl in excludedSubTypes,
-                        leadingIcon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .background(excl.color, RoundedCornerShape(4.dp))
-                            )
-                        }
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
-
-            // 统计信息和分页信息
-            Column(
-                verticalArrangement = Arrangement.spacedBy(SPACING_SMALL)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(SPACING_LARGE),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = stringResource(R.string.log_viewer_showing_entries, logCount, totalCount),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = stringResource(R.string.settings),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
 
-                if (pageInfo.totalPages > 0) {
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = SPACING_LARGE)
+                ) {
+                    // 文件选择
                     Text(
-                        text = stringResource(
-                            R.string.log_viewer_page_info,
-                            pageInfo.currentPage + 1,
-                            pageInfo.totalPages,
-                            pageInfo.totalLogs
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.log_viewer_select_file),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
-                }
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+                    Row(horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)) {
+                        FilterChip(
+                            onClick = { onLogFileSelected("current") },
+                            label = { Text(stringResource(R.string.log_viewer_current_log)) },
+                            selected = selectedLogFile == "current"
+                        )
+                        FilterChip(
+                            onClick = { onLogFileSelected("old") },
+                            label = { Text(stringResource(R.string.log_viewer_old_log)) },
+                            selected = selectedLogFile == "old"
+                        )
+                    }
 
-                if (pageInfo.totalLogs >= MAX_TOTAL_LOGS) {
+                    Spacer(modifier = Modifier.height(SPACING_LARGE))
+
+                    // 类型过滤
                     Text(
-                        text = stringResource(R.string.log_viewer_too_many_logs, MAX_TOTAL_LOGS),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
+                        text = stringResource(R.string.log_viewer_filter_type),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)) {
+                        item {
+                            FilterChip(
+                                onClick = { onFilterTypeSelected(null) },
+                                label = { Text(stringResource(R.string.log_viewer_all_types)) },
+                                selected = filterType == null
+                            )
+                        }
+                        items(LogType.entries.toTypedArray()) { type ->
+                            FilterChip(
+                                onClick = { onFilterTypeSelected(if (filterType == type) null else type) },
+                                label = { Text(type.displayName) },
+                                selected = filterType == type,
+                                leadingIcon = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(type.color, RoundedCornerShape(4.dp))
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+                    // 排除子类型
+                    Text(
+                        text = stringResource(R.string.log_viewer_exclude_subtypes),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)) {
+                        items(LogExclType.entries.toTypedArray()) { excl ->
+                            val label = if (excl == LogExclType.CURRENT_APP)
+                                stringResource(R.string.log_viewer_exclude_current_app)
+                            else excl.displayName
+
+                            FilterChip(
+                                onClick = { onExcludeToggle(excl) },
+                                label = { Text(label) },
+                                selected = excl in excludedSubTypes,
+                                leadingIcon = {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(excl.color, RoundedCornerShape(4.dp))
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+                    // 统计信息
+                    Column(verticalArrangement = Arrangement.spacedBy(SPACING_SMALL)) {
+                        Text(
+                            text = stringResource(R.string.log_viewer_showing_entries, logCount, totalCount),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (pageInfo.totalPages > 0) {
+                            Text(
+                                text = stringResource(
+                                    R.string.log_viewer_page_info,
+                                    pageInfo.currentPage + 1,
+                                    pageInfo.totalPages,
+                                    pageInfo.totalLogs
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (pageInfo.totalLogs >= MAX_TOTAL_LOGS) {
+                            Text(
+                                text = stringResource(R.string.log_viewer_too_many_logs, MAX_TOTAL_LOGS),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(SPACING_LARGE))
                 }
             }
         }
