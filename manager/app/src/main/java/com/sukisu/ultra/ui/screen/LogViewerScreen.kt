@@ -1,5 +1,6 @@
 package com.sukisu.ultra.ui.screen
 
+import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,6 +42,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.*
 import java.time.format.DateTimeFormatter
+import android.os.Process.myUid
+import androidx.core.content.edit
 
 private val SPACING_SMALL = 4.dp
 private val SPACING_MEDIUM = 8.dp
@@ -65,8 +68,29 @@ enum class LogType(val displayName: String, val color: Color) {
     UNKNOWN("UNKNOWN", Color(0xFF757575))
 }
 
+enum class LogExclType(val displayName: String, val color: Color) {
+    CURRENT_APP("Current app", Color(0xFF9E9E9E)),
+    PRCTL_STAR("prctl_*", Color(0xFF00BCD4)),
+    PRCTL_UNKNOWN("prctl_unknown", Color(0xFF00BCD4)),
+    SETUID("setuid", Color(0xFF00BCD4))
+}
+
 private val utcFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 private val localFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+private fun saveExcludedSubTypes(context: Context, types: Set<LogExclType>) {
+    val prefs = context.getSharedPreferences("sulog", Context.MODE_PRIVATE)
+    val nameSet = types.map { it.name }.toSet()
+    prefs.edit { putStringSet("excluded_subtypes", nameSet) }
+}
+
+private fun loadExcludedSubTypes(context: Context): Set<LogExclType> {
+    val prefs = context.getSharedPreferences("sulog", Context.MODE_PRIVATE)
+    val nameSet = prefs.getStringSet("excluded_subtypes", emptySet()) ?: emptySet()
+    return nameSet.mapNotNull { name ->
+        LogExclType.entries.firstOrNull { it.name == name }
+    }.toSet()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Destination<RootGraph>
@@ -83,14 +107,40 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
     var filterType by rememberSaveable { mutableStateOf<LogType?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
+    val currentUid = remember { myUid().toString() }
 
-    val filteredEntries = remember(logEntries, filterType, searchQuery) {
+    val initialExcluded = remember {
+        loadExcludedSubTypes(context)
+    }
+
+    var excludedSubTypes by rememberSaveable { mutableStateOf(initialExcluded) }
+
+    LaunchedEffect(excludedSubTypes) {
+        saveExcludedSubTypes(context, excludedSubTypes)
+    }
+
+    val filteredEntries = remember(
+        logEntries, filterType, searchQuery, excludedSubTypes
+    ) {
         logEntries.filter { entry ->
-            val matchesFilter = filterType == null || entry.type == filterType
             val matchesSearch = searchQuery.isEmpty() ||
                     entry.comm.contains(searchQuery, ignoreCase = true) ||
                     entry.details.contains(searchQuery, ignoreCase = true) ||
                     entry.uid.contains(searchQuery, ignoreCase = true)
+
+            // 排除本应用
+            if (LogExclType.CURRENT_APP in excludedSubTypes && entry.uid == currentUid) return@filter false
+
+            // 排除 SYSCALL 子类型
+            if (entry.type == LogType.SYSCALL) {
+                val detail = entry.details
+                if (LogExclType.PRCTL_STAR in excludedSubTypes && detail.startsWith("Syscall: prctl") && !detail.startsWith("Syscall: prctl_unknown")) return@filter false
+                if (LogExclType.PRCTL_UNKNOWN in excludedSubTypes && detail.startsWith("Syscall: prctl_unknown")) return@filter false
+                if (LogExclType.SETUID in excludedSubTypes && detail.startsWith("Syscall: setuid")) return@filter false
+            }
+
+            // 普通类型筛选
+            val matchesFilter = filterType == null || entry.type == filterType
             matchesFilter && matchesSearch
         }
     }
@@ -161,7 +211,14 @@ fun LogViewerScreen(navigator: DestinationsNavigator) {
                 filterType = filterType,
                 onFilterTypeSelected = { filterType = it },
                 logCount = filteredEntries.size,
-                totalCount = logEntries.size
+                totalCount = logEntries.size,
+                excludedSubTypes = excludedSubTypes,
+                onExcludeToggle = { excl ->
+                    excludedSubTypes = if (excl in excludedSubTypes)
+                        excludedSubTypes - excl
+                    else
+                        excludedSubTypes + excl
+                }
             )
 
             // 日志列表
@@ -200,7 +257,9 @@ private fun LogControlPanel(
     filterType: LogType?,
     onFilterTypeSelected: (LogType?) -> Unit,
     logCount: Int,
-    totalCount: Int
+    totalCount: Int,
+    excludedSubTypes: Set<LogExclType>,
+    onExcludeToggle: (LogExclType) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -271,6 +330,35 @@ private fun LogControlPanel(
                 }
             }
 
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            Text(
+                text = stringResource(R.string.log_viewer_exclude_subtypes),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(SPACING_MEDIUM))
+
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(SPACING_MEDIUM)) {
+                items(LogExclType.entries.toTypedArray()) { excl ->
+                    val label = if (excl == LogExclType.CURRENT_APP)
+                        stringResource(R.string.log_viewer_exclude_current_app)
+                    else excl.displayName
+
+                    FilterChip(
+                        onClick = { onExcludeToggle(excl) },
+                        label = { Text(label) },
+                        selected = excl in excludedSubTypes,
+                        leadingIcon = {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(excl.color, RoundedCornerShape(4.dp))
+                            )
+                        }
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(SPACING_MEDIUM))
 
             // 统计信息

@@ -707,4 +707,6 @@
     <string name="log_viewer_clear_search">清除搜索</string>
     <string name="log_viewer_view_logs">查看使用日志</string>
     <string name="log_viewer_view_logs_summary">查看 KernelSU 超级用户访问日志</string>
+    <string name="log_viewer_exclude_subtypes">排除子类型</string>
+    <string name="log_viewer_exclude_current_app">当前应用</string>
 </resources>

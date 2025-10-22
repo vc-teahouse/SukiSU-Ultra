@@ -716,4 +716,6 @@ Important Note:\n
     <string name="log_viewer_clear_search">Clear search</string>
     <string name="log_viewer_view_logs">View Usage Logs</string>
     <string name="log_viewer_view_logs_summary">View KernelSU superuser access logs</string>
+    <string name="log_viewer_exclude_subtypes">Exclude sub-types</string>
+    <string name="log_viewer_exclude_current_app">Current App</string>
 </resources>
