@@ -434,7 +434,7 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 	case CMD_UID_SHOULD_UMOUNT:             name = "prctl_uid_should_umount"; break;
 	case CMD_IS_SU_ENABLED:                 name = "prctl_is_su_enabled"; break;
 	case CMD_ENABLE_SU:                     name = "prctl_enable_su"; break;
-#ifdef CONFIG_KSU_MANUAL_SU
+#ifdef CONFIG_KPM
 	case CMD_ENABLE_KPM:                    name = "prctl_enable_kpm"; break;
 #endif
 	case CMD_HOOK_TYPE:                     name = "prctl_hook_type"; break;
@@ -445,7 +445,7 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 	case CMD_SET_APP_PROFILE:               name = "prctl_set_app_profile"; break;
 	case CMD_GET_APP_PROFILE:               name = "prctl_get_app_profile"; break;
 
-#ifdef CONFIG_KPM
+#ifdef CONFIG_KSU_MANUAL_SU
 	case CMD_SU_ESCALATION_REQUEST:         name = "prctl_su_escalation_request"; break;
 	case CMD_ADD_PENDING_ROOT:              name = "prctl_add_pending_root"; break;
 #endif
