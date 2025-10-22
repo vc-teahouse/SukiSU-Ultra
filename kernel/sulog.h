@@ -11,6 +11,8 @@ void ksu_sulog_report_permission_check(uid_t uid, const char *comm, bool allowed
 
 void ksu_sulog_report_manager_operation(const char *operation, uid_t manager_uid, uid_t target_uid);
 
+void ksu_sulog_report_syscall(uid_t uid, const char *comm, const char *syscall, const char *args);
+
 void ksu_sulog_set_enabled(bool enabled);
 bool ksu_sulog_is_enabled(void);
 

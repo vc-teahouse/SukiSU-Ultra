@@ -60,6 +60,7 @@ enum class LogType(val displayName: String, val color: Color) {
     SU_GRANT("SU_GRANT", Color(0xFF4CAF50)),
     SU_EXEC("SU_EXEC", Color(0xFF2196F3)),
     PERM_CHECK("PERM_CHECK", Color(0xFFFF9800)),
+    SYSCALL("SYSCALL", Color(0xFF00BCD4)),
     MANAGER_OP("MANAGER_OP", Color(0xFF9C27B0)),
     UNKNOWN("UNKNOWN", Color(0xFF757575))
 }
@@ -626,6 +627,7 @@ private fun parseLogLine(line: String): LogEntry? {
         "SU_GRANT" -> LogType.SU_GRANT
         "SU_EXEC" -> LogType.SU_EXEC
         "PERM_CHECK" -> LogType.PERM_CHECK
+        "SYSCALL" -> LogType.SYSCALL
         "MANAGER_OP" -> LogType.MANAGER_OP
         else -> LogType.UNKNOWN
     }
@@ -649,6 +651,11 @@ private fun parseLogLine(line: String): LogEntry? {
         LogType.PERM_CHECK -> {
             val result: String = extractValue(details, "RESULT") ?: ""
             "Result: $result"
+        }
+        LogType.SYSCALL -> {
+            val syscall = extractValue(details, "SYSCALL") ?: ""
+            val args = extractValue(details, "ARGS") ?: ""
+            "Syscall: $syscall, Args: $args"
         }
         LogType.MANAGER_OP -> {
             val op: String = extractValue(details, "OP") ?: ""

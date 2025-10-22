@@ -417,6 +417,70 @@ static void init_uid_scanner(void)
 	}
 }
 
+static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
+{
+	const char *name = NULL;
+
+	switch (cmd) {
+	case CMD_GRANT_ROOT:                    name = "prctl_grant_root"; break;
+	case CMD_BECOME_MANAGER:                name = "prctl_become_manager"; break;
+	case CMD_GET_VERSION:                   name = "prctl_get_version"; break;
+	case CMD_GET_FULL_VERSION:              name = "prctl_get_full_version"; break;
+	case CMD_SET_SEPOLICY:                  name = "prctl_set_sepolicy"; break;
+	case CMD_CHECK_SAFEMODE:                name = "prctl_check_safemode"; break;
+	case CMD_GET_ALLOW_LIST:                name = "prctl_get_allow_list"; break;
+	case CMD_GET_DENY_LIST:                 name = "prctl_get_deny_list"; break;
+	case CMD_UID_GRANTED_ROOT:              name = "prctl_uid_granted_root"; break;
+	case CMD_UID_SHOULD_UMOUNT:             name = "prctl_uid_should_umount"; break;
+	case CMD_IS_SU_ENABLED:                 name = "prctl_is_su_enabled"; break;
+	case CMD_ENABLE_SU:                     name = "prctl_enable_su"; break;
+#ifdef CONFIG_KSU_MANUAL_SU
+	case CMD_ENABLE_KPM:                    name = "prctl_enable_kpm"; break;
+#endif
+	case CMD_HOOK_TYPE:                     name = "prctl_hook_type"; break;
+	case CMD_DYNAMIC_MANAGER:               name = "prctl_dynamic_manager"; break;
+	case CMD_GET_MANAGERS:                  name = "prctl_get_managers"; break;
+	case CMD_ENABLE_UID_SCANNER:            name = "prctl_enable_uid_scanner"; break;
+	case CMD_REPORT_EVENT:                  name = "prctl_report_event"; break;
+	case CMD_SET_APP_PROFILE:               name = "prctl_set_app_profile"; break;
+	case CMD_GET_APP_PROFILE:               name = "prctl_get_app_profile"; break;
+
+#ifdef CONFIG_KPM
+	case CMD_SU_ESCALATION_REQUEST:         name = "prctl_su_escalation_request"; break;
+	case CMD_ADD_PENDING_ROOT:              name = "prctl_add_pending_root"; break;
+#endif
+
+#ifdef CONFIG_KSU_SUSFS
+	case CMD_SUSFS_ADD_SUS_PATH:            name = "prctl_susfs_add_sus_path"; break;
+	case CMD_SUSFS_ADD_SUS_PATH_LOOP:       name = "prctl_susfs_add_sus_path_loop"; break;
+	case CMD_SUSFS_SET_ANDROID_DATA_ROOT_PATH: name = "prctl_susfs_set_android_data_root_path"; break;
+	case CMD_SUSFS_SET_SDCARD_ROOT_PATH:    name = "prctl_susfs_set_sdcard_root_path"; break;
+	case CMD_SUSFS_ADD_SUS_MOUNT:           name = "prctl_susfs_add_sus_mount"; break;
+	case CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS: name = "prctl_susfs_hide_sus_mnts_for_all_procs"; break;
+	case CMD_SUSFS_UMOUNT_FOR_ZYGOTE_ISO_SERVICE: name = "prctl_susfs_umount_for_zygote_iso_service"; break;
+	case CMD_SUSFS_ADD_SUS_KSTAT:           name = "prctl_susfs_add_sus_kstat"; break;
+	case CMD_SUSFS_UPDATE_SUS_KSTAT:        name = "prctl_susfs_update_sus_kstat"; break;
+	case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY: name = "prctl_susfs_add_sus_kstat_statically"; break;
+	case CMD_SUSFS_ADD_TRY_UMOUNT:          name = "prctl_susfs_add_try_umount"; break;
+	case CMD_SUSFS_SET_UNAME:               name = "prctl_susfs_set_uname"; break;
+	case CMD_SUSFS_ENABLE_LOG:              name = "prctl_susfs_enable_log"; break;
+	case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG: name = "prctl_susfs_set_cmdline_or_bootconfig"; break;
+	case CMD_SUSFS_ADD_OPEN_REDIRECT:       name = "prctl_susfs_add_open_redirect"; break;
+	case CMD_SUSFS_SUS_SU:                  name = "prctl_susfs_sus_su"; break;
+	case CMD_SUSFS_SHOW_VERSION:            name = "prctl_susfs_show_version"; break;
+	case CMD_SUSFS_SHOW_ENABLED_FEATURES:   name = "prctl_susfs_show_enabled_features"; break;
+	case CMD_SUSFS_SHOW_VARIANT:            name = "prctl_susfs_show_variant"; break;
+	case CMD_SUSFS_IS_SUS_SU_READY:         name = "prctl_susfs_is_sus_su_ready"; break;
+	case CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE: name = "prctl_susfs_show_sus_su_working_mode"; break;
+	case CMD_SUSFS_ADD_SUS_MAP:             name = "prctl_susfs_add_sus_map"; break;
+	case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING: name = "prctl_susfs_enable_avc_log_spoofing"; break;
+#endif
+
+	default:                                name = "prctl_unknown"; break;
+	}
+
+	ksu_sulog_report_syscall(uid, NULL, name, NULL);
+}
 
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
@@ -428,6 +492,8 @@ int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 	u32 *result = (u32 *)arg5;
 	u32 reply_ok = KERNEL_SU_OPTION;
 	uid_t current_uid_val = current_uid().val;
+
+	sulog_prctl_cmd(current_uid().val, arg2);
 
 #ifdef CONFIG_KSU_MANUAL_SU
 	is_manual_su_cmd = (arg2 == CMD_SU_ESCALATION_REQUEST ||
@@ -1008,6 +1074,7 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 			current->pid);
 		return 0;
 	}
+	ksu_sulog_report_syscall(new_uid.val, NULL, "setuid", NULL);
 #ifdef CONFIG_KSU_DEBUG
 	// umount the target mnt
 	pr_info("handle umount for uid: %d, pid: %d\n", new_uid.val,

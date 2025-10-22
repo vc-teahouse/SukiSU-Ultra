@@ -18,7 +18,7 @@
 
 #define SULOG_PATH "/data/adb/ksu/log/sulog.log"
 #define SULOG_OLD_PATH "/data/adb/ksu/log/sulog.log.old"
-#define SULOG_MAX_SIZE (16 * 1024 * 1024) // 16MB
+#define SULOG_MAX_SIZE (128 * 1024 * 1024) // 128MB
 #define SULOG_ENTRY_MAX_LEN 512
 #define SULOG_COMM_LEN 256
 
@@ -335,6 +335,42 @@ void ksu_sulog_report_manager_operation(const char *operation, uid_t manager_uid
 	sulog_add_entry(log_buf);
 	pr_info("sulog: %s", log_buf);
 	
+cleanup_mgr:
+	if (timestamp) kfree(timestamp);
+	if (full_comm) kfree(full_comm);
+	if (log_buf) kfree(log_buf);
+}
+
+void ksu_sulog_report_syscall(uid_t uid, const char *comm,
+			      const char *syscall, const char *args)
+{
+	char *timestamp, *full_comm, *log_buf;
+
+	if (!sulog_enabled)
+		return;
+
+	timestamp = kmalloc(32, GFP_ATOMIC);
+	full_comm = kmalloc(SULOG_COMM_LEN, GFP_ATOMIC);
+	log_buf   = kmalloc(SULOG_ENTRY_MAX_LEN, GFP_ATOMIC);
+
+	if (!timestamp || !full_comm || !log_buf) {
+		pr_err("sulog: failed to allocate memory for syscall log\n");
+		goto cleanup_mgr;
+	}
+
+	get_timestamp(timestamp, 32);
+	get_full_comm(full_comm, SULOG_COMM_LEN);
+
+	snprintf(log_buf, SULOG_ENTRY_MAX_LEN,
+		 "[%s] SYSCALL: UID=%d COMM=%s SYSCALL=%s ARGS=%s PID=%d\n",
+		 timestamp, uid, full_comm,
+		 syscall  ? syscall  : "unknown",
+		 args     ? args     : "none",
+		 current->pid);
+
+	sulog_add_entry(log_buf);
+	pr_info("sulog: %s", log_buf);
+
 cleanup_mgr:
 	if (timestamp) kfree(timestamp);
 	if (full_comm) kfree(full_comm);
