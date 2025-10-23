@@ -6,7 +6,6 @@
 extern struct timezone sys_tz;
 
 #define SULOG_PATH "/data/adb/ksu/log/sulog.log"
-#define SULOG_OLD_PATH "/data/adb/ksu/log/sulog.log.old"
 #define SULOG_MAX_SIZE (128 * 1024 * 1024) // 128MB
 #define SULOG_ENTRY_MAX_LEN 512
 #define SULOG_COMM_LEN 256

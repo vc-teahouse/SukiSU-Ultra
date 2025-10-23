@@ -94,8 +94,4 @@ static long ksu_copy_from_user_retry(void *to,
 	return copy_from_user(to, from, count);
 }
 
-extern int ksu_vfs_unlink(struct inode *dir, struct dentry *dentry);
-extern int ksu_vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
-                   struct inode *new_dir, struct dentry *new_dentry);
-
 #endif

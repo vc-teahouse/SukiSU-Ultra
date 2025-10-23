@@ -135,40 +135,11 @@ static void sulog_work_handler(struct work_struct *work)
 	}
 	
 	if (fp->f_inode->i_size > SULOG_MAX_SIZE) {
-		pr_info("sulog: rotating log file, size: %lld\n", fp->f_inode->i_size);
-		filp_close(fp, 0);
-		
-		struct path old_path;
-		if (!kern_path(SULOG_OLD_PATH, 0, &old_path)) {
-			ksu_vfs_unlink(old_path.dentry->d_parent->d_inode, old_path.dentry);
-			path_put(&old_path);
+		pr_info("sulog: log file exceeds maximum size, clearing...\n");
+		if (vfs_truncate(&fp->f_path, 0)) {
+			pr_err("sulog: failed to truncate log file\n");
 		}
-		
-		struct path current_path, parent_path;
-		if (!kern_path(SULOG_PATH, 0, &current_path)) {
-			parent_path = current_path;
-			path_get(&parent_path);
-			parent_path.dentry = current_path.dentry->d_parent;
-			
-			struct dentry *old_dentry = lookup_one_len("sulog.log.old", 
-				parent_path.dentry, strlen("sulog.log.old"));
-			if (!IS_ERR(old_dentry)) {
-				ksu_vfs_rename(parent_path.dentry->d_inode, current_path.dentry,
-                          parent_path.dentry->d_inode, old_dentry);
-				dput(old_dentry);
-			}
-			path_put(&current_path);
-			path_put(&parent_path);
-		}
-		
-		fp = ksu_filp_open_compat(SULOG_PATH, O_WRONLY | O_CREAT | O_EXCL, 0640);
-		if (IS_ERR(fp)) {
-			pr_err("sulog: failed to create new log file: %ld\n", PTR_ERR(fp));
-			goto cleanup;
-		}
-		
-		const char *rotate_msg = "=== Log file rotated, old log saved as sulog.log.old ===\n";
-		ksu_kernel_write_compat(fp, rotate_msg, strlen(rotate_msg), &pos);
+		pos = 0;
 	} else {
 		pos = fp->f_inode->i_size;
 	}
