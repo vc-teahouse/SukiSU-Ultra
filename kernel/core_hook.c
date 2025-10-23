@@ -450,32 +450,6 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 	case CMD_ADD_PENDING_ROOT:              name = "prctl_add_pending_root"; break;
 #endif
 
-#ifdef CONFIG_KSU_SUSFS
-	case CMD_SUSFS_ADD_SUS_PATH:            name = "prctl_susfs_add_sus_path"; break;
-	case CMD_SUSFS_ADD_SUS_PATH_LOOP:       name = "prctl_susfs_add_sus_path_loop"; break;
-	case CMD_SUSFS_SET_ANDROID_DATA_ROOT_PATH: name = "prctl_susfs_set_android_data_root_path"; break;
-	case CMD_SUSFS_SET_SDCARD_ROOT_PATH:    name = "prctl_susfs_set_sdcard_root_path"; break;
-	case CMD_SUSFS_ADD_SUS_MOUNT:           name = "prctl_susfs_add_sus_mount"; break;
-	case CMD_SUSFS_HIDE_SUS_MNTS_FOR_ALL_PROCS: name = "prctl_susfs_hide_sus_mnts_for_all_procs"; break;
-	case CMD_SUSFS_UMOUNT_FOR_ZYGOTE_ISO_SERVICE: name = "prctl_susfs_umount_for_zygote_iso_service"; break;
-	case CMD_SUSFS_ADD_SUS_KSTAT:           name = "prctl_susfs_add_sus_kstat"; break;
-	case CMD_SUSFS_UPDATE_SUS_KSTAT:        name = "prctl_susfs_update_sus_kstat"; break;
-	case CMD_SUSFS_ADD_SUS_KSTAT_STATICALLY: name = "prctl_susfs_add_sus_kstat_statically"; break;
-	case CMD_SUSFS_ADD_TRY_UMOUNT:          name = "prctl_susfs_add_try_umount"; break;
-	case CMD_SUSFS_SET_UNAME:               name = "prctl_susfs_set_uname"; break;
-	case CMD_SUSFS_ENABLE_LOG:              name = "prctl_susfs_enable_log"; break;
-	case CMD_SUSFS_SET_CMDLINE_OR_BOOTCONFIG: name = "prctl_susfs_set_cmdline_or_bootconfig"; break;
-	case CMD_SUSFS_ADD_OPEN_REDIRECT:       name = "prctl_susfs_add_open_redirect"; break;
-	case CMD_SUSFS_SUS_SU:                  name = "prctl_susfs_sus_su"; break;
-	case CMD_SUSFS_SHOW_VERSION:            name = "prctl_susfs_show_version"; break;
-	case CMD_SUSFS_SHOW_ENABLED_FEATURES:   name = "prctl_susfs_show_enabled_features"; break;
-	case CMD_SUSFS_SHOW_VARIANT:            name = "prctl_susfs_show_variant"; break;
-	case CMD_SUSFS_IS_SUS_SU_READY:         name = "prctl_susfs_is_sus_su_ready"; break;
-	case CMD_SUSFS_SHOW_SUS_SU_WORKING_MODE: name = "prctl_susfs_show_sus_su_working_mode"; break;
-	case CMD_SUSFS_ADD_SUS_MAP:             name = "prctl_susfs_add_sus_map"; break;
-	case CMD_SUSFS_ENABLE_AVC_LOG_SPOOFING: name = "prctl_susfs_enable_avc_log_spoofing"; break;
-#endif
-
 	default:                                name = "prctl_unknown"; break;
 	}
 
