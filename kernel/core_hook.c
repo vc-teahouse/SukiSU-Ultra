@@ -149,7 +149,6 @@ static void disable_seccomp()
 void escape_to_root(void)
 {
 	struct cred *cred;
-	uid_t original_uid = current_euid().val;
 
 	cred = prepare_creds();
 	if (!cred) {
@@ -159,7 +158,7 @@ void escape_to_root(void)
 
 	if (cred->euid.val == 0) {
 		pr_warn("Already root, don't escape!\n");
-		ksu_sulog_report_su_grant(original_uid, NULL, "escape_to_root_failed");
+		ksu_sulog_report_su_grant(current_euid().val, NULL, "escape_to_root_failed");
 		abort_creds(cred);
 		return;
 	}
@@ -203,8 +202,9 @@ void escape_to_root(void)
 	spin_unlock_irq(&current->sighand->siglock);
 
 	setup_selinux(profile->selinux_domain);
-
-	ksu_sulog_report_su_grant(original_uid, NULL, "escape_to_root");
+#if __SULOG_GATE
+	ksu_sulog_report_su_grant(current_euid().val, NULL, "escape_to_root");
+#endif
 }
 
 #ifdef CONFIG_KSU_MANUAL_SU
@@ -247,7 +247,9 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 	if (!target_task) {
 		rcu_read_unlock(); 
 		pr_err("cmd_su: target task not found for PID: %d\n", target_pid);
+#if __SULOG_GATE
 		ksu_sulog_report_su_grant(target_uid, "cmd_su", "target_not_found");
+#endif
 		return;
 	}
 	get_task_struct(target_task);
@@ -262,7 +264,9 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 	newcreds = prepare_kernel_cred(target_task);
 	if (newcreds == NULL) {
 		pr_err("cmd_su: failed to allocate new cred for PID: %d\n", target_pid);
+#if __SULOG_GATE
 		ksu_sulog_report_su_grant(target_uid, "cmd_su", "cred_alloc_failed");
+#endif
 		put_task_struct(target_task);
 		return;
 	}
@@ -312,8 +316,9 @@ void escape_to_root_for_cmd_su(uid_t target_uid, pid_t target_pid)
 	}
 
 	put_task_struct(target_task);
-
+#if __SULOG_GATE
 	ksu_sulog_report_su_grant(target_uid, "cmd_su", "manual_escalation");
+#endif
 	pr_info("cmd_su: privilege escalation completed for UID: %d, PID: %d\n", target_uid, target_pid);
 }
 #endif
@@ -417,6 +422,7 @@ static void init_uid_scanner(void)
 	}
 }
 
+#if __SULOG_GATE
 static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 {
 	const char *name = NULL;
@@ -455,6 +461,7 @@ static void sulog_prctl_cmd(uid_t uid, unsigned long cmd)
 
 	ksu_sulog_report_syscall(uid, NULL, name, NULL);
 }
+#endif
 
 int ksu_handle_prctl(int option, unsigned long arg2, unsigned long arg3,
 		     unsigned long arg4, unsigned long arg5)
@@ -495,8 +502,10 @@ skip_check:
 	// just continue old logic
 	bool from_root = !current_uid().val;
 	bool from_manager = is_manager();
-
+	
+#if __SULOG_GATE
 	sulog_prctl_cmd(current_uid().val, arg2);
+#endif
 
 	if (!from_root && !from_manager 
 		&& !(is_manual_su_cmd ? is_system_uid(): 
@@ -520,10 +529,13 @@ skip_check:
 	}
 
 	if (arg2 == CMD_GRANT_ROOT) {
+#if __SULOG_GATE
 		bool is_allowed = is_allow_su();
 		ksu_sulog_report_permission_check(current_uid().val, current->comm, is_allowed);
-		
 		if (is_allowed) {
+#else
+		if (is_allow_su()) {
+#endif
 			pr_info("allow root for: %d\n", current_uid().val);
 			escape_to_root();
 			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
@@ -627,7 +639,9 @@ skip_check:
 				post_fs_data_lock = true;
 				pr_info("post-fs-data triggered\n");
 				on_post_fs_data();
+#if __SULOG_GATE
 				ksu_sulog_init();
+#endif
 				// Initialize UID scanner if enabled
 				init_uid_scanner();
 				// Initializing Dynamic Signatures
@@ -863,8 +877,10 @@ skip_check:
 
 		// todo: validate the params
 		if (ksu_set_app_profile(&profile, true)) {
+#if __SULOG_GATE
 			ksu_sulog_report_manager_operation("SET_APP_PROFILE", 
 				current_uid().val, profile.current_uid);
+#endif
 			
 			if (copy_to_user(result, &reply_ok, sizeof(reply_ok))) {
 				pr_err("prctl reply error, cmd: %lu\n", arg2);
@@ -1046,7 +1062,9 @@ int ksu_handle_setuid(struct cred *new, const struct cred *old)
 			current->pid);
 		return 0;
 	}
+#if __SULOG_GATE
 	ksu_sulog_report_syscall(new_uid.val, NULL, "setuid", NULL);
+#endif
 #ifdef CONFIG_KSU_DEBUG
 	// umount the target mnt
 	pr_info("handle umount for uid: %d, pid: %d\n", new_uid.val,
@@ -1430,7 +1448,11 @@ void ksu_core_exit(void)
 {
 	ksu_uid_exit();
 	ksu_throne_comm_exit();
+
+#if __SULOG_GATE
 	ksu_sulog_exit();
+#endif
+
 #ifdef CONFIG_KPROBE
 	pr_info("ksu_core_kprobe_exit\n");
 	// we dont use this now

@@ -70,7 +70,9 @@ int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
 	ksu_strncpy_from_user_nofault(path, *filename_user, sizeof(path));
 
 	if (unlikely(!memcmp(path, su, sizeof(su)))) {
+#if __SULOG_GATE
 		ksu_sulog_report_syscall(current_uid().val, NULL, "faccessat", path);
+#endif
 		pr_info("faccessat su->sh!\n");
 		*filename_user = sh_user_path();
 	}
@@ -115,7 +117,9 @@ int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags)
 	ksu_strncpy_from_user_nofault(path, *filename_user, sizeof(path));
 
 	if (unlikely(!memcmp(path, su, sizeof(su)))) {
+#if __SULOG_GATE
 		ksu_sulog_report_syscall(current_uid().val, NULL, "newfstatat", path);
+#endif
 		pr_info("newfstatat su->sh!\n");
 		*filename_user = sh_user_path();
 	}
@@ -136,8 +140,6 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 				 int *__never_use_flags)
 {
 	struct filename *filename;
-	uid_t current_uid_val = current_uid().val;
-	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 	const char sh[] = KSUD_PATH;
 	const char su[] = SU_PATH;
 
@@ -157,12 +159,20 @@ int ksu_handle_execveat_sucompat(int *fd, struct filename **filename_ptr,
 	if (likely(memcmp(filename->name, su, sizeof(su))))
 		return 0;
 
-	ksu_sulog_report_syscall(current_uid_val, NULL, "execve", filename->name);
-	ksu_sulog_report_su_attempt(current_uid_val, NULL, filename->name, is_allowed);
+#if __SULOG_GATE
+	bool is_allowed = ksu_is_allow_uid(current_uid().val);
+	ksu_sulog_report_syscall(current_uid().val, NULL, "execve", filename->name);
 
 	if (!is_allowed) {
 		return 0;
 	}
+
+	ksu_sulog_report_su_attempt(current_uid().val, NULL, filename->name, is_allowed);
+#else
+	if (!ksu_is_allow_uid(current_uid().val)) {
+		return 0;
+	}
+#endif
 
 	pr_info("do_execveat_common su found\n");
 	memcpy((void *)filename->name, sh, sizeof(sh));
@@ -176,8 +186,6 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 			       void *__never_use_argv, void *__never_use_envp,
 			       int *__never_use_flags)
 {
-	uid_t current_uid_val = current_uid().val;
-	bool is_allowed = ksu_is_allow_uid(current_uid_val);
 	const char su[] = SU_PATH;
 	char path[sizeof(su) + 1];
 
@@ -194,12 +202,20 @@ int ksu_handle_execve_sucompat(int *fd, const char __user **filename_user,
 
 	if (likely(memcmp(path, su, sizeof(su))))
 		return 0;
-	
-	ksu_sulog_report_syscall(current_uid_val, NULL, "execve", path);
-	ksu_sulog_report_su_attempt(current_uid_val, NULL, path, is_allowed);
 
+#if __SULOG_GATE
+	bool is_allowed = ksu_is_allow_uid(current_uid().val);
+	ksu_sulog_report_syscall(current_uid().val, NULL, "execve", path);
+	
 	if (!is_allowed)
 		return 0;
+
+	ksu_sulog_report_su_attempt(current_uid().val, NULL, path, is_allowed);
+#else
+	if (!ksu_is_allow_uid(current_uid().val)) {
+		return 0;
+	}
+#endif
 
 	pr_info("sys_execve su found\n");
 	*filename_user = ksud_user_path();
