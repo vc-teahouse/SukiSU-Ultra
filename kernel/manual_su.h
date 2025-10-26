@@ -7,7 +7,7 @@
 #define KSU_SU_VERIFIED_BIT (1UL << 0)
 #define KSU_TOKEN_LENGTH 32
 #define KSU_TOKEN_ENV_NAME "KSU_AUTH_TOKEN"
-#define KSU_TOKEN_EXPIRE_TIME 30
+#define KSU_TOKEN_EXPIRE_TIME 60
 
 struct ksu_token_entry {
     char token[KSU_TOKEN_LENGTH + 1];
