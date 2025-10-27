@@ -513,7 +513,7 @@ private fun LogEntryCard(entry: LogEntry) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded },
-        colors = getCardColors(MaterialTheme.colorScheme.surface),
+        colors = getCardColors(MaterialTheme.colorScheme.surfaceContainerLow),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -779,7 +779,6 @@ private suspend fun loadLogsWithPagination(
             val statResult = runCmd(shell, "stat -c '%Y %s' $LOGS_PATCH 2>/dev/null || echo '0 0'")
             val currentHash = statResult.trim()
 
-            // 如果不是强制刷新且文件没有变化，则不加载
             if (!forceRefresh && currentHash == lastHash && currentHash != "0 0") {
                 withContext(Dispatchers.Main) {
                     onLoaded(emptyList(), LogPageInfo(), currentHash)
