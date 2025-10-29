@@ -27,6 +27,7 @@ struct sdesc {
 
 static apk_sign_key_t apk_sign_keys[] = {
 	{EXPECTED_SIZE_SHIRKNEKO, EXPECTED_HASH_SHIRKNEKO}, // ShirkNeko/SukiSU
+	{0x38c,"1e9fa119b426ecd1361d7d4e9dc25d0c5c1bc4998acaaffb2f4b1520b775ad79"}, // Spoofed Manager
 	{EXPECTED_SIZE_OTHER, EXPECTED_HASH_OTHER}, // Dynamic Sign
 #ifdef EXPECTED_SIZE
 	{EXPECTED_SIZE, EXPECTED_HASH}, // Custom
