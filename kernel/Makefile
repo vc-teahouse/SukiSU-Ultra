@@ -123,6 +123,20 @@ else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
 endif
 
+KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
+KERNEL_TYPE := Non-GKI
+# Check for GKI 2.0 (5.10+ or 6.x+)
+ifneq ($(shell test \( $(VERSION) -ge 5 -a $(PATCHLEVEL) -ge 10 \) -o $(VERSION) -ge 6; echo $$?),0)
+# Check for GKI 1.0 (5.4)
+ifeq ($(shell test $(VERSION)-$(PATCHLEVEL) = 5-4; echo $$?),0)
+KERNEL_TYPE := GKI 1.0
+endif
+else
+KERNEL_TYPE := GKI 2.0
+endif
+$(info -- KERNEL_VERSION: $(KERNEL_VERSION))
+$(info -- KERNEL_TYPE: $(KERNEL_TYPE))
+
 $(info -- KERNEL_VERSION: $(KERNEL_VERSION))
 ifeq ($(CONFIG_KPM), y)
 $(info -- KPM is enabled)
