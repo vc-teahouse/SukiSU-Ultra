@@ -77,4 +77,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./bin
           publish_branch: lkm
+          disable_nojekyll: true
 
