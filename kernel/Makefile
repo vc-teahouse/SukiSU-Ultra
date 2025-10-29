@@ -134,8 +134,8 @@ ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
 
 all:
-        make -C $(KDIR) M=$(MDIR) modules
+	make -C $(KDIR) M=$(MDIR) modules
 clean:
-        make -C $(KDIR) M=$(MDIR) clean
+	make -C $(KDIR) M=$(MDIR) clean
 
 # Keep a new line here!! Because someone may append config
