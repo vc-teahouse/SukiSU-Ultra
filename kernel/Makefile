@@ -53,7 +53,7 @@ else
   KSU_SRC := $(srctree)/$(src)
 endif
 
-ifneq ($(shell test -e $(srctree)/$(src)/../.git && echo "in-tree"),in-tree)
+ifneq ($(shell test -e $(KSU_SRC)/../.git && echo "in-tree"),in-tree)
   KSU_SRC := $(MDIR)
 endif
 
