@@ -7,10 +7,6 @@ on:
         type: boolean
         default: true
         description: "Whether to upload to branch"
-    secrets:
-      # username:github_pat
-      TOKEN:
-        required: true
   workflow_dispatch:
     inputs:
       upload:
@@ -77,5 +73,8 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./bin
           publish_branch: lkm
+          user_name: "github-actions[bot]"
+          user_email: "Upload LKM from ${{ github.sha }}" 'github-actions[bot]@users.noreply.github.com'
           disable_nojekyll: true
+          commit_message: 
 
