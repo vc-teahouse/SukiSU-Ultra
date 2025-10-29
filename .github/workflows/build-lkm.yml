@@ -74,6 +74,7 @@ jobs:
       - name: Push to Branch LKM
         uses: peaceiris/actions-gh-pages@v4
         with: 
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./bin
           publish_branch: lkm
 
