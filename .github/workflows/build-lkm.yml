@@ -74,7 +74,7 @@ jobs:
           publish_dir: ./bin
           publish_branch: lkm
           user_name: "github-actions[bot]"
-          user_email: "Upload LKM from ${{ github.sha }}" 'github-actions[bot]@users.noreply.github.com'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
           disable_nojekyll: true
-          commit_message: 
+          commit_message: "Upload LKM from ${{ github.sha }}"
 
