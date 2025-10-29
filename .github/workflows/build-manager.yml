@@ -33,7 +33,7 @@ on:
         description: "Whether to upload lkm"
 jobs:
   check-build-lkm:
-    if: false
+    #if: false
     runs-on: ubuntu-latest
     outputs:
       build_lkm: ${{ steps.check-build.outputs.build_lkm }}
@@ -80,7 +80,7 @@ jobs:
   build-lkm:
     needs: check-build-lkm
     uses: ./.github/workflows/build-lkm.yml
-    if: false
+    if: ${{ needs.check-build-lkm.outputs.build_lkm == 'true' }}
     with:
       upload: ${{ needs.check-build-lkm.outputs.upload_lkm == 'true' }}
     secrets: inherit
