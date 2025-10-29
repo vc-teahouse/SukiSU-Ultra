@@ -133,4 +133,9 @@ endif
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
 
+all:
+        make -C $(KDIR) M=$(MDIR) modules
+clean:
+        make -C $(KDIR) M=$(MDIR) clean
+
 # Keep a new line here!! Because someone may append config
