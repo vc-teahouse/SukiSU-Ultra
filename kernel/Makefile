@@ -30,13 +30,19 @@ obj-$(CONFIG_KSU_TRACEPOINT_HOOK) += ksu_trace_export.o
 obj-$(CONFIG_KPM) += kpm/
 
 
-REPO_OWNER := SukiSU-Ultra
+REPO_OWNER := vc-teahouse
 REPO_NAME := SukiSU-Ultra
 REPO_BRANCH := main
 KSU_VERSION_API := 3.2.0
 
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
 CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
+
+KDIR := $(KDIR)
+MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
+$(info -- KDIR: $(KDIR))
+$(info -- MDIR: $(MDIR))
 
 KSU_GITHUB_VERSION := $(shell $(CURL_BIN) -s "https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 KSU_GITHUB_VERSION_COMMIT := $(shell $(CURL_BIN) -sI "https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)/commits?sha=$(REPO_BRANCH)&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
@@ -45,6 +51,10 @@ ifeq ($(findstring $(srctree),$(src)),$(srctree))
   KSU_SRC := $(src)
 else
   KSU_SRC := $(srctree)/$(src)
+endif
+
+ifneq ($(shell test -e $(KSU_SRC)/../.git && echo "in-tree"),in-tree)
+  KSU_SRC := $(MDIR)
 endif
 
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
@@ -113,20 +123,6 @@ else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
 $(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
 endif
 
-KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
-KERNEL_TYPE := Non-GKI
-# Check for GKI 2.0 (5.10+ or 6.x+)
-ifneq ($(shell test \( $(VERSION) -ge 5 -a $(PATCHLEVEL) -ge 10 \) -o $(VERSION) -ge 6; echo $$?),0)
-# Check for GKI 1.0 (5.4)
-ifeq ($(shell test $(VERSION)-$(PATCHLEVEL) = 5-4; echo $$?),0)
-KERNEL_TYPE := GKI 1.0
-endif
-else
-KERNEL_TYPE := GKI 2.0
-endif
-$(info -- KERNEL_VERSION: $(KERNEL_VERSION))
-$(info -- KERNEL_TYPE: $(KERNEL_TYPE))
-
 $(info -- KERNEL_VERSION: $(KERNEL_VERSION))
 ifeq ($(CONFIG_KPM), y)
 $(info -- KPM is enabled)
@@ -136,5 +132,10 @@ endif
 
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
+
+all:
+	make -C $(KDIR) M=$(MDIR) modules
+clean:
+	make -C $(KDIR) M=$(MDIR) clean
 
 # Keep a new line here!! Because someone may append config
