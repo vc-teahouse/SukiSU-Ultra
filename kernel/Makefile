@@ -30,13 +30,19 @@ obj-$(CONFIG_KSU_TRACEPOINT_HOOK) += ksu_trace_export.o
 obj-$(CONFIG_KPM) += kpm/
 
 
-REPO_OWNER := SukiSU-Ultra
+REPO_OWNER := vc-teahouse
 REPO_NAME := SukiSU-Ultra
 REPO_BRANCH := main
 KSU_VERSION_API := 3.2.0
 
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
 CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
+
+KDIR := $(KDIR)
+MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+
+$(info -- KDIR: $(KDIR))
+$(info -- MDIR: $(MDIR))
 
 KSU_GITHUB_VERSION := $(shell $(CURL_BIN) -s "https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
 KSU_GITHUB_VERSION_COMMIT := $(shell $(CURL_BIN) -sI "https://api.github.com/repos/$(REPO_OWNER)/$(REPO_NAME)/commits?sha=$(REPO_BRANCH)&per_page=1" | grep -i "link:" | sed -n 's/.*page=\([0-9]*\)>; rel="last".*/\1/p')
@@ -45,6 +51,10 @@ ifeq ($(findstring $(srctree),$(src)),$(srctree))
   KSU_SRC := $(src)
 else
   KSU_SRC := $(srctree)/$(src)
+endif
+
+ifneq ($((shell test -e $(srctree)/$(src)/../.git && echo "in-tree"),in-tree)
+  KSU_SRC := $(MDIR)
 endif
 
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
