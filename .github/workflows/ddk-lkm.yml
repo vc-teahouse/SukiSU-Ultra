@@ -27,13 +27,13 @@ jobs:
 
     - name: Build kernelsu.ko
       run: |
-        git config --global --add safe.directory /__w/KernelSU/KernelSU
+        git config --global --add safe.directory /__w/SukiSU-Ultra/SukiSU-Ultra
 
         cd kernel
 
         echo "=== Building kernelsu.ko for KMI: ${{ inputs.kmi }} ==="
 
-        CONFIG_KSU=m make
+        CONFIG_KSU=m CONFIG_KSU_KPROBES_HOOKS=y make
         
         echo "=== Build completed ==="
 
