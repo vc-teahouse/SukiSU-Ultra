@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use std::fs;
 #[cfg(any(target_os = "linux", target_os = "android"))]
 use std::os::fd::RawFd;
@@ -127,6 +128,11 @@ fn ksuctl<T>(request: u32, arg: *mut T) -> std::io::Result<i32> {
 #[cfg(not(any(target_os = "linux", target_os = "android")))]
 fn ksuctl<T>(_request: u32, _arg: *mut T) -> std::io::Result<i32> {
     Err(std::io::Error::from_raw_os_error(libc::ENOSYS))
+}
+
+#[allow(dead_code)]
+pub fn ksu_ioctl<T>(req: u32, arg: *mut T) -> anyhow::Result<i32> {
+    ksuctl(req, arg).map_err(|e| anyhow!("KSU ioctl error: {e}"))
 }
 
 // API implementations
