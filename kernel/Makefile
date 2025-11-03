@@ -36,8 +36,13 @@ ifeq ($(CONFIG_KSU),m)
 ccflags-y += -DKSU_MODULE
 endif
 
+KDIR := $(KDIR) 
+MDIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST))))) 
+   
+$(info -- KDIR: $(KDIR))
+$(info -- MDIR: $(MDIR))
 
-REPO_OWNER := SukiSU-Ultra
+REPO_OWNER := vc-teahouse
 REPO_NAME := SukiSU-Ultra
 REPO_BRANCH := main
 KSU_VERSION_API := 3.2.0
@@ -52,6 +57,10 @@ ifeq ($(findstring $(srctree),$(src)),$(srctree))
   KSU_SRC := $(src)
 else
   KSU_SRC := $(srctree)/$(src)
+endif
+
+ifneq ($(shell test -e $(KSU_SRC)/../.git && echo "in-tree"),in-tree) 
+  KSU_SRC := $(MDIR) 
 endif
 
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
@@ -153,5 +162,11 @@ endif
 
 ccflags-y += -Wno-implicit-function-declaration -Wno-strict-prototypes -Wno-int-conversion -Wno-gcc-compat
 ccflags-y += -Wno-declaration-after-statement -Wno-unused-function
+
+all: 
+	make -C $(KDIR) M=$(MDIR) modules
+clean: 
+	make -C $(KDIR) M=$(MDIR) clean 
+			    
 
 # Keep a new line here!! Because someone may append config
