@@ -61,10 +61,13 @@ endif
 
 ifneq ($(shell test -e $(KSU_SRC)/../.git && echo "in-tree" || echo "invalid"),in-tree) 
   KSU_SRC := $(MDIR) 
+  LOCAL_GIT_EXISTS := 1
+else
+  LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
 endif
 
 $(info $(KSU_SRC))
-LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
+
 
 define get_ksu_version_full
 v$1-$(shell cd $(KSU_SRC); $(GIT_BIN) rev-parse --short=8 HEAD)@$(shell cd $(KSU_SRC); $(GIT_BIN) rev-parse --abbrev-ref HEAD)-spoofed
