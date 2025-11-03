@@ -43,12 +43,12 @@ jobs:
           path: bin/
           merge-multiple: true
       - name: Push to Branch LKM 
-         uses: peaceiris/actions-gh-pages@v4 
+        uses: peaceiris/actions-gh-pages@v4 
          with:  
-           github_token: ${{ secrets.GITHUB_TOKEN }} 
-           publish_dir: ./bin 
-           publish_branch: lkm 
-           user_name: "github-actions[bot]" 
-           user_email: 'github-actions[bot]@users.noreply.github.com' 
-           disable_nojekyll: true 
-           commit_message: "Upload LKM from"
+          github_token: ${{ secrets.GITHUB_TOKEN }} 
+          publish_dir: ./bin 
+          publish_branch: lkm 
+          user_name: "github-actions[bot]" 
+          user_email: 'github-actions[bot]@users.noreply.github.com' 
+          disable_nojekyll: true 
+          commit_message: "Upload LKM from"
