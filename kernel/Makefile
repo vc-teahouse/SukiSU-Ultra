@@ -121,14 +121,6 @@ endif
 
 $(info -- Supported Unofficial Manager: 5ec1cff (GKI) ShirkNeko udochina (GKI and KPM))
 
-ifeq ($(CONFIG_KSU_KPROBES_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_KPROBES_HOOK)
-else ifeq ($(CONFIG_KSU_TRACEPOINT_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_TRACEPOINT_HOOK)
-else ifeq ($(CONFIG_KSU_MANUAL_HOOK), y)
-$(info -- SukiSU: CONFIG_KSU_MANUAL_HOOK)
-endif
-
 KERNEL_VERSION := $(VERSION).$(PATCHLEVEL)
 KERNEL_TYPE := Non-GKI
 # Check for GKI 2.0 (5.10+ or 6.x+)

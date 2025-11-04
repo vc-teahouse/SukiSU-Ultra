@@ -2,7 +2,6 @@ menu "KernelSU"
 
 config KSU
     tristate "KernelSU function support"
-    depends on OVERLAY_FS
     default y
     help
       Enable kernel-level root privileges on Android System.
@@ -34,31 +33,18 @@ config KPM
     select KALLSYMS
     select KALLSYMS_ALL
 
-choice
-    prompt "KernelSU hook type"
-    depends on KSU
-    default KSU_KPROBES_HOOK
-    help
-      Hook type for KernelSU
-
-config KSU_KPROBES_HOOK
-    bool "Hook KernelSU with Kprobes"
-    depends on KPROBES
-    help
-      If enabled, Hook required KernelSU syscalls with Kernel-probe.
-
 config KSU_TRACEPOINT_HOOK
     bool "Hook KernelSU with Tracepoint"
     depends on TRACEPOINTS
+    default n
     help
       If enabled, Hook required KernelSU syscalls with Tracepoint.
 
 config KSU_MANUAL_HOOK
     bool "Hook KernelSU manually"
     depends on KSU != m
+    default n
     help
       If enabled, Hook required KernelSU syscalls with manually-patched function.
-
-endchoice
 
 endmenu
