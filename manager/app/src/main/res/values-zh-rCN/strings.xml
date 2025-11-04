@@ -721,4 +721,7 @@
     <!-- MiUI Uninstall Desc -->
     <string name="miui_uninstall_title">真要走?</string>
     <string name="miui_uninstall_content">哼，卸就卸。Root 功能可不会因为失去区区一个管理器就停止运作。别担心，zakozako 只卸载管理器可干不掉 Root 呢，zako~❤️</string>
+    <string name="incompatible_kernel_msg">
+    当前管理器与此内核不兼容！请将内核升级至版本 %2$d 或以上（当前 %1$d）
+</string>
 </resources>

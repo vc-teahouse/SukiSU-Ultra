@@ -203,7 +203,7 @@ fun SettingScreen(navigator: DestinationsNavigator) {
                             }
                         )
                         // UID 扫描开关
-                        if (Natives.version >= Natives.MINIMAL_SUPPORTED_UID_SCANNER) {
+                        if (Natives.version >= Natives.MINIMAL_SUPPORTED_UID_SCANNER && Natives.version >= Natives.MINIMAL_NEW_IOCTL_KERNEL) {
                             UidScannerSection(prefs, snackBarHost, scope, context)
                         }
                     }
