@@ -380,6 +380,9 @@ install_module() {
   MODAUTH=`grep_prop author $TMPDIR/module.prop`
   MODPATH=$MODULEROOT/$MODID
 
+  BLACKLISTED_AUTH='Caelifall|revwhiteshadow|iamlooper' 
+  echo "$MODAUTH" | grep -i -q -E "$BLACKLISTED_AUTH" && abort "! Installation aborted: Prohibited to install modules from blacklisted author."
+
   # Check managed features
   check_managed_features $TMPDIR/module.prop
 
