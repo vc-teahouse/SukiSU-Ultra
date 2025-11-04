@@ -162,7 +162,7 @@ fun HomeScreen(navigator: DestinationsNavigator) {
                     val shouldShowWarnings = viewModel.systemStatus.requireNewKernel ||
                             (viewModel.systemStatus.ksuVersion != null && !viewModel.systemStatus.isRootAvailable)
 
-                    if (Natives.version >= Natives.MINIMAL_NEW_IOCTL_KERNEL && !shouldShowWarnings) {
+                    if (Natives.version <= Natives.MINIMAL_NEW_IOCTL_KERNEL && !shouldShowWarnings) {
                         IncompatibleKernelCard()
                         Spacer(Modifier.height(12.dp))
                     }
