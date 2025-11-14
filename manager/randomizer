@@ -5,7 +5,6 @@ word1=$(tr -dc 'a-z' </dev/urandom | head -c6)
 word2=$(tr -dc 'a-z' </dev/urandom | head -c6)
 word3=$(tr -dc 'a-z' </dev/urandom | head -c6)
 word4=$(tr -dc 'a-z' </dev/urandom | head -c6)
-#word5=$(tr -dc 'a~z' </dev/urandom | head -c6)
 
 
 # Export variables for use in find -exec
@@ -16,7 +15,6 @@ find . -depth -type d -name 'com' -execdir mv {} "$word1" \;
 find . -depth -type d -name 'sukisu' -execdir mv {} "$word2" \;
 find . -depth -type d -name 'ultra' -execdir mv {} "$word3" \;
 find . -depth -type d -name 'io' -execdir mv {} "$word4" \;
-#find . -depth -type d -name 'zako' -execdir mv {} "$word4" \;
 
 
 # Replace inside files
@@ -28,3 +26,6 @@ find . -type f -exec sed -i \
     -e "s/io\/sukisu\/ultra/$word4\/$word2\/$word3/g" \
     -e "s/io_sukisu_ultra/${word4}_${word2}_${word3}/g" \
     -e "s/com_sukisu_ultra/${word1}_${word2}_${word3}/g" {} +
+
+# add -spoofed on tags
+sed -i -e '/fun getGitDescribe(): String {/,/^    }/ s/\.trim()$/.trim() + "-spoofed"/' build.gradle.kts
