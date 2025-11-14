@@ -55,6 +55,9 @@ jobs:
   build-manager:
     needs: build-ksud
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        spoofed: ["true","false"]
     defaults:
       run:
         working-directory: ./manager
@@ -73,6 +76,25 @@ jobs:
           else
             echo "UPLOAD=false" >> $GITHUB_OUTPUT
           fi
+
+
+      - name: Determine manager variant for telegram bot
+        id: determine
+        run: |
+          if [ "${{ matrix.spoofed }}" == "true" ]; then
+            echo "title=Spoofed-Manager" >> $GITHUB_OUTPUT
+            # maybe need a new var
+            echo "topic=519956" >> $GITHUB_OUTPUT
+          else
+            echo "title=Manager" >> $GITHUB_OUTPUT
+            echo "topic=${{ vars.MESSAGE_THREAD_ID }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: run randomizer
+        if: ${{ matrix.spoofed == 'true' }}
+        run: |
+          chmod +x randomizer
+          ./randomizer
 
       - name: Write key
         if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
@@ -148,14 +170,14 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
         with:
-          name: manager
+          name: ${{ steps.determine.outputs.title }}
           path: manager/app/build/outputs/apk/release/*.apk
 
       - name: Upload mappings
         uses: actions/upload-artifact@v4
         if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
         with:
-          name: "mappings"
+          name: "${{ steps.determine.outputs.title }}-mappings"
           path: "manager/app/build/outputs/mapping/release/"
       
       - name: Bot session cache
@@ -171,11 +193,11 @@ jobs:
         env:
           CHAT_ID: ${{ vars.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          MESSAGE_THREAD_ID: ${{ vars.MESSAGE_THREAD_ID }}
+          MESSAGE_THREAD_ID: ${{ steps.determine.outputs.topicid }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           COMMIT_URL: ${{ github.event.head_commit.url }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          TITLE: Manager
+          TITLE: ${{ steps.determine.outputs.title }}
           BRANCH: ${{ github.ref_name }}
         run: |
           if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then
