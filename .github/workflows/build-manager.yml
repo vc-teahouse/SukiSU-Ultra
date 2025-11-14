@@ -91,7 +91,7 @@ jobs:
             echo "topic=${{ vars.MESSAGE_THREAD_ID }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: run randomizer
+      - name: Run randomizer
         if: ${{ matrix.spoofed == 'true' }}
         run: |
           chmod +x randomizer
