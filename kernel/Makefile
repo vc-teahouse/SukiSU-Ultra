@@ -35,7 +35,7 @@ obj-$(CONFIG_KSU) += kernelsu.o
 
 obj-$(CONFIG_KPM) += kpm/
 
-REPO_OWNER := SukiSU-Ultra
+REPO_OWNER := vc-teahouse
 REPO_NAME := SukiSU-Ultra
 REPO_BRANCH := main
 KSU_VERSION_API := 4.0.0
