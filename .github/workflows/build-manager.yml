@@ -84,7 +84,7 @@ jobs:
           if [ "${{ matrix.spoofed }}" == "true" ]; then
             echo "title=Spoofed-Manager" >> $GITHUB_OUTPUT
             # maybe need a new var
-            echo "topicid=519956" >> $GITHUB_OUTPUT
+            echo "topicid=${{ vars.MESSAGE_SPOOFED_THREAD_ID }}" >> $GITHUB_OUTPUT
           else
             echo "title=Manager" >> $GITHUB_OUTPUT
             echo "topicid=${{ vars.MESSAGE_THREAD_ID }}" >> $GITHUB_OUTPUT
@@ -179,14 +179,6 @@ jobs:
         with:
           name: "${{ steps.determine.outputs.title }}-mappings"
           path: "manager/app/build/outputs/mapping/release/"
-      
-      - name: Bot session cache
-        if: github.event_name != 'pull_request' && steps.need_upload.outputs.UPLOAD == 'true'
-        id: bot_session_cache
-        uses: actions/cache@v4
-        with:
-          path: scripts/ksubot.session
-          key: ${{ runner.os }}-bot-session
 
       - name: Upload to telegram
         if: github.event_name != 'pull_request' && steps.need_upload.outputs.UPLOAD == 'true'
