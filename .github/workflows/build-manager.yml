@@ -63,9 +63,9 @@ jobs:
         id: determine-type
         run: |
           if [ "${{github.event_name}}" == "schedule" ]; then
-            echo "spoofed=true" >> $GITHUB_OUTPUT
+            echo "spoofed=[true]" >> $GITHUB_OUTPUT
           else
-            echo "spoofed=true,false" >> $GITHUB_OUTPUT
+            echo "spoofed=[true,false]" >> $GITHUB_OUTPUT
           fi
 
   build-manager:
