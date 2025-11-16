@@ -19,6 +19,7 @@ on:
       - 'kernel/**'
       - 'userspace/ksud/**'
   workflow_call:
+  workflow_dispatch:
   schedule:
     - cron: "* * 12 *  *"
 
