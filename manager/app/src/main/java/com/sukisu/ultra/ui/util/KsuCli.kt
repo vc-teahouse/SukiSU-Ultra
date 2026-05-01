@@ -222,8 +222,6 @@ fun flashModule(
 fun runModuleAction(
     moduleId: String, onStdout: (String) -> Unit, onStderr: (String) -> Unit
 ): Boolean {
-    val shell = createRootShell(true)
-
     val stdoutCallback: CallbackList<String?> = object : CallbackList<String?>() {
         override fun onAddElement(s: String?) {
             onStdout(s ?: "")
@@ -236,8 +234,11 @@ fun runModuleAction(
         }
     }
 
-    val result = shell.newJob().add("${getKsuDaemonPath()} module action $moduleId")
-        .to(stdoutCallback, stderrCallback).exec()
+    val result = withNewRootShell(true) {
+        newJob().add("${getKsuDaemonPath()} module action $moduleId")
+            .to(stdoutCallback, stderrCallback).exec()
+    }
+
     Log.i("KernelSU", "Module runAction result: $result")
 
     return result.isSuccess
