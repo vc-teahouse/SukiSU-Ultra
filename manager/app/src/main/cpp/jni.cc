@@ -331,6 +331,18 @@ Java_com_sukisu_ultra_Natives_setKernelUmountEnabled(JNIEnv *env, jobject thiz, 
 }
 
 extern "C"
+JNIEXPORT jboolean JNICALL
+Java_com_sukisu_ultra_Natives_isSelinuxHideEnabled(JNIEnv *env, jobject thiz) {
+    return is_selinux_hide_enabled();
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_sukisu_ultra_Natives_setSelinuxHideEnabled(JNIEnv *env, jobject thiz, jboolean enabled) {
+    return set_selinux_hide_enabled(enabled);
+}
+
+extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_sukisu_ultra_Natives_getUserName(JNIEnv *env, jobject thiz, jint uid) {
     struct passwd *pw = getpwuid((uid_t) uid);

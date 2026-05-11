@@ -1,6 +1,7 @@
 package com.sukisu.ultra.ui.viewmodel
 
-import android.content.Context
+import android.system.OsConstants
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -9,9 +10,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.sukisu.ultra.Natives
+import com.sukisu.ultra.R
 import com.sukisu.ultra.data.repository.SettingsRepository
 import com.sukisu.ultra.data.repository.SettingsRepositoryImpl
+import com.sukisu.ultra.ksuApp
 import com.sukisu.ultra.ui.screen.settings.SettingsUiState
 import com.sukisu.ultra.ui.theme.ColorMode
 
@@ -54,6 +58,8 @@ class SettingsViewModel(
 
             val kernelUmountStatus = repo.getKernelUmountStatus()
             val isKernelUmountEnabled = repo.isKernelUmountEnabled()
+            val selinuxHideStatus = repo.getSelinuxHideStatus()
+            val isSelinuxHideEnabled = repo.isSelinuxHideEnabled()
             val sulogStatus = repo.getSulogStatus()
             val isSulogEnabled = repo.getSulogPersistValue() == 1L
             val adbRootStatus = repo.getAdbRootStatus()
@@ -88,6 +94,8 @@ class SettingsViewModel(
                     isAdbRootEnabled = isAdbRootEnabled,
                     kernelUmountStatus = kernelUmountStatus,
                     isKernelUmountEnabled = isKernelUmountEnabled,
+                    selinuxHideStatus = selinuxHideStatus,
+                    isSelinuxHideEnabled = isSelinuxHideEnabled,
                     sulogStatus = sulogStatus,
                     isSulogEnabled = isSulogEnabled,
                     isDefaultUmountModules = isDefaultUmountModules,
@@ -256,6 +264,29 @@ class SettingsViewModel(
             if (repo.setKernelUmountEnabled(enabled)) {
                 repo.execKsudFeatureSave()
                 _uiState.update { it.copy(isKernelUmountEnabled = enabled) }
+            }
+        }
+    }
+
+    fun setSelinuxHideEnabled(enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val status = repo.setSelinuxHideEnabled(enabled)
+            repo.execKsudFeatureSave()
+            _uiState.update { it.copy(isSelinuxHideEnabled = enabled) }
+            when (status) {
+                0 -> {}
+                -OsConstants.EAGAIN -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(ksuApp, R.string.settings_selinux_hide_reboot_required,
+                            Toast.LENGTH_LONG).show()
+                    }
+                }
+                else -> {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(ksuApp, ksuApp.getString(R.string.settings_selinux_hide_failed, status),
+                            Toast.LENGTH_LONG).show()
+                    }
+                }
             }
         }
     }
