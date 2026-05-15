@@ -1,3 +1,5 @@
+// Mirrored from compose-miuix-ui example.
+
 package com.sukisu.ultra.ui.component.miuix.effect
 
 import androidx.compose.ui.graphics.Color
