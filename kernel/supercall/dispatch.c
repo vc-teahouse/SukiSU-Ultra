@@ -22,6 +22,7 @@
 #include "sulog/event.h"
 #include "sulog/fd.h"
 #include "supercall/supercall.h"
+#include "feature/uts_spoof.h"
 
 #ifdef CONFIG_KPM
 #include "kpm/kpm.h"
@@ -659,6 +660,21 @@ static int do_get_sulog_fd(void __user *arg)
     return ksu_install_sulog_fd();
 }
 
+static int do_set_spoof_version(void __user *arg)
+{
+    struct ksu_set_spoof_version_cmd cmd;
+
+    if (copy_from_user(&cmd, arg, sizeof(cmd))) {
+        return -EFAULT;
+    }
+
+    cmd.release[sizeof(cmd.release) - 1] = '\0';
+    cmd.version[sizeof(cmd.version) - 1] = '\0';
+
+    return ksu_set_spoof_version(cmd.release[0] != '\0' ? cmd.release : NULL,
+                                 cmd.version[0] != '\0' ? cmd.version : NULL);
+}
+
 static int list_try_umount(void __user *arg)
 {
     struct ksu_list_try_umount_cmd cmd;
@@ -936,6 +952,12 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .cmd = KSU_IOCTL_GET_SULOG_FD,
         .name = "GET_SULOG_FD",
         .handler = do_get_sulog_fd,
+        .perm_check = only_root
+    },
+    {
+        .cmd = KSU_IOCTL_SET_SPOOF_VERSION,
+        .name = "SET_SPOOF_VERSION",
+        .handler = do_set_spoof_version,
         .perm_check = only_root
     },
     { 

@@ -25,6 +25,7 @@
 #include "hook/syscall_hook.h"
 #include "feature/adb_root.h"
 #include "feature/selinux_hide.h"
+#include "feature/uts_spoof.h"
 #include "infra/symbol_resolver.h"
 
 #if defined(__x86_64__)
@@ -80,6 +81,12 @@ bool allow_shell = false;
 #endif
 module_param(allow_shell, bool, 0);
 
+static char *spoof_release = NULL;
+module_param(spoof_release, charp, 0);
+
+static char *spoof_version = NULL;
+module_param(spoof_version, charp, 0);
+
 int __init kernelsu_init(void)
 {
 #if defined(__x86_64__)
@@ -123,6 +130,11 @@ int __init kernelsu_init(void)
     }
 
     ksu_init_symbol_resolver();
+
+    if (spoof_release || spoof_version) {
+        ksu_spoof_version(spoof_release, spoof_version);
+    }
+
     ksu_syscall_hook_init();
 
     ksu_feature_init();
