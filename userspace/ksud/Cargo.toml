@@ -16,11 +16,14 @@ rust-embed = { version = "8", features = [
     "compression", # must clean build after updating binaries
 ] }
 which = "8"
-sha1 = "0.10"
+sha1 = "0.11"
+base16ct = { version = "0.2", features = ["alloc"] }
 sha256 = "1"
 tempfile = "3"
 chrono = "0.4"
 regex-lite = "0.1"
+memmap2 = "0.9"
+android-bootimg = { git = "https://github.com/5ec1cff/android_bootimg", rev = "ae9c67a69cdcb1fdbdce523a09bcdd3b085a210b" }
 wait-timeout = "0.2.1"
 
 [target.'cfg(target_os = "android")'.dependencies]
@@ -62,4 +65,4 @@ notify = "6.1"
 mlua = { version = "0.11.6", features = ["lua54", "vendored"] }
 
 [build-dependencies]
-bindgen = "0.71.0"
+bindgen = "0.72"
