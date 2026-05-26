@@ -37,7 +37,11 @@ import com.sukisu.ultra.ui.util.getDefaultPartition
 import com.sukisu.ultra.ui.util.getSlotSuffix
 import com.sukisu.ultra.ui.util.isAbDevice
 import android.net.Uri
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalResources
 import com.sukisu.ultra.ui.util.rootAvailable
+import kotlinx.coroutines.launch
 
 @Composable
 fun InstallScreen(
@@ -45,6 +49,10 @@ fun InstallScreen(
 ) {
     val navigator = LocalNavigator.current
     val context = LocalContext.current
+    val snackbarHost = remember { SnackbarHostState() }
+    val uiMode = LocalUiMode.current
+    val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
 
     var installMethod by rememberSaveable { mutableStateOf<InstallMethod?>(null) }
     var lkmSelection by rememberSaveable { mutableStateOf<LkmSelection>(LkmSelection.KmiNone) }
@@ -139,6 +147,16 @@ fun InstallScreen(
         partitions.map { name -> if (defaultPartition == name) "$name (default)" else name }
     }
 
+    fun showMessage(message: String) {
+        scope.launch {
+            if (uiMode == UiMode.Material) {
+                snackbarHost.showSnackbar(message)
+            } else {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     val onInstall = {
         installMethod?.let { method ->
             when (method) {
@@ -195,7 +213,7 @@ fun InstallScreen(
                     lkmSelection = LkmSelection.LkmUri(uri)
                 } else {
                     lkmSelection = LkmSelection.KmiNone
-                    Toast.makeText(context, R.string.install_only_support_ko_file, Toast.LENGTH_SHORT).show()
+                    showMessage(resources.getString(R.string.install_only_support_ko_file))
                 }
             }
         }
@@ -305,6 +323,6 @@ fun InstallScreen(
 
     when (LocalUiMode.current) {
         UiMode.Miuix -> InstallScreenMiuix(state, actions)
-        UiMode.Material -> InstallScreenMaterial(state, actions)
+        UiMode.Material -> InstallScreenMaterial(state, actions, snackbarHost)
     }
 }

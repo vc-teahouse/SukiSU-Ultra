@@ -1,6 +1,7 @@
 package com.sukisu.ultra.ui.screen.appprofile
 
 import android.widget.Toast
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -21,7 +22,6 @@ import com.sukisu.ultra.ui.LocalUiMode
 import com.sukisu.ultra.ui.UiMode
 import com.sukisu.ultra.ui.navigation3.LocalNavigator
 import com.sukisu.ultra.ui.navigation3.Route
-import com.sukisu.ultra.ui.util.LocalSnackbarHost
 import com.sukisu.ultra.ui.util.forceStopApp
 import com.sukisu.ultra.ui.util.getSepolicy
 import com.sukisu.ultra.ui.util.launchApp
@@ -35,7 +35,7 @@ fun AppProfileScreen(uid: Int) {
     val uiMode = LocalUiMode.current
     val navigator = LocalNavigator.current
     val context = LocalContext.current
-    val snackbarHost = LocalSnackbarHost.current
+    val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val viewModel: SuperUserViewModel = viewModel()
     val appGroupState = remember(uid) {
@@ -141,6 +141,7 @@ fun AppProfileScreen(uid: Int) {
         UiMode.Material -> AppProfileScreenMaterial(
             state = state,
             actions = actions,
+            snackBarHost = snackbarHost,
         )
     }
 }

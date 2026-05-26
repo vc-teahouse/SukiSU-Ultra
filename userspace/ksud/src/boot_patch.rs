@@ -657,17 +657,13 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         }
 
         write_optional_ramdisk_config(
-            &magiskboot,
-            workdir,
-            ramdisk,
+            &mut cpio,
             "ksu_spoof_release",
             "spoof release",
             spoof_release.as_deref(),
         )?;
         write_optional_ramdisk_config(
-            &magiskboot,
-            workdir,
-            ramdisk,
+            &mut cpio,
             "ksu_spoof_version",
             "spoof version",
             spoof_version.as_deref(),
@@ -761,26 +757,20 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
 }
 
 fn write_optional_ramdisk_config(
-    magiskboot: &Path,
-    workdir: &Path,
-    ramdisk: &Path,
+    cpio: &mut Cpio,
     file_name: &str,
     label: &str,
     value: Option<&str>,
 ) -> Result<()> {
     if let Some(value) = value.map(str::trim).filter(|value| !value.is_empty()) {
         println!("- Adding {label} config");
-        let config_file = workdir.join(file_name);
-        std::fs::write(&config_file, value).with_context(|| format!("write {file_name}"))?;
-        do_cpio_cmd(
-            magiskboot,
-            workdir,
-            ramdisk,
-            &format!("add 0644 {file_name} {file_name}"),
+        cpio.add(
+            file_name,
+            CpioEntry::regular(0o644, Box::new(value.as_bytes().to_vec())),
         )?;
-    } else if do_cpio_cmd(magiskboot, workdir, ramdisk, &format!("exists {file_name}")).is_ok() {
+    } else if cpio.exists(file_name) {
         println!("- Removing {label} config");
-        do_cpio_cmd(magiskboot, workdir, ramdisk, &format!("rm {file_name}")).ok();
+        cpio.rm(file_name, false);
     }
 
     Ok(())
