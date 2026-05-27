@@ -6,6 +6,7 @@ use android_logger::Config;
 use log::{LevelFilter, error, info};
 
 use crate::boot_patch::{BootPatchArgs, BootRestoreArgs};
+use crate::module::regenerate_preinit_rc;
 #[cfg(target_arch = "aarch64")]
 use crate::susfs;
 use crate::{
@@ -149,6 +150,12 @@ enum Commands {
         /// Arguments passed to resetprop
         #[arg(trailing_var_arg = true, allow_hyphen_values = true, num_args = 0..)]
         args: Vec<String>,
+    },
+
+    /// Manage initrc injection
+    Initrc {
+        #[command(subcommand)]
+        command: Initrc,
     },
 
     /// Manage kernel umount paths
@@ -510,6 +517,12 @@ enum UmountOp {
     },
     /// Wipe all entries from umount list
     Wipe,
+}
+
+#[derive(clap::Subcommand, Debug)]
+enum Initrc {
+    /// Regenerate preinit rc file
+    Refresh,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -878,6 +891,9 @@ pub fn run() -> Result<()> {
                 let v = version.unwrap_or_default();
                 ksucalls::set_spoof_version(&r, &v)
             }
+        },
+        Commands::Initrc { command } => match command {
+            Initrc::Refresh => regenerate_preinit_rc(),
         },
         Commands::Umount { command } => match command {
             Umount::Add { mnt, flags } => ksucalls::umount_list_add(&mnt, flags),

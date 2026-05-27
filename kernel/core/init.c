@@ -81,6 +81,9 @@ bool allow_shell = false;
 #endif
 module_param(allow_shell, bool, 0);
 
+bool ksu_no_custom_rc = false;
+module_param_named(norc, ksu_no_custom_rc, bool, 0);
+
 static char *spoof_release = NULL;
 module_param(spoof_release, charp, 0);
 

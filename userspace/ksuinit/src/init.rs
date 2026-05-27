@@ -2,7 +2,6 @@ use std::ffi::CString;
 use std::io::{ErrorKind, Write};
 
 use anyhow::{Context, Result};
-use rustix::cstr;
 use rustix::fs::{Mode, symlink, unlink};
 use rustix::{
     fd::AsFd,
@@ -136,38 +135,8 @@ pub fn init() -> Result<()> {
 fn load_module_from_path(path: &str) -> Result<()> {
     anyhow::ensure!(rustix::process::getpid().is_init(), "Invalid process");
     let buffer = std::fs::read(path).with_context(|| format!("Cannot read file {}", path))?;
-    let mut params = Vec::new();
-    if std::fs::exists("/ksu_allow_shell").unwrap_or(false) {
-        log::warn!("ksu allow shell at init!");
-        params.push("allow_shell=1".to_string());
-    }
-    if let Some(release) = read_module_param("/ksu_spoof_release") {
-        params.push(format!(
-            "spoof_release=\"{}\"",
-            escape_module_param(&release)
-        ));
-    }
-    if let Some(version) = read_module_param("/ksu_spoof_version") {
-        params.push(format!(
-            "spoof_version=\"{}\"",
-            escape_module_param(&version)
-        ));
-    }
-    let params = if params.is_empty() {
-        cstr!("").to_owned()
-    } else {
-        CString::new(params.join(" "))?
-    };
+    let params = std::fs::read("/ksu_config").unwrap_or_default();
+    let params = unsafe { CString::from_vec_unchecked(params) };
+    log::info!("load kernelsu with params {params:?}");
     ksuinit::load_module(&buffer, &params)
-}
-
-fn read_module_param(path: &str) -> Option<String> {
-    std::fs::read_to_string(path)
-        .ok()
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty())
-}
-
-fn escape_module_param(value: &str) -> String {
-    value.replace('\\', "\\\\").replace('"', "\\\"")
 }
