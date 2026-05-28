@@ -15,8 +15,8 @@ use log::{debug, error, info, warn};
 use mlua::{Function, Lua, Result as LuaResult, Table};
 use regex_lite::Regex;
 
-use std::fs;
 #[cfg(all(target_os = "android", target_arch = "aarch64"))]
+use std::fs;
 use std::{
     collections::{BTreeMap, HashMap},
     env::var as env_var,
