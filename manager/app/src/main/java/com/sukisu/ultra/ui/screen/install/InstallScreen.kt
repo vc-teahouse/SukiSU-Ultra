@@ -40,7 +40,7 @@ import android.net.Uri
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalResources
-import com.sukisu.ultra.ui.util.rootAvailable
+import com.sukisu.ultra.ui.util.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,8 +62,16 @@ fun InstallScreen(
     var advancedOptionsShown by rememberSaveable { mutableStateOf(false) }
     var allowShell by rememberSaveable { mutableStateOf(false) }
     var enableAdb by rememberSaveable { mutableStateOf(false) }
+
+    // Read the configuration from the boot image ksu_config
+    val bootConfig by produceState(initialValue = BootConfig()) { value = getBootConfig() }
     var spoofRelease by rememberSaveable { mutableStateOf(SuSFSManager.getKernelSpoofRelease(context)) }
     var spoofVersion by rememberSaveable { mutableStateOf(SuSFSManager.getKernelSpoofVersion(context)) }
+
+    LaunchedEffect(bootConfig) {
+        spoofRelease = bootConfig.spoofRelease.ifEmpty { spoofRelease }
+        spoofVersion = bootConfig.spoofVersion.ifEmpty { spoofVersion }
+    }
 
     val currentKmi by produceState(initialValue = "") { value = getCurrentKmi() }
     val partitions by produceState(initialValue = emptyList()) { value = getAvailablePartitions() }

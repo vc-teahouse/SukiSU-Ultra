@@ -696,3 +696,45 @@ fun rememberKpmAvailable(): Boolean {
     }
     return kpmVersion.isNotEmpty() && !kpmVersion.contains("Error", ignoreCase = true)
 }
+
+data class BootConfig(
+    val allowShell: Boolean = false,
+    val spoofRelease: String = "",
+    val spoofVersion: String = "",
+)
+
+// 读取镜像中的 ksu_config 参数
+suspend fun getBootConfig(): BootConfig = withContext(Dispatchers.IO) {
+    val shell = getRootShell()
+    val cmd = "${getKsuDaemonPath()} boot-info read-config"
+    val out = shell.newJob().add(cmd).to(ArrayList(), null).exec().out
+
+    var allowShell = false
+    var spoofRelease = ""
+    var spoofVersion = ""
+
+    for (line in out) {
+        when {
+            line.startsWith("allow_shell=") -> allowShell = line.substringAfter("=").trim() == "1"
+            line.startsWith("spoof_release=") -> {
+                spoofRelease = parseQuotedValue(line.substringAfter("spoof_release="))
+            }
+            line.startsWith("spoof_version=") -> {
+                spoofVersion = parseQuotedValue(line.substringAfter("spoof_version="))
+            }
+        }
+    }
+
+    BootConfig(allowShell, spoofRelease, spoofVersion)
+}
+
+private fun parseQuotedValue(value: String): String {
+    val trimmed = value.trim()
+    return if (trimmed.startsWith("\"") && trimmed.endsWith("\"")) {
+        trimmed.substring(1, trimmed.length - 1)
+    } else if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
+        trimmed.substring(1, trimmed.length - 1)
+    } else {
+        trimmed
+    }
+}

@@ -202,6 +202,9 @@ enum BootInfo {
         #[arg(short = 'u', long, default_value = "false")]
         ota: bool,
     },
+
+    /// read ksu_config from ramdisk
+    ReadConfig,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -864,6 +867,13 @@ pub fn run() -> Result<()> {
                 let parts = crate::boot_patch::list_available_partitions();
                 for p in &parts {
                     println!("{p}");
+                }
+                return Ok(());
+            }
+            BootInfo::ReadConfig => {
+                let config = crate::boot_patch::read_ksu_config()?;
+                for line in &config {
+                    println!("{line}");
                 }
                 return Ok(());
             }

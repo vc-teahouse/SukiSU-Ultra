@@ -654,7 +654,13 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
             .entry_by_name("ksu_config")
             .and_then(CpioEntry::data)
             .and_then(|v| str::from_utf8(v).ok())
-            .map(|v| v.split(' ').map(std::borrow::ToOwned::to_owned).collect())
+            .map(|v| {
+                v.split(' ')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(str::to_owned)
+                    .collect()
+            })
             .unwrap_or_default();
 
         let mut apply_config = |name: &str, value: &str, add: bool| {
@@ -674,32 +680,34 @@ pub fn patch(args: BootPatchArgs) -> Result<()> {
         apply_config("no custom rc", "norc=1", no_custom_rc);
         apply_config("allow shell", "allow_shell=1", allow_shell);
 
-        let mut add_spoof_config = |key: &str, value: &str| {
-            if !value.trim().is_empty() {
-                println!("- Adding {key} config");
-                let config_str = format!(
-                    "{}=\"{}\"",
-                    key,
-                    value.replace('\\', "\\\\").replace('"', "\\\"")
-                );
-                if !ksu_config.iter().any(|v| v.starts_with(&format!("{key}="))) {
+        let mut apply_spoof_config = |key: &str, value: Option<&str>| {
+            ksu_config.retain(|x| !x.starts_with(&format!("{key}=")));
+            if let Some(v) = value {
+                let v = v.trim();
+                if v.is_empty() {
+                    println!("- Removing {key} config");
+                } else {
+                    println!("- Adding {key} config");
+                    let config_str = format!(
+                        "{}=\"{}\"",
+                        key,
+                        v.replace('\\', "\\\\").replace('"', "\\\"")
+                    );
                     ksu_config.push(config_str);
                 }
+            } else {
+                println!("- Removing {key} config");
             }
         };
 
-        if let Some(release) = spoof_release.as_ref() {
-            add_spoof_config("spoof_release", release);
-        }
-
-        if let Some(version) = spoof_version.as_ref() {
-            add_spoof_config("spoof_version", version);
-        }
+        apply_spoof_config("spoof_release", spoof_release.as_deref());
+        apply_spoof_config("spoof_version", spoof_version.as_deref());
 
         if ksu_config.is_empty() {
             cpio.rm("ksu_config", false);
         } else {
             let data = ksu_config.join(" ").into_bytes();
+            println!("- ksu_config content: {:?}", String::from_utf8_lossy(&data));
             cpio.add("ksu_config", CpioEntry::regular(0o644, Box::new(data)))?;
         }
 
@@ -982,4 +990,39 @@ fn rebuild_without_ksu(
     let mut buf = Cursor::new(Vec::<u8>::with_capacity(boot_image.get_size()));
     patcher.patch(&mut buf)?;
     Ok(buf.into_inner())
+}
+
+pub fn read_ksu_config() -> Result<Vec<String>> {
+    #[cfg(target_os = "android")]
+    {
+        let boot_image_file = auto_boot_partition_path("", false, false, &None);
+        let bootimage_data = map_file(&boot_image_file)?;
+        let boot_image = BootImage::parse(&bootimage_data)?;
+
+        let (cpio, _) = if let Some(ramdisk_image) = boot_image.get_blocks().get_ramdisk() {
+            extract_ramdisk(ramdisk_image)?
+        } else {
+            bail!("No compatible ramdisk found.")
+        };
+
+        let config = cpio
+            .entry_by_name("ksu_config")
+            .and_then(CpioEntry::data)
+            .and_then(|v| str::from_utf8(v).ok())
+            .map(|v| {
+                v.split(' ')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .map(std::string::ToString::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Ok(config)
+    }
+
+    #[cfg(not(target_os = "android"))]
+    {
+        Ok(Vec::new())
+    }
 }
