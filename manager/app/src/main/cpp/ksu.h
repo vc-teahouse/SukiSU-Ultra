@@ -66,13 +66,11 @@ inline std::pair<int, int> legacy_get_info() {
         if (g_##name[0] == '\0') { \
             struct cmd_type cmd = {0}; \
             if (ksuctl(ioctl, &cmd) == 0) { \
-                strncpy(g_##name, cmd.field, sizeof(g_##name) - 1); \
-                g_##name[sizeof(g_##name) - 1] = '\0'; \
+                snprintf(g_##name, sizeof(g_##name), "%s", cmd.field); \
             } \
         } \
         if (g_##name[0] != '\0') { \
-            strncpy(buff, g_##name, size - 1); \
-            buff[size - 1] = '\0'; \
+            snprintf(buff, size, "%s", g_##name); \
             return true; \
         } \
         return false; \
