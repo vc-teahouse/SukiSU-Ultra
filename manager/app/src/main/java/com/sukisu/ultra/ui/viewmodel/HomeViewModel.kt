@@ -24,6 +24,7 @@ import com.sukisu.ultra.ui.util.getModuleCount
 import com.sukisu.ultra.ui.util.getSuperuserCount
 import com.sukisu.ultra.ui.util.getSELinuxStatusRaw
 import com.sukisu.ultra.ui.util.module.LatestVersionInfo
+import com.sukisu.ultra.ui.util.resolveDeviceName
 import com.sukisu.ultra.ui.util.rootAvailable
 
 class HomeViewModel : ViewModel() {
@@ -71,6 +72,7 @@ class HomeViewModel : ViewModel() {
             systemInfo = SystemInfo(
                 kernelVersion = Os.uname().release,
                 managerVersion = "${managerVersion.versionName} (${managerVersion.versionCode})",
+                deviceModel = resolveDeviceName(),
                 kernelFullVersion = kernelFullVersion,
                 fingerprint = Build.FINGERPRINT,
                 selinuxStatus = getSELinuxStatusRaw(),

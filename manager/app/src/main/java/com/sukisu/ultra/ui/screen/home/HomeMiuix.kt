@@ -378,7 +378,7 @@ private fun StatusCard(
                                 Icon(
                                     Icons.Rounded.ErrorOutline,
                                     stringResource(R.string.home_not_installed),
-                                    modifier = Modifier.padding(end = 16.dp),
+                                    modifier = Modifier.padding(end = 6.dp),
                                     tint = colorScheme.onBackground,
                                 )
                             },
@@ -499,14 +499,16 @@ private fun InfoCard(systemInfo: SystemInfo) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            InfoText(title = stringResource(R.string.home_kernel), content = systemInfo.kernelVersion)
             InfoText(title = stringResource(R.string.home_manager_version), content = systemInfo.managerVersion)
+            InfoText(title = stringResource(R.string.home_kernel), content = systemInfo.kernelVersion)
+            InfoText(title = stringResource(R.string.home_device_model), content = systemInfo.deviceModel)
             InfoText(title = stringResource(R.string.home_kernel_full_version), content = systemInfo.kernelFullVersion)
             if (isSusfsSupported) {
                 InfoText(title = stringResource(R.string.home_susfs_version), content = susfsInfo.detail)
             } else {
                 InfoText(title = stringResource(R.string.hook_type),content = hookTypeLabel)
             }
+            InfoText(title = stringResource(R.string.home_fingerprint), content = systemInfo.fingerprint)
             val selinuxDisplay = when (systemInfo.selinuxStatus) {
                 "Enforcing" -> stringResource(R.string.selinux_status_enforcing)
                 "Permissive" -> stringResource(R.string.selinux_status_permissive)
@@ -573,8 +575,9 @@ private fun StatusCardJailbreakPreview() {
 private val previewSystemInfo = SystemInfo(
     kernelVersion = "6.1.0-android14-0-g1234567",
     managerVersion = "1.0.0 (10000)",
+    deviceModel = "Xiaomi 17 Pro Max",
+    fingerprint = "Xiaomi/popsicle/popsicle:16/BQ2A.250705.001-BP2A.250605.031.A3/OS3.0.313.0.WPBCNXM:user/release-keys",
     kernelFullVersion = "v4.1.2-abc1234@main",
-    fingerprint = "google/raven/raven:14/AP1A.240305.019:user/release-keys",
     selinuxStatus = "Enforcing",
     seccompStatus = 2
 )

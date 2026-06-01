@@ -432,9 +432,11 @@ private fun InfoCard(systemInfo: SystemInfo) {
                 )
             }
 
+            InfoCardItem(stringResource(R.string.home_manager_version), systemInfo.managerVersion)
+            Spacer(Modifier.height(16.dp))
             InfoCardItem(stringResource(R.string.home_kernel), systemInfo.kernelVersion)
             Spacer(Modifier.height(16.dp))
-            InfoCardItem(stringResource(R.string.home_manager_version), systemInfo.managerVersion)
+            InfoCardItem(stringResource(R.string.home_device_model), systemInfo.deviceModel)
             Spacer(Modifier.height(16.dp))
             InfoCardItem(stringResource(R.string.home_kernel_full_version), systemInfo.kernelFullVersion)
             Spacer(Modifier.height(16.dp))
@@ -510,6 +512,7 @@ private fun StatusCardJailbreakPreview() {
 private val previewSystemInfo = SystemInfo(
     kernelVersion = "6.1.0-android14-0-g1234567",
     managerVersion = "1.0.0 (10000)",
+    deviceModel = "Google Pixel 6 Pro",
     kernelFullVersion = "v4.1.2-abc1234@main",
     fingerprint = "google/raven/raven:14/AP1A.240305.019:user/release-keys",
     selinuxStatus = "Enforcing",
