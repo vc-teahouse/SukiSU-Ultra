@@ -2,6 +2,7 @@ package com.sukisu.ultra.data.model
 
 import android.os.Parcelable
 import android.util.Log
+import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.profile.Capabilities
@@ -10,6 +11,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Locale
 
+@Immutable
 @Parcelize
 data class TemplateInfo(
     val id: String = "",
