@@ -502,11 +502,13 @@ private fun InfoCard(systemInfo: SystemInfo) {
             InfoText(title = stringResource(R.string.home_manager_version), content = systemInfo.managerVersion)
             InfoText(title = stringResource(R.string.home_kernel), content = systemInfo.kernelVersion)
             InfoText(title = stringResource(R.string.home_device_model), content = systemInfo.deviceModel)
-            InfoText(title = stringResource(R.string.home_kernel_full_version), content = systemInfo.kernelFullVersion)
+            if (!systemInfo.kernelFullVersion.isNullOrBlank()) {
+                InfoText(title = stringResource(R.string.home_kernel_full_version), content = systemInfo.kernelFullVersion)
+            }
             if (isSusfsSupported) {
                 InfoText(title = stringResource(R.string.home_susfs_version), content = susfsInfo.detail)
-            } else {
-                InfoText(title = stringResource(R.string.hook_type),content = hookTypeLabel)
+            } else if (!hookTypeLabel.isNullOrBlank()) {
+                InfoText(title = stringResource(R.string.hook_type), content = hookTypeLabel)
             }
             InfoText(title = stringResource(R.string.home_fingerprint), content = systemInfo.fingerprint)
             val selinuxDisplay = when (systemInfo.selinuxStatus) {

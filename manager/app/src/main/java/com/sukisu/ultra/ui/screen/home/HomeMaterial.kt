@@ -437,15 +437,18 @@ private fun InfoCard(systemInfo: SystemInfo) {
             InfoCardItem(stringResource(R.string.home_kernel), systemInfo.kernelVersion)
             Spacer(Modifier.height(16.dp))
             InfoCardItem(stringResource(R.string.home_device_model), systemInfo.deviceModel)
-            Spacer(Modifier.height(16.dp))
-            InfoCardItem(stringResource(R.string.home_kernel_full_version), systemInfo.kernelFullVersion)
-            Spacer(Modifier.height(16.dp))
+            if (!systemInfo.kernelFullVersion.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
+                InfoCardItem(stringResource(R.string.home_kernel_full_version), systemInfo.kernelFullVersion)
+            }
             if (isSusfsSupported) {
+                Spacer(Modifier.height(16.dp))
                 InfoCardItem(
                     stringResource(R.string.home_susfs_version),
                     susfsInfo.detail
                 )
-            } else {
+            } else if (!hookTypeLabel.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
                 InfoCardItem(
                     stringResource(R.string.hook_type),
                     hookTypeLabel

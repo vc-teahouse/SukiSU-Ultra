@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.pm.PackageInfoCompat
 import com.sukisu.ultra.Natives
+import com.sukisu.ultra.Natives.isManager
 import com.sukisu.ultra.ui.util.getSuSFSStatus
 import com.sukisu.ultra.ui.util.getSuSFSVersion
 
@@ -20,7 +21,7 @@ data class SystemInfo(
     val kernelVersion: String,
     val managerVersion: String,
     val deviceModel: String,
-    val kernelFullVersion: String,
+    val kernelFullVersion: String?,
     val fingerprint: String,
     val selinuxStatus: String,
     val seccompStatus: Int
@@ -84,14 +85,14 @@ fun rememberHookTypeLabel(
     inlineHookText: String,
     tracepointHookText: String,
     unknownHookText: String,
-): String {
+): String? {
     return remember(manualHookText, inlineHookText, tracepointHookText, unknownHookText) {
-        val rawType = Natives.getHookType()
-        val localized = when (rawType) {
+        if (!isManager) return@remember null
+        val rawType = runCatching { Natives.getHookType() }.getOrNull() ?: return@remember null
+        when (rawType) {
             "Manual" -> manualHookText
             "Tracepoint" -> tracepointHookText
-            else -> rawType
+            else -> rawType.ifBlank { unknownHookText }
         }
-        localized.ifBlank { unknownHookText }
     }
 }

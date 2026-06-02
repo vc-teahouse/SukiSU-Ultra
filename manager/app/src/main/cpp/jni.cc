@@ -407,7 +407,7 @@ Java_com_sukisu_ultra_Natives_getFullVersion(JNIEnv *env, jobject) {
     if (get_full_version(buff)) {
         return env->NewStringUTF(buff);
     }
-    return env->NewStringUTF("Unknown");
+    return nullptr;
 }
 
 extern "C"
@@ -417,5 +417,5 @@ Java_com_sukisu_ultra_Natives_getHookType(JNIEnv *env, jobject) {
     if (get_hook_type(hook_type)) {
         return env->NewStringUTF(hook_type);
     }
-    return env->NewStringUTF("Unknown");
+    return nullptr;
 }
