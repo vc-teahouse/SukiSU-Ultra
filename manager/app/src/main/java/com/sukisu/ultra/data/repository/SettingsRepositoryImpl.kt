@@ -82,6 +82,10 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = prefs.getBoolean("enable_web_debugging", false)
         set(value) = prefs.edit { putBoolean("enable_web_debugging", value) }
 
+    override var showFullStatus: Boolean
+        get() = prefs.getBoolean("show_fingerprint", true)
+        set(value) = prefs.edit { putBoolean("show_fingerprint", value) }
+
     override var autoJailbreak: Boolean
         get() = prefs.getBoolean("auto_jailbreak", false)
         set(value) {

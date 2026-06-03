@@ -51,6 +51,7 @@ import androidx.compose.material.icons.rounded.AspectRatio
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DesignServices
 import androidx.compose.material.icons.rounded.Style
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -285,6 +286,21 @@ fun ColorPaletteScreenMaterial(
                         )
                     )
                 }
+
+                SegmentedColumn(
+                    modifier = Modifier.padding(top = 4.dp),
+                    content = listOf(
+                        {
+                            SegmentedSwitchItem(
+                                icon = Icons.Rounded.Fingerprint,
+                                title = stringResource(id = R.string.settings_show_fullstatus),
+                                summary = stringResource(id = R.string.settings_show_fullstatus_summary),
+                                checked = state.showFullStatus,
+                                onCheckedChange = actions.onSetShowFullStatus
+                            )
+                        }
+                    )
+                )
 
                 TonalCard(modifier = Modifier.padding(top = 4.dp)) {
                     var sliderValue by remember(uiState.pageScale) { mutableFloatStateOf(uiState.pageScale) }

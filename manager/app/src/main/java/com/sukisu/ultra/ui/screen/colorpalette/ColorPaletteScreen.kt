@@ -38,6 +38,7 @@ fun ColorPaletteScreen() {
         currentColorMode = ColorMode.fromValue(uiState.themeMode),
         currentPaletteStyle = currentPaletteStyle,
         currentColorSpec = currentColorSpec,
+        showFullStatus = uiState.showFullStatus,
     )
     val actions = ColorPaletteScreenActions(
         onBack = dropUnlessResumed { navigator.pop() },
@@ -56,6 +57,7 @@ fun ColorPaletteScreen() {
             activity?.recreate()
         },
         onSetPageScale = viewModel::setPageScale,
+        onSetShowFullStatus = viewModel::setShowFullStatus,
     )
 
     when (LocalUiMode.current) {

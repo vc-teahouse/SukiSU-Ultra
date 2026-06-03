@@ -37,6 +37,7 @@ import androidx.compose.material.icons.rounded.Colorize
 import androidx.compose.material.icons.rounded.DesignServices
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Wallpaper
+import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -356,6 +357,23 @@ fun ColorPaletteScreenMiuix(
                                 }
                             )
                         }
+
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_show_fullstatus),
+                            summary = stringResource(id = R.string.settings_show_fullstatus_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Rounded.Fingerprint,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_show_fullstatus),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            checked = state.showFullStatus,
+                            onCheckedChange = {
+                                actions.onSetShowFullStatus(it)
+                            }
+                        )
 
                         var sliderValue by remember(uiState.pageScale) { mutableFloatStateOf(uiState.pageScale) }
                         ArrowPreference(

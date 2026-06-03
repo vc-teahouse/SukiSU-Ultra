@@ -114,12 +114,12 @@ fun HomePagerMiuix(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        if (state.showManagerPrBuildWarning) {
+                        if (state.showManagerPrBuildWarning && state.showFullStatus) {
                             WarningCard(stringResource(id = R.string.home_pr_build_warning))
-                        } else if (state.showKernelPrBuildWarning) {
+                        } else if (state.showKernelPrBuildWarning && state.showFullStatus) {
                             WarningCard(stringResource(id = R.string.home_pr_kernel_warning))
                         }
-                        if (state.showVersionMismatchWarning) {
+                        if (state.showVersionMismatchWarning && state.showFullStatus) {
                             WarningCard(
                                 stringResource(
                                     id = R.string.home_version_mismatch,
@@ -146,7 +146,7 @@ fun HomePagerMiuix(
                         if (state.checkUpdateEnabled) {
                             UpdateCard(state = state, actions = actions)
                         }
-                        InfoCard(systemInfo = state.systemInfo)
+                        InfoCard(systemInfo = state.systemInfo, showFullStatus = state.showFullStatus)
                         DonateCard(onOpenUrl = actions.onOpenUrl)
                         LearnMoreCard(onOpenUrl = actions.onOpenUrl)
                     }
@@ -465,7 +465,7 @@ private fun DonateCard(onOpenUrl: (String) -> Unit) {
 }
 
 @Composable
-private fun InfoCard(systemInfo: SystemInfo) {
+private fun InfoCard(systemInfo: SystemInfo, showFullStatus: Boolean = true) {
     val manualHookText = stringResource(R.string.manual_hook)
     val inlineHookText = stringResource(R.string.inline_hook)
     val tracepointHookText = stringResource(R.string.tracepoint_hook)
@@ -501,16 +501,25 @@ private fun InfoCard(systemInfo: SystemInfo) {
         ) {
             InfoText(title = stringResource(R.string.home_manager_version), content = systemInfo.managerVersion)
             InfoText(title = stringResource(R.string.home_kernel), content = systemInfo.kernelVersion)
-            InfoText(title = stringResource(R.string.home_device_model), content = systemInfo.deviceModel)
-            if (!systemInfo.kernelFullVersion.isNullOrBlank()) {
-                InfoText(title = stringResource(R.string.home_kernel_full_version), content = systemInfo.kernelFullVersion)
+
+            if (showFullStatus) {
+                if (!systemInfo.kernelFullVersion.isNullOrBlank()) {
+                    InfoText(
+                        title = stringResource(R.string.home_kernel_full_version),
+                        content = systemInfo.kernelFullVersion
+                    )
+                }
+                if (isSusfsSupported) {
+                    InfoText(
+                        title = stringResource(R.string.home_susfs_version),
+                        content = susfsInfo.detail
+                    )
+                } else if (!hookTypeLabel.isNullOrBlank()) {
+                    InfoText(title = stringResource(R.string.hook_type), content = hookTypeLabel)
+                }
+
             }
-            if (isSusfsSupported) {
-                InfoText(title = stringResource(R.string.home_susfs_version), content = susfsInfo.detail)
-            } else if (!hookTypeLabel.isNullOrBlank()) {
-                InfoText(title = stringResource(R.string.hook_type), content = hookTypeLabel)
-            }
-            InfoText(title = stringResource(R.string.home_fingerprint), content = systemInfo.fingerprint)
+
             val selinuxDisplay = when (systemInfo.selinuxStatus) {
                 "Enforcing" -> stringResource(R.string.selinux_status_enforcing)
                 "Permissive" -> stringResource(R.string.selinux_status_permissive)
@@ -519,24 +528,39 @@ private fun InfoCard(systemInfo: SystemInfo) {
             }
             InfoText(
                 title = stringResource(R.string.home_selinux_status),
-                content = selinuxDisplay,
+                content = selinuxDisplay
             )
-            val seccompDisplay = when (systemInfo.seccompStatus) {
-                -1 -> stringResource(R.string.seccomp_status_not_supported)
-                0 -> stringResource(R.string.seccomp_status_disabled)
-                1 -> stringResource(R.string.seccomp_status_strict)
-                2 -> stringResource(R.string.seccomp_status_filter)
-                else -> stringResource(R.string.seccomp_status_unknown)
+
+            if (showFullStatus) {
+                val seccompDisplay = when (systemInfo.seccompStatus) {
+                    -1 -> stringResource(R.string.seccomp_status_not_supported)
+                    0 -> stringResource(R.string.seccomp_status_disabled)
+                    1 -> stringResource(R.string.seccomp_status_strict)
+                    2 -> stringResource(R.string.seccomp_status_filter)
+                    else -> stringResource(R.string.seccomp_status_unknown)
+                }
+                InfoText(
+                    title = stringResource(R.string.home_seccomp_status),
+                    content = seccompDisplay,
+                )
             }
-            InfoText(
-                title = stringResource(R.string.home_seccomp_status),
-                content = seccompDisplay,
-            )
-            InfoText(
-                title = stringResource(R.string.home_fingerprint),
-                content = systemInfo.fingerprint,
-                bottomPadding = 0.dp
-            )
+
+
+            if (!showFullStatus) {
+                InfoText(
+                    title = stringResource(R.string.home_device_model),
+                    content = systemInfo.deviceModel,
+                    bottomPadding = 0.dp
+                )
+            }
+
+            if (showFullStatus) {
+                InfoText(
+                    title = stringResource(R.string.home_fingerprint),
+                    content = systemInfo.fingerprint,
+                    bottomPadding = 0.dp
+                )
+            }
         }
     }
 }
@@ -617,7 +641,7 @@ private fun HomeScreenPreviewContent(
                 ),
                 actions = actions
             )
-            InfoCard(previewSystemInfo.copy(selinuxStatus = selinuxStatus))
+            InfoCard(previewSystemInfo.copy(selinuxStatus = selinuxStatus), showFullStatus = true)
             DonateCard(onOpenUrl = {})
             LearnMoreCard(onOpenUrl = {})
         }
@@ -668,6 +692,7 @@ private fun previewHomeScreenState(
     isSafeMode = isSafeMode,
     isLateLoadMode = isLateLoadMode,
     checkUpdateEnabled = false,
+    showFullStatus = true,
     latestVersionInfo = LatestVersionInfo(),
     currentManagerVersionCode = 10000,
     superuserCount = superuserCount,

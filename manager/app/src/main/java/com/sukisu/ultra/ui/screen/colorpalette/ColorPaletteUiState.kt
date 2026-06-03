@@ -12,6 +12,7 @@ data class ColorPaletteUiState(
     val currentColorMode: ColorMode,
     val currentPaletteStyle: PaletteStyle,
     val currentColorSpec: ColorSpec.SpecVersion,
+    val showFullStatus: Boolean,
 )
 
 @Immutable
@@ -28,4 +29,5 @@ data class ColorPaletteScreenActions(
     val onSetEnableFloatingBottomBarBlur: (Boolean) -> Unit,
     val onSetEnablePredictiveBack: (Boolean) -> Unit,
     val onSetPageScale: (Float) -> Unit,
+    val onSetShowFullStatus: (Boolean) -> Unit,
 )

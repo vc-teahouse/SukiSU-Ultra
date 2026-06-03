@@ -587,4 +587,6 @@
     <string name="icon_switch_summary">Change the launcher icon to KernelSU\'s icon</string>
     <string name="refresh">Refresh</string>
     <string name="home_kernel_full_version">Kernel full version</string>
+    <string name="settings_show_fullstatus">Show FullStatus</string>
+    <string name="settings_show_fullstatus_summary">Display device FullStatus in home page info card</string>
 </resources>

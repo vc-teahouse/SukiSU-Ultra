@@ -45,6 +45,7 @@ class SettingsViewModel(
             val enableFloatingBottomBarBlur = repo.enableFloatingBottomBarBlur
             val pageScale = repo.pageScale
             val enableWebDebugging = repo.enableWebDebugging
+            val showFullStatus = repo.showFullStatus
             val colorStyle = repo.colorStyle
             val colorSpec = repo.colorSpec
             val isLkmMode = repo.isLkmMode()
@@ -84,6 +85,7 @@ class SettingsViewModel(
                     enableFloatingBottomBarBlur = enableFloatingBottomBarBlur,
                     pageScale = pageScale,
                     enableWebDebugging = enableWebDebugging,
+                    showFullStatus = showFullStatus,
                     colorStyle = colorStyle,
                     colorSpec = colorSpec,
                     suCompatStatus = suCompatStatus,
@@ -223,6 +225,11 @@ class SettingsViewModel(
     fun setEnableWebDebugging(enabled: Boolean) {
         repo.enableWebDebugging = enabled
         _uiState.update { it.copy(enableWebDebugging = enabled) }
+    }
+
+    fun setShowFullStatus(enabled: Boolean) {
+        repo.showFullStatus = enabled
+        _uiState.update { it.copy(showFullStatus = enabled) }
     }
 
     fun setSuCompatMode(mode: Int) {
