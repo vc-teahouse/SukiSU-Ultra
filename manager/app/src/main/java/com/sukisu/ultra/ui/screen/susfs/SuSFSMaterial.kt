@@ -38,7 +38,6 @@ import com.sukisu.ultra.ui.screen.susfs.content.SusPathsContent
 import com.sukisu.ultra.ui.screen.susfs.util.SuSFSManager
 import com.sukisu.ultra.ui.screen.susfs.viewmodel.SuSFSViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("SdCardPath", "AutoboxingStateCreation")
 @Composable
 fun SuSFSMaterial() {

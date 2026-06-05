@@ -42,7 +42,6 @@ import com.sukisu.ultra.ui.viewmodel.KpmViewModel
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.TextButton
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun KpmMaterial(
     viewModel: KpmViewModel,
@@ -217,7 +216,6 @@ fun KpmMaterial(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun KpmListMaterial(
     state: KpmUiState,

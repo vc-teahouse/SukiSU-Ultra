@@ -53,8 +53,6 @@ import androidx.compose.material.icons.rounded.DesignServices
 import androidx.compose.material.icons.rounded.Style
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -100,7 +98,6 @@ import com.sukisu.ultra.ui.component.material.TonalCard
 import com.sukisu.ultra.ui.theme.ColorMode
 import com.sukisu.ultra.ui.theme.keyColorOptions
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ColorPaletteScreenMaterial(
     state: ColorPaletteUiState,
@@ -357,7 +354,6 @@ fun ColorPaletteScreenMaterial(
 }
 
 @SuppressLint("ConfigurationScreenWidthHeight")
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun ThemePreviewCard(
     keyColor: Int,

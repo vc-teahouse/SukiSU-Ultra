@@ -34,8 +34,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -78,7 +76,6 @@ import com.sukisu.ultra.ui.component.statustag.StatusTag
 import com.sukisu.ultra.ui.util.SulogEntry
 import com.sukisu.ultra.ui.util.SulogEventFilter
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SulogScreenMaterial(
     state: SulogScreenState,
@@ -256,7 +253,6 @@ fun SulogScreenMaterial(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 private fun LazyListScope.sulogEntriesSection(
     entries: List<SulogEntry>,
     errorMessage: String?,

@@ -33,7 +33,6 @@ sealed class DialogFieldMaterial {
     ) : DialogFieldMaterial()
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UniversalDialogMaterial(
     showDialog: Boolean,

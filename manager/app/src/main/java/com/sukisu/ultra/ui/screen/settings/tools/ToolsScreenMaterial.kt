@@ -14,7 +14,6 @@ import androidx.compose.material.icons.rounded.Backup
 import androidx.compose.material.icons.rounded.FolderDelete
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.Security
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,7 +33,6 @@ import com.sukisu.ultra.ui.component.material.SegmentedColumn
 import com.sukisu.ultra.ui.component.material.SegmentedListItem
 import com.sukisu.ultra.ui.util.getSELinuxStatusRaw
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToolsMaterial(
     state: ToolsUiState,

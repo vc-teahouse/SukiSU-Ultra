@@ -81,9 +81,9 @@ import com.sukisu.ultra.ui.component.dialog.ConfirmDialogHandle
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.markdown.GithubMarkdown
 import com.sukisu.ultra.ui.component.miuix.SearchBarFake
-import com.sukisu.ultra.ui.component.miuix.deferredTopPadding
 import com.sukisu.ultra.ui.component.miuix.SearchBox
 import com.sukisu.ultra.ui.component.miuix.SearchPager
+import com.sukisu.ultra.ui.component.miuix.deferredTopPadding
 import com.sukisu.ultra.ui.theme.LocalEnableBlur
 import com.sukisu.ultra.ui.theme.isInDarkTheme
 import com.sukisu.ultra.ui.util.BlurredBar

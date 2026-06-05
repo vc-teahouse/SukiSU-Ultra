@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -381,7 +380,6 @@ private fun SelectInstallMethod(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun TopBar(
     onBack: () -> Unit = {},
