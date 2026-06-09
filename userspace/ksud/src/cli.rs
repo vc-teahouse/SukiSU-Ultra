@@ -10,8 +10,8 @@ use crate::module::regenerate_preinit_rc;
 #[cfg(target_arch = "aarch64")]
 use crate::susfs;
 use crate::{
-    apk_sign, assets, debug, defs, init_event, ksucalls, module, module_config, sulog, umount,
-    utils,
+    apk_sign, assets, debug, defs, init_event, ksu_uapi, ksucalls, module, module_config, sulog,
+    utils, umount,
 };
 
 /// KernelSU userspace cli
@@ -251,6 +251,9 @@ enum Debug {
 
     /// Launch sulogd daemon manually
     Sulogd,
+
+    /// Get kernel info
+    Info,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -827,6 +830,26 @@ pub fn run() -> Result<()> {
                 MarkCommand::Refresh => debug::mark_refresh(),
             },
             Debug::Sulogd => sulog::ensure_sulogd_running(),
+            Debug::Info => {
+                let info = ksucalls::get_info();
+                println!("version: {}", info.version);
+                println!("flags: 0x{:x}", info.flags);
+                println!("uapi_version: {}", info.uapi_version);
+                println!("features: 0x{:x}", info.features);
+                println!(
+                    "lkm: {}",
+                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_LKM) != 0
+                );
+                println!(
+                    "late_load: {}",
+                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_LATE_LOAD) != 0
+                );
+                println!(
+                    "pr_build: {}",
+                    (info.flags & ksu_uapi::KSU_GET_INFO_FLAG_PR_BUILD) != 0
+                );
+                Ok(())
+            }
         },
 
         Commands::BootPatch(boot_patch) => crate::boot_patch::patch(boot_patch),

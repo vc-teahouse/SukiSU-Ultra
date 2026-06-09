@@ -4,7 +4,7 @@
     <string name="home_not_installed">Kurulmadı</string>
     <string name="home_click_to_install">Yüklemek için dokunun</string>
     <string name="home_working">Çalışıyor</string>
-    <string name="home_working_version">Sürüm: %d</string>
+    <string name="home_working_version">Sürüm: %s</string>
     <string name="home_unsupported">Desteklenmiyor</string>
     <string name="home_unsupported_reason">KernelSU şimdilik sadece GKI çekirdeklerini destekliyor</string>
     <string name="home_version_mismatch">Yönetici sürümü (%1$d) ile KernelSU sürücüsü sürümü (%2$d) uyuşmuyor.</string>
