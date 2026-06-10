@@ -4,7 +4,7 @@
 #include <linux/vmalloc.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
-
+#include <linux/thread_info.h>
 #include "uapi/supercall.h"
 #include "supercall/internal.h"
 #include "arch.h" // IWYU pragma: keep
@@ -688,6 +688,12 @@ static int do_get_sulog_fd(void __user *arg)
     return ksu_install_sulog_fd();
 }
 
+static int do_disable_escape_to_root(void __user *arg)
+{
+    set_thread_flag(TIF_KSU_DISABLE_ESCAPE_WITH_ROOT);
+    return 0;
+}
+
 static int do_set_spoof_version(void __user *arg)
 {
     struct ksu_set_spoof_version_cmd cmd;
@@ -987,6 +993,12 @@ static const struct ksu_ioctl_cmd_map ksu_ioctl_handlers[] = {
         .name = "GET_SULOG_FD",
         .handler = do_get_sulog_fd,
         .perm_check = only_root
+    },
+    { 
+        .cmd = KSU_IOCTL_DISABLE_ESCAPE_TO_ROOT, 
+        .name = "DISABLE_ESCAPE_TO_ROOT", 
+        .handler = do_disable_escape_to_root, 
+        .perm_check = only_root 
     },
     {
         .cmd = KSU_IOCTL_SET_SPOOF_VERSION,

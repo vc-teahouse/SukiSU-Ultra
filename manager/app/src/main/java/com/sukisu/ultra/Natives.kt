@@ -2,9 +2,11 @@ package com.sukisu.ultra
 
 import android.os.Parcelable
 import androidx.annotation.Keep
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import com.sukisu.ultra.Natives.Profile.RootProfileFlag
 
 /**
  * @author weishu
@@ -182,7 +184,17 @@ object Natives {
         val nonRootUseDefault: Boolean = true,
         val umountModules: Boolean = true,
         var rules: String = "", // this field is save in ksud!!
+
+        val flags: Long = FLAG_KSU_NO_NEW_PRIVS,
     ) : Parcelable {
+        @Keep
+        enum class RootProfileFlag(val display: String, val desc: Int) {
+            NO_NEW_PRIVS(
+                "NO_NEW_PRIVS",
+                R.string.profile_flags_desc_no_new_privs
+            )
+        }
+
         enum class Namespace {
             INHERITED,
             GLOBAL,
@@ -191,4 +203,12 @@ object Natives {
 
         constructor() : this("")
     }
+
+    const val FLAG_KSU_NO_NEW_PRIVS = 1L
 }
+
+fun List<RootProfileFlag>.toRawFlags(): Long =
+    fold(0L) { acc, flag -> acc.or(1L.shl(flag.ordinal)) }
+
+fun Long.toRootProfileFlags(): List<RootProfileFlag> =
+    RootProfileFlag.entries.filter { 1L.shl(it.ordinal).and(this) != 0L }.toList()

@@ -2,10 +2,17 @@ package com.sukisu.ultra.ui.screen.templateeditor
 
 import com.sukisu.ultra.Natives
 import com.sukisu.ultra.data.model.TemplateInfo
+import com.sukisu.ultra.toRawFlags
 import com.sukisu.ultra.ui.util.getAppProfileTemplate
 import com.sukisu.ultra.ui.util.setAppProfileTemplate
 
 fun toNativeProfile(templateInfo: TemplateInfo): Natives.Profile {
+    val allFlags = Natives.Profile.RootProfileFlag.entries
+
+    val mappedFlags = templateInfo.flags.mapNotNull { ordinal ->
+        if (ordinal in allFlags.indices) allFlags[ordinal] else null
+    }
+
     return Natives.Profile().copy(
         rootTemplate = templateInfo.id,
         uid = templateInfo.uid,
@@ -14,7 +21,8 @@ fun toNativeProfile(templateInfo: TemplateInfo): Natives.Profile {
         capabilities = templateInfo.capabilities,
         context = templateInfo.context,
         namespace = templateInfo.namespace,
-        rules = templateInfo.rules.joinToString("\n").ifBlank { "" }
+        rules = templateInfo.rules.joinToString("\n").ifBlank { "" },
+        flags = mappedFlags.toRawFlags(),
     )
 }
 

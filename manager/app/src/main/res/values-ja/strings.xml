@@ -196,6 +196,14 @@
     <string name="select_file_tip_nogki">パッチを適用する GKI デバイスのイメージファイルを選択してください</string>
     <string name="current_kmi">このデバイスの KMI バージョン: %s</string>
     <string name="current_device_kmi">このデバイスの KMI</string>
+    <string name="color_deep_purple">ディープパープル</string>
+    <string name="color_indigo">インディゴ</string>
+    <string name="color_cyan">シアン</string>
+    <string name="color_yellow">イエロー</string>
+    <string name="color_amber">アンバー</string>
+    <string name="color_blue_grey">ブルーグレー</string>
+    <string name="color_sakura">桜</string>
+    <string name="profile_flags_desc_no_new_privs">この root プロファイルのコンテキスト内で、KernelSU を介したさらなる権限昇格を防止します。</string>
     <!-- Customize -->
     <!-- Log Viewer -->
     <!-- Umount Manager -->

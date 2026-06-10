@@ -25,13 +25,14 @@ import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.profile.Capabilities
 import com.sukisu.ultra.profile.Groups
+import com.sukisu.ultra.toRawFlags
+import com.sukisu.ultra.toRootProfileFlags
 import com.sukisu.ultra.ui.component.material.SegmentedColumn
 import com.sukisu.ultra.ui.component.material.SegmentedListItem
 import com.sukisu.ultra.ui.component.material.SegmentedTextField
 import com.sukisu.ultra.ui.component.profile.dialogs.MultiSelectDialog
 import com.sukisu.ultra.ui.component.profile.dialogs.SingleSelectDialog
 import com.sukisu.ultra.ui.util.isSepolicyValid
-
 @Composable
 fun RootProfileConfigMaterial(
     modifier: Modifier = Modifier,
@@ -83,6 +84,18 @@ fun RootProfileConfigMaterial(
             enabled = enabled,
             namespace = profile.namespace,
             onNamespaceChange = { onProfileChange(profile.copy(namespace = it, rootUseDefault = false)) }
+        )
+
+        RootProfileFlagPanel(
+            enabled = enabled,
+            selected = profile.flags.toRootProfileFlags(),
+            onSelectionChange = {
+                onProfileChange(
+                    profile.copy(
+                        flags = it.toRawFlags(),
+                    )
+                )
+            }
         )
 
         SELinuxPanel(
@@ -237,6 +250,60 @@ private fun MountNameSpacePanel(
             SegmentedListItem(
                 headlineContent = { Text(stringResource(R.string.profile_namespace)) },
                 supportingContent = { Text(selectedOption.label) },
+                onClick = if (enabled) {
+                    { showDialog.value = true }
+                } else null
+            )
+        }
+    )
+}
+
+@Composable
+private fun RootProfileFlagPanel(
+    enabled: Boolean,
+    selected: List<Natives.Profile.RootProfileFlag>,
+    onSelectionChange: (flags: List<Natives.Profile.RootProfileFlag>) -> Unit
+) {
+    val showDialog = remember { mutableStateOf(false) }
+
+    val selectedFlags = remember(selected) {
+        selected.mapNotNull { flag ->
+            Natives.Profile.RootProfileFlag.entries.find { it.ordinal == flag.ordinal }
+        }
+    }
+
+    val flags = remember {
+        Natives.Profile.RootProfileFlag.entries.sortedBy { it.display }
+    }
+
+    if (showDialog.value) {
+        MultiSelectDialog(
+            title = stringResource(R.string.profile_flags),
+            subtitle = "${selectedFlags.size} / ${Natives.Profile.RootProfileFlag.entries.size}",
+            items = flags,
+            selectedItems = selectedFlags.toSet(),
+            itemTitle = { it.display },
+            itemSubtitle = { null },
+            maxSelection = Int.MAX_VALUE,
+            onSelectionChange = {
+                onSelectionChange(it.toList())
+            },
+            onDismiss = { showDialog.value = false }
+        )
+    }
+
+    val tag = if (selectedFlags.isEmpty()) {
+        "None"
+    } else {
+        selectedFlags.joinToString(", ") { it.display }
+    }
+
+    SegmentedColumn(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        content = listOf {
+            SegmentedListItem(
+                headlineContent = { Text(stringResource(R.string.profile_flags)) },
+                supportingContent = { Text(tag) },
                 onClick = if (enabled) {
                     { showDialog.value = true }
                 } else null

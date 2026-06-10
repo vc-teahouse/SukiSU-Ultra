@@ -258,6 +258,7 @@
     <string name="download">İndir</string>
     <string name="download_cancel">İptal</string>
     <string name="download_install">Yükle</string>
+    <string name="profile_flags_desc_no_new_privs">Bu root profili bağlamında KernelSU aracılığıyla daha fazla ayrıcalık yükseltmesini engeller.</string>
     <!-- Customize -->
     <string name="hook_type">Hook Türü</string>
     <string name="manual_hook">Manuel Hook</string>
