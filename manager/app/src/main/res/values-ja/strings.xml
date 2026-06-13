@@ -169,13 +169,6 @@
     <string name="color_teal">ティール</string>
     <string name="color_pink">ピンク</string>
     <string name="color_brown">ブラウン</string>
-    <string name="color_deep_purple">ディープパープル</string>
-    <string name="color_indigo">インディゴ</string>
-    <string name="color_cyan">シアン</string>
-    <string name="color_yellow">イエロー</string>
-    <string name="color_amber">アンバー</string>
-    <string name="color_blue_grey">ブルーグレー</string>
-    <string name="color_sakura">桜</string>
     <string name="network_offline">ネットワークに接続されていません</string>
     <string name="network_retry">再試行</string>
     <string name="tab_readme">README</string>

@@ -215,13 +215,6 @@
     <string name="color_teal">Бирюзовый</string>
     <string name="color_pink">Розовый</string>
     <string name="color_brown">Коричневый</string>
-    <string name="color_deep_purple">Тёмно-фиолетовый</string>
-    <string name="color_indigo">Индиго</string>
-    <string name="color_cyan">Циан</string>
-    <string name="color_yellow">Желтый</string>
-    <string name="color_amber">Янтарный</string>
-    <string name="color_blue_grey">Серо-голубой</string>
-    <string name="color_sakura">Сакура</string>
     <string name="network_offline">Нет подключения к сети</string>
     <string name="network_retry">Повторить</string>
     <string name="tab_readme">README</string>
