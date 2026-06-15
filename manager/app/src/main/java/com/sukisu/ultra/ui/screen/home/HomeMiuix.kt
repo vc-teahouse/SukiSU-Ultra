@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sukisu.ultra.KernelVersion
+import com.sukisu.ultra.Natives
 import com.sukisu.ultra.R
 import com.sukisu.ultra.ui.component.dialog.rememberConfirmDialog
 import com.sukisu.ultra.ui.component.miuix.WarningCard
@@ -151,7 +152,7 @@ fun HomePagerMiuix(
                                     stringResource(
                                         id = R.string.require_kernel_version,
                                         state.ksuVersion ?: 0,
-                                        me.weishu.kernelsu.Natives.MINIMAL_SUPPORTED_KERNEL
+                                        Natives.MINIMAL_SUPPORTED_KERNEL
                                     )
                                 )
                             }
