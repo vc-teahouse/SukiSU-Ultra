@@ -83,15 +83,6 @@ fun HomePagerMaterial(
             } else if (state.showKernelPrBuildWarning && state.showFullStatus) {
                 WarningCard(stringResource(id = R.string.home_pr_kernel_warning))
             }
-            if (state.showVersionMismatchWarning && state.showFullStatus) {
-                WarningCard(
-                    stringResource(
-                        id = R.string.home_version_mismatch,
-                        state.currentManagerVersionCode,
-                        state.ksuVersion ?: 0
-                    )
-                )
-            }
             if (state.showUAPIMisMatchWarning && state.showFullStatus) {
                 WarningCard(
                     stringResource(
