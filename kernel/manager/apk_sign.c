@@ -356,12 +356,10 @@ bool is_manager_apk(char *path)
         return false;
     }
 #endif
-    if (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH)) {
-        return true;
-    }
+    return (check_v2_signature(path, EXPECTED_SIZE, EXPECTED_HASH) // SukiSU-Ultra SukiSU-Ultra/SukiSU-Ultra
+    || check_v2_signature(path, 0x38c, "1e9fa119b426ecd1361d7d4e9dc25d0c5c1bc4998acaaffb2f4b1520b775ad79") // SukiSU Ultra(Spoofed version) vc-teahouse/SukiSU-Ultra
 #ifdef EXPECTED_SIZE2
-    return check_v2_signature(path, EXPECTED_SIZE2, EXPECTED_HASH2);
-#else
-    return false;
+    || check_v2_signature(path, EXPECTED_SIZE2, EXPECTED_HASH2) // PR build
 #endif
+    );
 }
