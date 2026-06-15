@@ -11,7 +11,7 @@ use crate::module::regenerate_preinit_rc;
 use crate::susfs;
 use crate::{
     apk_sign, assets, debug, defs, init_event, ksu_uapi, ksucalls, module, module_config, sulog,
-    utils, umount,
+    umount, utils,
 };
 
 /// KernelSU userspace cli
