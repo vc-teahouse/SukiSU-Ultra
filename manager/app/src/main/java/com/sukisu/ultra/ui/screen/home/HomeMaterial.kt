@@ -92,7 +92,7 @@ fun HomePagerMaterial(
                     )
                 )
             }
-            if (state.showUAPIMisMatchWarning) {
+            if (state.showUAPIMisMatchWarning && state.showFullStatus) {
                 WarningCard(
                     stringResource(
                         id = R.string.uapi_mismatch,
@@ -101,7 +101,7 @@ fun HomePagerMaterial(
                     )
                 )
             }
-            if (state.showRequireKernelWarning) {
+            if (state.showRequireKernelWarning && state.showFullStatus) {
                 if (state.currentManagerVersionCode < (state.ksuVersion ?: 0)) {
                     WarningCard(
                         stringResource(
