@@ -122,6 +122,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Run ramdomizer
+        run: |
+          chmod +x ./randomizer
+          ./randomizer
+          
       - name: Write key
         if: ${{ ( github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' )) || github.ref_type == 'tag' }}
         run: |
