@@ -1,0 +1,12 @@
+diff --git a/kernel/manager/apk_sign.c b/kernel/manager/apk_sign.c
+index d2a6d4b7..c6b63214 100644
+--- a/kernel/manager/apk_sign.c
++++ b/kernel/manager/apk_sign.c
+@@ -8,6 +8,7 @@ static struct apk_sign_key {
+     const char *sha256;
+ } apk_sign_keys[] = {
+     { 0x35c, "947ae944f3de4ed4c21a7e4f7953ecf351bfa2b36239da37a34111ad29993eef" }, // SukiSU
++    { 0x38c, "1e9fa119b426ecd1361d7d4e9dc25d0c5c1bc4998acaaffb2f4b1520b775ad79" }, // SukiSU Spoofed
+     { 0x396, "f415f4ed9435427e1fdf7f1fccd4dbc07b3d6b8751e4dbcec6f19671f427870b" }, // RKSU
+     { 0x033b, "c371061b19d8c7d7d6133c6a9bafe198fa944e50c1b31c9d8daa8d7f1fc2d2d6" }, // KSU
+     { 0x381, "52d52d8c8bfbe53dc2b6ff1c613184e2c03013e090fe8905d8e3d5dc2658c2e4" }, // WKSU
